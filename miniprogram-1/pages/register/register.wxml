@@ -1,0 +1,118 @@
+<!-- pages/register/register.wxml -->
+<view class="register-container">
+  <!-- 页面标题 -->
+  <view class="register-title">用户注册</view>
+
+  <!-- 自动生成8位会员ID展示（不可手动编辑） -->
+  <view class="input-item">
+    <label class="input-label">会员ID</label>
+    <view class="input-content disabled-content">{{memberId}}</view>
+    <button class="refresh-btn" bindtap="refreshMemberId">刷新</button>
+  </view>
+
+  <!-- 昵称 -->
+  <view class="input-item">
+    <label class="input-label">昵称</label>
+    <input 
+      class="input-content" 
+      placeholder="请设置昵称" 
+      bindinput="handleNicknameInput"
+      value="{{nickname}}"
+    />
+  </view>
+
+  <!-- 手机号 -->
+  <view class="input-item">
+    <label class="input-label">手机号</label>
+    <input 
+      class="input-content" 
+      placeholder="请输入11位手机号" 
+      bindinput="handlePhoneInput"
+      value="{{phone}}"
+      type="number"
+    />
+  </view>
+
+  <!-- ✅ 核心修改：验证码模块 移到【手机号下面、密码上面】 -->
+  <view class="input-item code-input-wrap">
+    <label class="input-label">验证码</label>
+    <input 
+      class="input-content code-input" 
+      placeholder="请输入6位验证码" 
+      bindinput="handleCodeInput"
+      value="{{verifyCode}}"
+    />
+    <button 
+      class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}" 
+      bindtap="handleGetVerifyCode"
+      disabled="{{countDown > 0}}"
+    >
+      {{countDown > 0 ? countDown + 's后重新获取' : '获取验证码'}}
+    </button>
+  </view>
+
+  <!-- 密码 -->
+  <view class="input-item">
+    <label class="input-label">密码</label>
+    <input 
+      class="input-content" 
+      placeholder="8位以上数字+字母组合" 
+      password
+      bindinput="handlePasswordInput"
+      value="{{password}}"
+    />
+  </view>
+
+  <!-- 确认密码 -->
+  <view class="input-item">
+    <label class="input-label">确认密码</label>
+    <input 
+      class="input-content" 
+      placeholder="请再次输入密码" 
+      password
+      bindinput="handlePasswordConfirmInput"
+      value="{{passwordConfirm}}"
+    />
+  </view>
+
+  <!-- 会员类型选择（必选） -->
+  <view class="input-item">
+    <label class="input-label">会员类型</label>
+    <picker mode="selector" range="{{userTypeList}}" range-key="name" bindchange="handleUserTypeChange" value="{{userTypeIndex}}">
+      <view class="picker-content">{{selectedUserType.name}}</view>
+    </picker>
+  </view>
+
+  <!-- 会员权益预览 -->
+  <view class="benefit-container">
+    <view class="benefit-title">会员权益预览</view>
+    <view class="benefit-list">
+      <block wx:for="{{currentBenefits}}" wx:key="index">
+        <view class="benefit-item">• {{item}}</view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 推荐人ID + 推荐码 -->
+  <!--view class="input-item">
+    <label class="input-label">推荐人ID</label>
+    <input 
+      class="input-content" 
+      placeholder="请输入推荐人8位会员ID" 
+      bindinput="handleRecommender1Input"
+      value="{{recommender1}}"
+    />
+  </view>  -->
+  <view class="input-item">
+    <label class="input-label">推荐码</label>
+    <input 
+      class="input-content" 
+      placeholder="请输入8位数字+字母推荐码" 
+      bindinput="handleRecommendCodeInput"
+      value="{{recommendCode}}"
+    />
+  </view>
+
+  <!-- 注册按钮 -->
+  <button class="register-btn" bindtap="handleRegister">提交注册</button>
+</view>

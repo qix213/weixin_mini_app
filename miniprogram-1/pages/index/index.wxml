@@ -1,0 +1,139 @@
+<!-- 顶部渐变横幅（整合标语、Logo、功能按钮） -->
+<!-- 顶部垂直渐变横幅（从蓝到白） -->
+<view class="banner1">
+  <!-- 顶部栏：标语 + 右上角登录/注册 -->
+  <view class="banner-header">
+    <view class="banner-text">
+      <image class="banner-logo" src="/images/home/logo.png" mode="widthFix" />
+      <text class="greeting">Hi，蓝朋友</text>
+      <text class="welcome">欢迎来到蓝色奇肌SSTA</text>
+    </view>
+    
+    <block wx:if="{{isLogin && userInfo.nickname}}">
+      <!-- 登录后：欢迎昵称 -->
+      <text class="welcome-text">欢迎回来，{{userInfo.nickname}}！</text>
+    </block>
+    <block wx:else>    
+      <view class="login-register-btn-group">
+        <button class="login-btn" bindtap="goToLogin">登录</button>
+        <button class="register-btn" bindtap="goToRegister">注册</button>
+      </view>
+  </block>
+  </view>
+
+
+  <!-- 功能按钮组 -->
+  <!-- view class="banner-btn-group">
+    <navigator class="btn join-btn" url="/pages/register/register-type">
+      入会领分 尊享权益
+    </navigator>
+    <navigator class="btn mall-btn" url="/pages/mall/mall">
+      进入商城
+    </navigator>
+  </view> -->
+</view>
+
+
+
+
+<!-- <view class="bottom"> -->
+  <!-- <view>
+    <image src="/images/home/bot1.png" mode="scaleToFill" />
+  </view>
+  <view>
+    <image src="/images/home/bot2.png" mode="scaleToFill" />
+  </view>
+  <view>
+    <image src="/images/home/bot3.png" mode="scaleToFill" />
+  </view> -->
+
+  <!-- <view wx:for="{{fixed_images}}" wx:key="id"> 
+      <image src="{{item.img}}" mode="scaleToFill"/>
+    </view>
+</view> -->
+
+<!-- 正确的 WXML 代码（重点：wx:for="{{fixed_images}}"，与前端字段名一致） -->
+<!-- view class="fixed-images-section"> -->
+  <!-- view class="fixed-images-container"> -->
+    <!-- 关键1：wx:for 绑定 fixed_images（与前端 setData 的字段名完全一致） -->
+    <!-- 关键2：wx:key 用 id（后端返回了 id，更稳定，避免警告） -->
+    <!-- block wx:for="{{fixed_images}}" wx:key="id"> -->
+      <!-- 关键3：src 绑定 item.img（与前端映射的 img 字段一致） -->
+      <!-- image 
+        src="{{item.img}}" 
+        mode="scaleToFill"  
+        class="fixed-image"
+      />
+    </block>
+  </view>
+</view> -->
+
+<!--view class="regist">
+    <navigator url="/pages/register/blue-friend">
+        <button type="default" plain bind:tap="handleClick01">
+          蓝朋友注册
+        </button>
+    </navigator>
+    <button type="default" plain bind:tap="handleClick02">
+          蓝明星注册
+        </button>
+        <button type="default" plain bind:tap="handleClick03">
+          TA创粉注册
+        </button>
+</view> -->
+<!-- <view class='tips'>
+  <text> {{notice}}
+    {{content}}
+  </text>
+    <image src="/images/home/logo.png" mode="aspectFit" style="width: 220rpx; height: 80rpx;" />
+
+</view> -->
+
+<!--view class="banner">
+  <swiper autoplay indicator-dots circular indicator-color='#FFFFF' interval='4000'>
+  <swiper-item wx:for="{{banner_list.results}}">
+    <image src="{{item.img}}" mode="widthFix" style="width: 100%;height: 20%;" />
+  </swiper-item>
+  </swiper>
+</view> -->
+
+<view class="menu">
+  <navigator url="/pages/homess/homess">
+    <view class="item">
+      <image src="/images/menu/menu1.png" class="img" />
+      <text class="title">
+        家居系列产品
+      </text>
+    </view>
+  </navigator>
+
+  <view class="item">
+    <image src="/images/menu/menu2.png" class="img" />
+    <text class="title">
+      旅行mini装
+    </text>
+  </view>
+
+  <view class="item">
+    <image src="/images/menu/menu3.png" class="img" />
+    <text class="title">
+      积分兑换单品
+    </text>
+  </view>
+
+  <view class="item">
+    <image src="/images/menu/menu4.png" class="img" />
+    <text class="title">
+      筋膜系列产品
+    </text>
+  </view>
+</view>
+
+<view class="notice">
+  <image src="/images/home/board.png" mode="aspectFit" style="width: 150rpx; height: 150rpx;" />
+  <text>
+    最新优惠活动信息：
+  </text>
+</view>
+
+

@@ -1,0 +1,83 @@
+<view class="register-container">
+  <view class="page-title">蓝朋友注册</view>
+  <!-- 会员类型卡片 -->
+      <view class="card-desc">自用省钱，10天退货期，30天瑕疵换货</view>
+      <view class="card-price">入会980元</view>
+      <view class="card-tag">推荐自用</view>
+
+  <form class="register-form">
+    <!-- 会员ID -->
+    <view class="input-item">
+      <label>会员ID <text style="color:red;">*</text></label>
+      <input placeholder="CN+字母、数字组成" value="{{userId}}" bindinput="handleInput" data-key="userId"></input>
+    </view>
+
+    <!-- 昵称 -->
+    <view class="input-item">
+      <label>昵称 <text style="color:red;">*</text></label>
+      <input placeholder="请输入昵称" value="{{nickname}}" bindinput="handleInput" data-key="nickname"></input>
+    </view>
+
+    <!-- 出生日期 -->
+    <view class="input-item">
+      <label>出生日期 <text style="color:red;">*</text></label>
+      <input placeholder="请选择和身份证一致的日期" value="{{birth}}" bindtap="pickBirth" readonly></input>
+    </view>
+
+    <!-- 手机号 -->
+    <view class="input-item">
+      <label>手机号 <text style="color:red;">*</text></label>
+      <input placeholder="请输入手机号" type="number" value="{{phone}}" bindinput="handleInput" data-key="phone"></input>
+    </view>
+
+    <!-- 验证码 -->
+    <view class="input-item">
+      <label>验证码 <text style="color:red;">*</text></label>
+      <input placeholder="请输入验证码" type="number" value="{{code}}" bindinput="handleInput" data-key="code"></input>
+      <button class="verify-btn" bindtap="getCode" disabled="{{codeDisabled}}">
+        {{codeText}}
+      </button>
+    </view>
+
+    <!-- 登录密码 -->
+    <view class="input-item">
+      <label>登录密码 <text style="color:red;">*</text></label>
+      <input placeholder="请输入8位以上数字+字母密码" type="password" value="{{pwd}}" bindinput="handleInput" data-key="pwd"></input>
+    </view>
+
+    <!-- 再次输入密码 -->
+    <view class="input-item">
+      <label>确认密码 <text style="color:red;">*</text></label>
+      <input placeholder="请再次输入密码" type="password" value="{{pwdConfirm}}" bindinput="handleInput" data-key="pwdConfirm"></input>
+    </view>
+
+    <!-- 邮箱（非必填） -->
+    <view class="input-item">
+      <label>邮箱</label>
+      <input placeholder="请输入邮箱" value="{{email}}" bindinput="handleInput" data-key="email"></input>
+    </view>
+
+    <!-- 省市区 -->
+    <view class="input-item">
+      <label>省市区 <text style="color:red;">*</text></label>
+      <input placeholder="请选择省市区" value="{{region}}" bindtap="pickRegion" readonly></input>
+    </view>
+
+    <!-- 详细地址 -->
+    <view class="input-item">
+      <label>详细地址 <text style="color:red;">*</text></label>
+      <input placeholder="请输入详细地址" value="{{address}}" bindinput="handleInput" data-key="address"></input>
+    </view>
+
+    <!-- 协议勾选 -->
+    <view class="agreement">
+      <checkbox checked="{{agree}}" bindchange="handleAgree"></checkbox>
+      <view>我已阅读并同意《服务条款》和《隐私协议》</view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <button class="btn-primary" bindtap="handleRegister" disabled="{{!agree || !userId || !nickname || !birth || !phone || !code || !pwd || !pwdConfirm || !region || !address || pwd !== pwdConfirm}}">
+      完成注册
+    </button>
+  </form>
+</view>
