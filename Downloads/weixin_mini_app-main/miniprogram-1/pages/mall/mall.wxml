@@ -1,0 +1,67 @@
+<view class="mall-container">
+  <!-- 搜索框（不变） -->
+  <view class="native-search-bar" style="background: {{primaryColor}}; padding: 10rpx 20rpx; display: flex; align-items: center; height: 80rpx; box-sizing: border-box;">
+    <input 
+      value="{{searchValue}}"
+      placeholder="搜索商品/关键词"
+      placeholder-style="color: #fff; font-size: 28rpx;"
+      bindinput="onSearchChange"  
+      bindconfirm="onSearch"     
+      style="flex:1; color:#fff; font-size:28rpx; background: transparent; border: none;"
+    />
+    <view bindtap="onSearch" class="search-btn">
+      <text style="color:#fff; font-size:32rpx;">🔍</text>
+    </view>
+  </view>
+
+  <!-- 商品分类（不变，后续配合分类功能） -->
+  <van-grid column-num="4" border="{{false}}" class="category-grid" wx:if="{{categories.length > 0}}">
+    <van-grid-item 
+      wx:for="{{categories}}" 
+      wx:key="id"
+      icon="{{item.icon || 'goods-collect-o'}}" 
+      text="{{item.name}}"
+      bind:click="chooseCategory"
+      data-id="{{item.id}}"
+      class="{{selectedCategoryId == item.id ? 'active' : ''}}"
+    />
+  </van-grid>
+
+<!-- 商品列表（外层 view 添加 class="goods-card-wrap"，保留原有布局） -->
+<view class="goods-list">
+  <!-- 骨架屏（不变） -->
+  <van-skeleton title row="3" wx:if="{{loading}}" class="skeleton-item" wx:key="index" />
+  
+  <!-- 核心修改：给外层 view 添加 class="goods-card-wrap"，用于设置宽度，恢复两列 -->
+  <view class="goods-card-wrap" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
+    <van-card
+      num="{{item.stock}}"
+      price="{{item.member_price}}"
+      origin-price="{{item.original_price}}"
+      title="{{item.name}}"
+      desc="{{item.brief_intro || '暂无介绍'}}"
+      thumb="{{item.image_url}}"
+      class="goods-card"
+      border="{{true}}"
+    >
+    <view slot="footer" class="card-footer">
+  <view class="num-control">
+    <button size="mini" bindtap="minusNum" data-id="{{item.id}}" disabled="{{item.cartNum <= 1}}">-</button>
+    <input type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" min="1" />
+    <button size="mini" bindtap="plusNum" data-id="{{item.id}}">+</button>
+  </view>
+  <van-button size="mini" type="primary" catch:click="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
+    加入购物车
+  </van-button>
+</view>
+    </van-card>
+  </view>
+  <!-- 全局提示 -->
+  <van-toast id="van-toast" />
+  <!-- 空数据提示（不变） -->
+  <van-empty image="search" description="暂无商品" wx:if="{{!loading && goodsList.length === 0}}" />
+</view>
+
+  <!-- 全局提示 -->
+  <van-toast id="van-toast" />
+</view>

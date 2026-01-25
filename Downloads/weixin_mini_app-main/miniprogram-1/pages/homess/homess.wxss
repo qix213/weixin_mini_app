@@ -1,0 +1,85 @@
+/* pages/homess/homess.wxss */
+.container{
+width: 745rpx;
+margin: 0 auto;
+}
+
+.row1{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.company {
+    width: 70rpx;
+    height: 180rpx;
+    background-color: saddlebrown;
+}
+
+.pic{
+width: 186rpx;
+height: 180rpx;
+background-color: cadetblue;
+}
+
+.title{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.pic-list{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.big{
+    background-color: aquamarine;
+    height: 610 rpx;
+    width: 210rpx;
+    margin-right: 20rpx;
+}
+
+.right-list{
+background-color: antiquewhite;
+flex-grow: 1;
+}
+
+.group{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.goods{
+    margin-bottom: 10rpx;
+    border: 1px solid red;
+    width: 300rpx;
+    height: 200rpx;
+}
+
+.goods>text{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 145rpx;
+}
+
+.course-list{
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.item{
+    width: 24%;
+    height: 100rpx;
+    background-color: skyblue;
+    margin-top: 15rpx;    
+}
+
+
+
+

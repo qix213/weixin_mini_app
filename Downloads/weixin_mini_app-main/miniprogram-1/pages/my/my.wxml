@@ -1,0 +1,94 @@
+<!-- pages/mine/mine.wxml -->
+<view class="mine-container">
+  <!-- 会员信息卡片：登录后显示完整信息，未登录显示登录入口 -->
+  <view class="user-info-card">
+    <block wx:if="{{isLogin && memberInfo.nickname}}">
+      <!-- 登录后：完整会员信息 -->
+      <view class="avatar-area">
+        <image 
+          class="avatar" 
+          src="/images/bg/bg.png" 
+          mode="aspectFill"
+        ></image>
+        <view class="user-base-info">
+          <view class="nickname">{{memberInfo.nickname}}</view>
+          <view class="member-type">
+            会员类型：{{memberInfo.user_type_text}} | 星级：{{memberInfo.star_level}}星
+          </view>
+          <view class="member-id">会员ID：{{memberInfo.member_id}}</view>
+        </view>
+      </view>
+      <view class="member-card-btn" bindtap="goToMemberCenter">
+        会员中心
+      </view>
+    </block>
+    <block wx:else>
+      <!-- 未登录：登录入口 -->
+      <view class="unlogin-area">
+        <button class="unlogin-btn" bindtap="goToLogin">立即登录/注册</button>
+      </view>
+    </block>
+  </view>
+
+  <!-- 积分 + 优惠券：登录后显示 -->
+  <view class="asset-container" wx:if="{{isLogin}}">
+    <view class="asset-item" bindtap="goToPoints">
+      <view class="asset-title">会员积分</view>
+      <view class="asset-value">{{memberInfo.points || 0}}</view>
+    </view>
+    <view class="asset-divider"></view>
+    <view class="asset-item" bindtap="goToCoupon">
+      <view class="asset-title">优惠券</view>
+      <view class="asset-value">{{memberInfo.coupon_count || 0}}张</view>
+    </view>
+  </view>
+
+  <!-- 会员到期时间：登录后显示 -->
+  <view class="vip-expire-container" wx:if="{{isLogin}}">
+    <view class="vip-expire-title">会员到期时间</view>
+    <view class="vip-expire-value">{{memberInfo.vip_expire_time_text}}</view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="function-list">
+    <view class="function-item" bindtap="{{isLogin ? 'goToAddressManage' : 'goToLogin'}}">
+      <view class="function-icon">📍</view>
+      <view class="function-name" style="{{!isLogin ? 'color:#999' : ''}}">地址管理</view>
+      <view class="function-arrow" style="{{!isLogin ? 'color:#ccc' : ''}}">→</view>
+    </view>
+    <view class="function-item" bindtap="goToInvoiceManage">
+      <view class="function-icon">📄</view>
+      <view class="function-name">账单记录</view>
+      <view class="function-arrow">→</view>
+    </view>
+    <view class="function-item" bindtap="previewQrcode">
+      <view class="function-icon">🔍</view>
+      <view class="function-name">关注公众号</view>
+      <view class="function-arrow">→</view>
+    </view>
+    <view class="function-item" bindtap="goToCustomerService">
+      <view class="function-icon">💬</view>
+      <view class="function-name">我的客服</view>
+      <view class="function-arrow">→</view>
+    </view>
+    <!--view class="function-item" bindtap="{{isLogin ? 'goToSetting' : 'goToLogin'}}">
+      <view class="function-icon">⚙️</view>
+      <view class="function-name" style="{{!isLogin ? 'color:#999' : ''}}">设置</view>
+      <view class="function-arrow" style="{{!isLogin ? 'color:#ccc' : ''}}">→</view>
+    </view>-->
+    <view class="function-item" bindtap="goToLogout">
+      <view class="function-icon">⚙️</view>
+      <view class="function-name">登出</view>
+      <view class="function-arrow">→</view>
+    </view>
+  </view>
+
+  <!-- 公众号二维码弹窗 -->
+  <view class="qrcode-modal" wx:if="{{showQrcode}}">
+    <view class="qrcode-content">
+      <image class="qrcode-img" src="/images/wechat-qrcode.png" mode="widthFix"></image>
+      <view class="qrcode-tip">扫码关注公众号</view>
+      <button class="close-btn" bindtap="hideQrcode">关闭</button>
+    </view>
+  </view>
+</view>

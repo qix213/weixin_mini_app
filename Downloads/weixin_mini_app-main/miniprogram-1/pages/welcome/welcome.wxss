@@ -1,0 +1,22 @@
+/* pages/welcome/welcome.wxss */
+page{
+  height: 100%;
+}
+  .container{
+    width: 100%;
+    height: 100%;
+  }
+  .container .img{
+    width: 100%;
+    height: 100%;
+  }
+
+.jump{
+font-size: 30rpx;
+position: absolute;
+left: 320rpx;
+top: 1180rpx;
+background-color: rgb(212, 212, 210);
+padding: 10prx 30prx;
+border-radius: 20rpx;
+}

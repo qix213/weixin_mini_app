@@ -1,0 +1,103 @@
+:root {
+  --primary-color: #1E88E5;
+  --primary-light: #E3F2FD;
+  --text-dark: #333;
+  --text-gray: #666;
+}
+
+.mall-container {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 分类样式（不变） */
+.category-grid {
+  background: #fff;
+  padding: 10rpx 0;
+  margin-bottom: 10rpx;
+}
+.category-grid .van-grid-item.active {
+  color: var(--primary-color);
+}
+.category-grid .van-grid-item__icon {
+  font-size: 40rpx !important;
+}
+
+/* 商品列表（不变，保持 flex 换行布局） */
+.goods-list {
+  padding: 10rpx;
+  display: flex;
+  flex-wrap: wrap; /* 关键：自动换行，实现多列布局 */
+  justify-content: space-between; /* 关键：左右间距均匀，两列对齐 */
+}
+
+/* 核心新增：外层 view 样式，与原 goods-card 一致，确保两列排列 */
+.goods-card-wrap {
+  width: 48%; /* 关键：保持 48% 宽度，实现两列布局 */
+  margin-bottom: 20rpx; /* 与原布局一致的下边距 */
+  flex-shrink: 0; /* 关键：防止被挤压，保持宽度不变 */
+}
+
+/* 商品卡片：宽度 100% 填满外层 view，高度自适应，文字不窜行 */
+.goods-card {
+  width: 100%; /* 关键：占满外层 view，不额外宽出 */
+  background: #fff;
+  /* 移除原有宽度，由外层 view 控制，避免冲突 */
+  min-height: 800rpx;
+}
+
+/* 骨架屏：同步外层 view 样式，确保占位一致，不打乱布局 */
+.skeleton-item {
+  width: 48%;
+  margin-bottom: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 卡片底部（不变） */
+.card-footer {
+  display: flex;
+  justify-content: center;
+}
+
+/* 搜索框样式（不变） */
+.search-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10rpx;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+/* 数量控制样式 */
+.num-control {
+  display: flex;
+  align-items: center;
+  margin-right: 10rpx;
+}
+.num-control button {
+  width: 40rpx;
+  height: 40rpx;
+  padding: 0;
+  line-height: 40rpx;
+  text-align: center;
+  border: 1rpx solid #ccc;
+  background: #fff;
+  color: #333;
+}
+.num-control input {
+  width: 60rpx;
+  height: 40rpx;
+  text-align: center;
+  border: 1rpx solid #ccc;
+  border-left: none;
+  border-right: none;
+  padding: 0;
+}
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

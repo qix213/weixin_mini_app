@@ -1,0 +1,63 @@
+<view class="checkout-container">
+  <!-- 收货地址区域 -->
+  <van-cell-group class="address-wrap">
+    <van-cell 
+      title="收货地址" 
+      is-link 
+      bindtap="toAddressPage"
+      value="{{defaultAddress.name}} {{defaultAddress.phone}}"
+      label="{{defaultAddress.address + defaultAddress.detail_address}}"
+      wx:if="{{defaultAddress}}"
+    >
+      <van-icon slot="left-icon" name="location-o" color="#ff6700" />
+    </van-cell>
+    <van-cell 
+      title="收货地址" 
+      is-link 
+      bindtap="toAddressPage"
+      value="暂无收货地址，点击添加"
+      wx:else
+    >
+      <van-icon slot="left-icon" name="location-o" color="#999" />
+    </van-cell>
+  </van-cell-group>
+
+  <!-- 分割线 -->
+  <view class="line"></view>
+
+  <!-- 结算商品列表 -->
+  <view class="goods-title">结算商品</view>
+  <view class="goods-list">
+    <van-card 
+      wx:for="{{cartList}}" 
+      wx:key="id" 
+      title="{{item.goods.name}}" 
+      thumb="{{item.goods.image_url}}"
+      price="{{item.goods.member_price}}"
+      class="goods-item"
+      border="{{true}}"
+    >
+      <view slot="desc">数量：{{item.num}}件</view>
+      <view slot="footer">小计：{{item.total_price}}</view>
+    </van-card>
+  </view>
+
+  <!-- 无商品提示 -->
+  <view class="empty-wrap" wx:if="{{cartList.length == 0}}">
+    <view class="empty-text">暂无结算商品</view>
+    <van-button size="mini" type="primary" bindtap="toCart">返回购物车</van-button>
+  </view>
+
+  <!-- 底部价格+提交订单栏 (固定底部) -->
+  <view class="submit-bar" wx:if="{{cartList.length > 0}}">
+    <view class="total-price">总计：¥<span>{{totalAll}}</span></view>
+    <van-button 
+      type="primary" 
+      bindtap="submitOrder"
+      disabled="{{!defaultAddress}}"
+      class="submit-btn"
+    >
+      {{!defaultAddress ? '请选择收货地址' : '提交订单'}}
+    </van-button>
+  </view>
+</view>

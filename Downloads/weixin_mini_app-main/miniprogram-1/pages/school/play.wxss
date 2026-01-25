@@ -1,0 +1,59 @@
+page {
+  background-color: #f5f5f5;
+}
+/* 视频组件：彻底适配全屏，无任何尺寸限制 */
+.video-player {
+  width: 100vw !important;  /* 占满屏幕宽度 */
+  height: 40vh !important;  /* 非全屏时高度为屏幕40%，全屏时自动占满 */
+  border-radius: 8rpx;
+  margin: 0 !important;     /* 移除外边距 */
+  padding: 0 !important;    /* 移除内边距 */
+}
+
+/* 全屏时的样式（可选，强制占满屏幕） */
+.video-player:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
+}
+video {
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+}
+/* 课程信息 */
+.video-info {
+  background-color: #fff;
+  padding: 20rpx;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+}
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+.desc, .play-count {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 5rpx;
+}
+/* 操作按钮 */
+.oper-btn-group {
+  display: flex;
+  justify-content: space-between;
+}
+.oper-btn {
+  width: 48%;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+.primary-btn {
+  background-color: #1E88E5;
+  color: #fff;
+}
+.warning-btn {
+  background-color: #FF9800;
+  color: #fff;
+}

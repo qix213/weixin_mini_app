@@ -1,0 +1,101 @@
+/**app.wxss**/
+@import "/static/css/iconfont.wxss";
+/* 1. 变量定义（保持不变） */
+:root {
+  --primary-color: #1E88E5;   /* 主品牌蓝 */
+  --primary-light: #E3F2FD;   /* 浅蓝（背景/hover） */
+  --text-dark: #333;          /* 深色文字 */
+  --text-gray: #666;          /* 灰色文字 */
+  --text-light: #999;         /* 浅色文字 */
+  --border-color: #E0E0E0;    /* 边框色 */
+  --white: #fff;              /* 白色背景 */
+}
+
+/* 2. 基础组件样式重置（替换原通配符 * ，适配 WXSS） */
+view, text, input, button, checkbox, image, navigator, picker {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "思源黑体", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 3. 通用按钮样式（保持不变） */
+.btn-primary {
+  width: 90%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: var(--primary-color);
+  color: var(--white);
+  border-radius: 40rpx;
+  text-align: center;
+  font-size: 32rpx;
+  margin: 40rpx auto;
+  border: none; /* 清除小程序按钮默认边框 */
+}
+.btn-primary:disabled {
+  background: #90CAF9; /* 禁用状态浅蓝 */
+}
+.btn-gray {
+  width: 90%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: #F5F5F5;
+  color: var(--text-gray);
+  border-radius: 40rpx;
+  text-align: center;
+  font-size: 32rpx;
+  margin: 20rpx auto;
+  border: none;
+}
+
+/* 4. 通用输入框样式（保持不变） */
+.input-item {
+  width: 90%;
+  height: 80rpx;
+  border-bottom: 1px solid var(--border-color);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+}
+.input-item label {
+  width: 200rpx;
+  font-size: 28rpx;
+  color: var(--text-dark);
+}
+.input-item input {
+  flex: 1;
+  height: 60rpx;
+  font-size: 28rpx;
+  color: var(--text-dark);
+  outline: none;
+  border: none; /* 清除输入框默认边框 */
+}
+.input-item .verify-btn {
+  width: 180rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--primary-color);
+  border-left: 1px solid var(--border-color);
+  background: transparent; /* 清除按钮默认背景 */
+  padding: 0; /* 清除按钮默认内边距 */
+}
+
+/* 5. 协议勾选样式（保持不变） */
+.agreement {
+  width: 90%;
+  margin: 20rpx auto;
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--text-gray);
+}
+.agreement checkbox {
+  margin-right: 16rpx;
+  transform: scale(0.8); /* 缩小复选框 */
+}
+.agreement a {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
