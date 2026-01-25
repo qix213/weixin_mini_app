@@ -1,0 +1,55 @@
+<view class="detail-container">
+  <!-- 加载中骨架屏 -->
+  <van-skeleton title row="6" wx:if="{{loading}}" class="skeleton-wrap" />
+
+  <!-- 商品详情内容（直接显示，无需折叠） -->
+  <view wx:if="{{!loading && goodsDetail.id}}">
+    <!-- 商品主图（支持预览） -->
+    <view class="goods-main-img" bindtap="previewMainImg">
+      <image src="{{goodsDetail.image_url}}" mode="aspectFill" style="width: 100%; height: 100%;" />
+    </view>
+
+    <!-- 商品基础信息（直接展示） -->
+    <van-card
+      title="{{goodsDetail.name}}"
+      price="{{goodsDetail.member_price}}"
+      origin-price="¥{{goodsDetail.original_price}}"
+      desc="{{goodsDetail.brief_intro || '暂无商品简介'}}"
+      class="goods-base-card"
+      border="{{false}}"
+    >
+      <view slot="footer" class="base-info-footer">
+        <text class="stock-text">库存：{{goodsDetail.stock}} 件</text>
+        <text class="sales-text" wx:if="{{goodsDetail.sales}}">销量：{{goodsDetail.sales}} 件</text>
+      </view>
+    </van-card>
+<!-- 数量选择器 -->
+<view class="num-selector" wx:if="{{!loading && goodsDetail.id}}">
+  <view class="selector-title">购买数量：</view>
+  <view class="num-control">
+    <button size="mini" bindtap="minusNum" disabled="{{cartNum <= 1}}">-</button>
+    <input type="number" value="{{cartNum}}" bindinput="changeNum" min="1" />
+    <button size="mini" bindtap="plusNum">+</button>
+  </view>
+</view>
+    <!-- 商品详情（直接显示，无需折叠面板） -->
+    <view class="goods-desc-section">
+      <view class="section-title">商品详情</view>
+      <view class="desc-content">
+        <text>{{goodsDetail.intro || '暂无详细描述'}}</text>
+      </view>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="operation-bar">
+      <van-button type="default" bindtap="addToCart" class="cart-btn">加入购物车</van-button>
+      <van-button type="primary" bindtap="buyNow" class="buy-btn">立即购买</van-button>
+    </view>
+  </view>
+  <!-- 全局提示 -->
+  <van-toast id="van-toast" />
+  <!-- 商品不存在提示 -->
+  <van-empty image="goods" description="商品不存在或已下架" wx:if="{{!loading && !goodsDetail.id}}" class="empty-wrap" />
+
+</view>
+

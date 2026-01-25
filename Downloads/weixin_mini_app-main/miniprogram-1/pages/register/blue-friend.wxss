@@ -1,0 +1,22 @@
+.card-desc {
+  font-size: 24rpx;
+  color: var(--text-gray);
+  margin-bottom: 20rpx;
+  line-height: 40rpx;
+}
+.card-price {
+  font-size: 28rpx;
+  color: var(--text-dark);
+  font-weight: 500;
+  margin-bottom: 10rpx;
+}
+.card-tag {
+  width: 120rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  background: var(--primary-color);
+  color: var(--white);
+  font-size: 22rpx;
+  text-align: center;
+  border-radius: 20rpx;
+}

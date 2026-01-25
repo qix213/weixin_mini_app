@@ -1,0 +1,71 @@
+{
+  "entryPagePath":   "pages/welcome/welcome",
+  "pages": [
+    "pages/welcome/welcome",
+    "pages/index/index",
+    "pages/my/my",
+    "pages/login/login",
+    "pages/homess/homess",
+    "pages/register/register",
+    "pages/mall/mall",
+    "pages/mall/detail",
+    "pages/school/school",   
+    "pages/school/play",       
+    "pages/cart/cart",       
+    "pages/checkout/checkout",  
+    "pages/address/address",  
+    "pages/addressAdd/addressAdd", 
+    "config/settings.js",
+    "pages/order-list/order-list"
+
+  ],
+  "window": {
+    "navigationBarTitleText": "蓝色奇迹",
+    "navigationBarBackgroundColor": "#0000FF",
+    "enablePullDownRefresh": true,
+    "backgroundColor": "#00FFFF",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "selectedColor": "#b4282d",
+    "position": "bottom",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/icont/home.png",
+        "selectedIconPath": "images/icont/home_select.png"
+      },
+      {
+        "pagePath": "pages/mall/mall",
+        "text": "小商场",
+        "iconPath": "images/icont/mall.png",
+        "selectedIconPath": "images/icont/mall_select.png"
+      },
+      {
+        "pagePath": "pages/cart/cart",
+        "text": "购物车",
+        "iconPath": "images/icont/cart.png",
+        "selectedIconPath": "images/icont/cart_select.png"
+      },
+      {
+        "pagePath": "pages/school/school",
+        "text": "商学院",
+        "iconPath": "images/icont/school.png",
+        "selectedIconPath": "images/icont/school_select.png"
+      },
+      {
+        "pagePath": "pages/my/my",
+        "text": "我的",
+        "iconPath": "images/icont/my.png",
+        "selectedIconPath": "images/icont/my_select.png"
+      }
+    ]
+  },
+  "usingComponents": {
+    "van-row": "@vant/weapp/row/index",
+    "van-col": "@vant/weapp/col/index",
+    "van-notice-bar": "@vant/weapp/notice-bar/index",
+    "van-button": "@vant/weapp/button/index"
+  }
+}
