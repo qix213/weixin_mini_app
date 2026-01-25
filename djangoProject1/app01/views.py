@@ -813,3 +813,99 @@ class OrderAddView(APIView):
             cart.delete()  # 下单成功后删除购物车商品
 
         return Response({"code": 200, "msg": "下单成功", "data": {"order_sn": order_sn}})
+
+
+import json
+from aliyunsdkcore.client import AcsClient
+from aliyunsdkcore.request import CommonRequest
+from django.views.decorators.csrf import csrf_exempt
+
+# 阿里云AccessKey配置（替换为你的RAM子账号信息）
+ACCESS_KEY_ID = "LTAI5t7mu8Bkdh4acCVJNScy"
+ACCESS_KEY_SECRET = "VmoJbNF6DxZvF7SVYil5j6IS4xGuHC"
+REGION_ID = "cn"  # 固定，号码认证服务仅支持杭州地域
+
+# 初始化阿里云客户端
+client = AcsClient(ACCESS_KEY_ID, ACCESS_KEY_SECRET, REGION_ID)
+
+
+@csrf_exempt
+def send_sms_code(request):
+    """发送短信验证码接口"""
+    if request.method != "POST":
+        return JsonResponse({"code": -1, "msg": "仅支持POST请求"})
+
+    # 获取前端传递的手机号
+    data = json.loads(request.body)
+    phone = data.get("phone")
+    if not phone or not phone.startswith("1") or len(phone) != 11:
+        return JsonResponse({"code": -1, "msg": "手机号格式错误"})
+
+    # 构造阿里云短信验证请求
+    request = CommonRequest()
+    request.set_domain("dypnsapi.aliyuncs.com")
+    request.set_version("2017-05-25")
+    request.set_action_name("SendSmsVerifyCode")
+    request.set_method("POST")
+    # 请求参数（必填）
+    request.add_query_param("PhoneNumber", phone)  # 接收验证码的手机号
+    request.add_query_param("SceneCode", "SMS_LOGIN")  # 场景码（固定：登录场景）
+    request.add_query_param("OutId", "your_out_id")  # 自定义标识（可选）
+
+    try:
+        # 调用阿里云API
+        response = client.do_action_with_exception(request)
+        res_data = json.loads(response.decode("utf-8"))
+        if res_data.get("Code") == "OK":
+            # 返回BizId（验证时需要）
+            return JsonResponse({
+                "code": 200,
+                "msg": "验证码发送成功",
+                "data": {"biz_id": res_data.get("BizId")}
+            })
+        else:
+            return JsonResponse({
+                "code": -1,
+                "msg": f"发送失败：{res_data.get('Message')}"
+            })
+    except Exception as e:
+        return JsonResponse({"code": -1, "msg": f"系统异常：{str(e)}"})
+
+
+@csrf_exempt
+def verify_sms_code(request):
+    """验证短信验证码接口"""
+    if request.method != "POST":
+        return JsonResponse({"code": -1, "msg": "仅支持POST请求"})
+
+    # 获取前端传递的参数
+    data = json.loads(request.body)
+    phone = data.get("phone")
+    code = data.get("code")
+    biz_id = data.get("biz_id")
+    if not (phone and code and biz_id):
+        return JsonResponse({"code": -1, "msg": "参数不完整"})
+
+    # 构造阿里云验证请求
+    request = CommonRequest()
+    request.set_domain("dypnsapi.aliyuncs.com")
+    request.set_version("2017-05-25")
+    request.set_action_name("VerifySmsVerifyCode")
+    request.set_method("POST")
+    # 请求参数（必填）
+    request.add_query_param("PhoneNumber", phone)
+    request.add_query_param("VerifyCode", code)  # 用户输入的验证码
+    request.add_query_param("BizId", biz_id)  # 发送时返回的BizId
+
+    try:
+        response = client.do_action_with_exception(request)
+        res_data = json.loads(response.decode("utf-8"))
+        if res_data.get("Code") == "OK":
+            return JsonResponse({"code": 200, "msg": "验证码验证成功"})
+        else:
+            return JsonResponse({
+                "code": -1,
+                "msg": f"验证失败：{res_data.get('Message')}"
+            })
+    except Exception as e:
+        return JsonResponse({"code": -1, "msg": f"系统异常：{str(e)}"})

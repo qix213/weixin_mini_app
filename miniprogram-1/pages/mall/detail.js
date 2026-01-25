@@ -5,7 +5,6 @@ Page({
     goodsId: '', // 商品ID
     goodsDetail: {}, // 商品详情数据
     loading: true, // 加载状态
-    // baseUrl: 'http://192.168.28.40:8000', // 你的局域网IP，与列 表页一致
     baseUrl: 'http://localhost:8000',
     cartNum: 1, // 默认购买数量
   },
@@ -99,7 +98,7 @@ Page({
 
     // 2. 调用封装的 request 方法（自动携带 Token）
     app.request({
-      url: '/app01/cart/add/', // 拼接后是 http://192.168.28.40:8000/app01/cart/add/
+      url: '/app01/cart/add/', // 拼接后是 http://localhost:8000/app01/cart/add/
       method: 'POST',
       data: { goods_id: goodsDetail.id, num: cartNum }
     }).then((res) => {
@@ -114,14 +113,42 @@ Page({
     });
   },
 
-  // 立即购买（占位方法，后续可扩展）
+  // 立即购买（修复 Toast 错误 + 跳转购物车 Tab）
   buyNow() {
     const { goodsDetail } = this.data;
     if (!goodsDetail.id) {
       Toast.fail('商品信息异常');
       return;
     }
-    Toast.info(`即将进入【${goodsDetail.name}】结算页面`);
+
+    // 1. 先校验登录（和加入购物车逻辑一致）
+    if (!app.globalData.token) {
+      wx.showModal({
+        title: '提示',
+        content: '请先登录后再结算',
+        confirmText: '去登录',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/login/login' });
+          }
+        }
+      });
+      return;
+    }
+
+    // 2. 提示跳转 + 跳转到购物车 Tab（核心修改）
+    Toast.success(`即将结算【${goodsDetail.name}】`);
+    setTimeout(() => {
+      // 关键：用 switchTab 跳转 Tab 页，路径对应 app.json 中的购物车 Tab 路径
+      wx.switchTab({
+        url: '/pages/cart/cart', // 替换为你实际的购物车 Tab 页面路径
+        fail: (err) => {
+          console.error('跳转购物车失败：', err);
+          Toast.fail('购物车页面不存在');
+        }
+      });
+    }, 1500);
   },
 
   // 预览商品主图

@@ -34,6 +34,7 @@
   </view>
 
   <!-- ✅ 核心修改：验证码模块 移到【手机号下面、密码上面】 -->
+  <!--       bindtap="getSmsCode" -->
   <view class="input-item code-input-wrap">
     <label class="input-label">验证码</label>
     <input 
@@ -43,7 +44,7 @@
       value="{{verifyCode}}"
     />
     <button 
-      class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}" 
+      class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}"   
       bindtap="handleGetVerifyCode"
       disabled="{{countDown > 0}}"
     >

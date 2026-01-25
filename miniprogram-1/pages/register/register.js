@@ -1,9 +1,10 @@
 // pages/register/register.js
+const app = getApp();
 Page({
   data: {
     memberId: '',
     nickname: '',        // 昵称
-    phone: '',           // 手机号
+    phone: '19261080527',           // 手机号
     password: '',        // 密码
     passwordConfirm: '', // 确认密码
     userTypeIndex: 0,    // 会员类型选择索引
@@ -142,7 +143,37 @@ Page({
   handleCodeInput(e) {
     this.setData({ verifyCode: e.detail.value.trim() });
   },
+    // 获取短信验证码
+    getSmsCode() {
+      const { phone } = this.data;
+      // 前端校验手机号
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+          wx.showToast({ title: "请输入正确的手机号", icon: "none" });
+          return;
+      }
 
+      // 调用后端发送验证码接口
+      wx.request({
+          url: `${app.globalData.baseUrl}/app01/send-sms/`,
+          method: "POST",
+          data: { phone },
+          success: (res) => {
+              if (res.data.code === 200) {
+                  wx.showToast({ title: "验证码已发送", icon: "success" });
+                  // 保存BizId（验证时需要）
+                  this.setData({ bizId: res.data.data.biz_id });
+                  // 启动60秒倒计时
+                  this.startCountDown();
+              } else {
+                  wx.showToast({ title: res.data.msg, icon: "none" });
+              }
+          },
+          fail: (err) => {
+              wx.showToast({ title: "网络异常", icon: "none" });
+              console.error("发送验证码失败：", err);
+          }
+      });
+  },
   // 模拟获取验证码（原有逻辑保留）
   handleGetVerifyCode() {
     const { phone } = this.data;

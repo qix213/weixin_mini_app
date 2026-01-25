@@ -3,51 +3,16 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/register/register",
-          "pathName": "pages/register/register",
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
           "query": "",
           "scene": null,
           "launchMode": "default"
         },
         {
-          "name": "pages/school/school",
-          "pathName": "pages/school/school",
+          "name": "pages/register/register",
+          "pathName": "pages/register/register",
           "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/mall/mall",
-          "pathName": "pages/mall/mall",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/index/index",
-          "pathName": "pages/index/index",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/my/my",
-          "pathName": "pages/my/my",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/homess/homess",
-          "pathName": "pages/homess/homess",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/login/login",
-          "pathName": "pages/login/login",
-          "query": "jiajun=undefined&age=18",
           "launchMode": "default",
           "scene": null
         }
@@ -55,6 +20,22 @@
     }
   },
   "setting": {
-    "urlCheck": false
-  }
+    "urlCheck": false,
+    "coverView": false,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "useApiHook": true,
+    "showShadowRootInWxmlPanel": false,
+    "useStaticServer": false,
+    "useLanDebug": false,
+    "showES6CompileOption": false,
+    "compileHotReLoad": true,
+    "checkInvalidKey": true,
+    "ignoreDevUnusedFiles": true,
+    "bigPackageSizeSupport": false
+  },
+  "libVersion": "3.14.0",
+  "projectname": "miniprogram-test"
 }
