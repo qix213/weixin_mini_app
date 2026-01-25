@@ -1,0 +1,143 @@
+.pay-container {
+  padding: 40rpx 30rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* 调整为顶部对齐，避免支付方式被挤压 */
+}
+
+.order-card {
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.08);
+  margin-bottom: 40rpx;
+}
+
+.order-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 40rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+  font-size: 32rpx;
+}
+
+.label {
+  color: #666;
+  width: 180rpx;
+}
+
+.value {
+  color: #333;
+  flex: 1;
+}
+
+.amount-item {
+  margin-top: 20rpx;
+  margin-bottom: 0;
+}
+
+.amount {
+  color: #f53f3f;
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+/* ====== 支付方式样式 ====== */
+.pay-methods-title {
+  font-size: 30rpx;
+  color: #333;
+  margin-bottom: 20rpx;
+  font-weight: 500;
+}
+
+.pay-methods-container {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 60rpx;
+}
+
+.pay-method-item {
+  flex: 1;
+  background-color: #fff;
+  border: 2rpx solid #eee;
+  border-radius: 15rpx;
+  padding: 25rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15rpx;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.pay-method-selected {
+  border-color: #1677ff !important;
+  background-color: #f0f7ff !important;
+}
+
+.pay-method-icon {
+  width: 60rpx;
+  height: 60rpx;
+  object-fit: contain;
+}
+
+.pay-method-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.pay-method-check {
+  position: absolute;
+  top: 15rpx;
+  right: 15rpx;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  background-color: #1677ff;
+  color: #fff;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.check-visible {
+  opacity: 1;
+}
+
+/* 支付按钮样式 */
+.pay-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background-color: #1677ff;
+  color: #fff;
+  font-size: 34rpx;
+  border-radius: 10rpx;
+  margin-bottom: 30rpx;
+}
+
+.cancel-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background-color: #fff;
+  color: #666;
+  font-size: 34rpx;
+  border-radius: 10rpx;
+  border: 1rpx solid #eee;
+}

@@ -821,8 +821,8 @@ from aliyunsdkcore.request import CommonRequest
 from django.views.decorators.csrf import csrf_exempt
 
 # 阿里云AccessKey配置（替换为你的RAM子账号信息）
-ACCESS_KEY_ID = "LTAI5t7mu8Bkdh4acCVJNScy"
-ACCESS_KEY_SECRET = "VmoJbNF6DxZvF7SVYil5j6IS4xGuHC"
+ACCESS_KEY_ID = ""
+ACCESS_KEY_SECRET = ""
 REGION_ID = "cn"  # 固定，号码认证服务仅支持杭州地域
 
 # 初始化阿里云客户端

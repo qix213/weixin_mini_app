@@ -1,9 +1,25 @@
-<!-- pages/register/register.wxml -->
 <view class="register-container">
-  <!-- 页面标题 -->
-  <view class="register-title">用户注册</view>
+  <!-- ====== 移除原页面内的“用户注册”标题 ====== -->
 
-  <!-- 自动生成8位会员ID展示（不可手动编辑） -->
+  <!-- ====== 强化版Tab切换栏 ====== -->
+  <view class="tab-bar">
+    <view 
+      class="tab-item {{activeTab === 0 ? 'tab-active' : ''}}"
+      data-tabid="0"
+      bindtap="switchTab"
+    >
+      成为会员
+    </view>
+    <view 
+      class="tab-item {{activeTab === 1 ? 'tab-active' : ''}}"
+      data-tabid="1"
+      bindtap="switchTab"
+    >
+      我要开店
+    </view>
+  </view>
+
+  <!-- 自动生成8位会员ID展示 -->
   <view class="input-item">
     <label class="input-label">会员ID</label>
     <view class="input-content disabled-content">{{memberId}}</view>
@@ -33,8 +49,7 @@
     />
   </view>
 
-  <!-- ✅ 核心修改：验证码模块 移到【手机号下面、密码上面】 -->
-  <!--       bindtap="getSmsCode" -->
+  <!-- 验证码 -->
   <view class="input-item code-input-wrap">
     <label class="input-label">验证码</label>
     <input 
@@ -76,17 +91,23 @@
     />
   </view>
 
-  <!-- 会员类型选择（必选） -->
+  <!-- 会员/开店类型选择 -->
   <view class="input-item">
-    <label class="input-label">会员类型</label>
-    <picker mode="selector" range="{{userTypeList}}" range-key="name" bindchange="handleUserTypeChange" value="{{userTypeIndex}}">
+    <label class="input-label">{{activeTab === 0 ? '会员类型' : '开店类型'}}</label>
+    <picker 
+      mode="selector" 
+      range="{{activeTab === 0 ? memberTypeList : shopTypeList}}" 
+      range-key="name" 
+      bindchange="handleUserTypeChange" 
+      value="{{userTypeIndex}}"
+    >
       <view class="picker-content">{{selectedUserType.name}}</view>
     </picker>
   </view>
 
-  <!-- 会员权益预览 -->
+  <!-- 权益预览 -->
   <view class="benefit-container">
-    <view class="benefit-title">会员权益预览</view>
+    <view class="benefit-title">{{activeTab === 0 ? '会员权益预览' : '开店权益预览'}}</view>
     <view class="benefit-list">
       <block wx:for="{{currentBenefits}}" wx:key="index">
         <view class="benefit-item">• {{item}}</view>
@@ -94,23 +115,14 @@
     </view>
   </view>
 
-  <!-- 推荐人ID + 推荐码 -->
-  <!--view class="input-item">
+  <!-- 推荐人ID -->
+  <view class="input-item">
     <label class="input-label">推荐人ID</label>
     <input 
       class="input-content" 
-      placeholder="请输入推荐人8位会员ID" 
-      bindinput="handleRecommender1Input"
-      value="{{recommender1}}"
-    />
-  </view>  -->
-  <view class="input-item">
-    <label class="input-label">推荐码</label>
-    <input 
-      class="input-content" 
-      placeholder="请输入8位数字+字母推荐码" 
-      bindinput="handleRecommendCodeInput"
-      value="{{recommendCode}}"
+      placeholder="请输入8位数字+字母推荐人ID" 
+      bindinput="handleRecommenderIdInput"
+      value="{{recommenderId}}"
     />
   </view>
 

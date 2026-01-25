@@ -4,6 +4,7 @@
     "pages/welcome/welcome",
     "pages/index/index",
     "pages/my/my",
+    "pages/pay/pay",
     "pages/login/login",
     "pages/homess/homess",
     "pages/register/register",
