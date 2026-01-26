@@ -3,6 +3,7 @@
   "pages": [
     "pages/welcome/welcome",
     "pages/index/index",
+    "pages/order-list/order-list",
     "pages/my/my",
     "pages/pay/pay",
     "pages/login/login",

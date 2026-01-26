@@ -116,7 +116,7 @@ Page({
       return;
     }
     wx.navigateTo({
-      url: '/pages/invoice/invoice',
+      url: '/pages/order-list/order-list',
     });
   },
 
@@ -150,7 +150,7 @@ Page({
 
   // 退出跳转首页页面
   goToLogout() {
-    //wx.removeStorageSync('hakelong'); // 清除特定的token
+    wx.removeStorageSync('hakelong'); // 清除特定的token
     wx.clearStorageSync(); // 清除所有本地缓存
     wx.reLaunch({
       url: '/pages/index/index' // 跳转到首页或登录页

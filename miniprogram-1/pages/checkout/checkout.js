@@ -121,47 +121,58 @@ getAddressList() {
     wx.navigateTo({ url: '/pages/cart/cart' });
   },
 
-  // 5. 核心：提交订单
-  submitOrder() {
-    const { defaultAddress, cartList, totalAll } = this.data;
-    // 双重校验地址
-    if (!defaultAddress) {
-      wx.showToast({ title: '请选择收货地址', icon: 'none' });
-      return;
-    }
-    if (cartList.length === 0) {
-      wx.showToast({ title: '暂无结算商品', icon: 'none' });
-      return;
-    }
-
-    // 组装订单数据
-    const orderData = {
-      address_id: defaultAddress,
-      total_price: totalAll,
-      goods_list: cartList.map(item => ({ cart_id: item.id, num: item.num }))
-    };
-
-    wx.showLoading({ title: '提交中...' });
-    app.request({
-      url: '/app01/order/add/',
-      method: 'POST',
-      data: orderData,
-      success: (res) => {
-        wx.hideLoading();
-        if (res.data && res.data.code === 200) {
-          wx.showToast({ title: '下单成功！', icon: 'success' });
-          // 下单成功后，跳转到订单页/首页，同时清空购物车（可选）
-          setTimeout(() => {
-            wx.switchTab({ url: '/pages/mall/mall' });
-          }, 1500);
-        } else {
-          wx.showToast({ title: res.data?.msg || '下单失败', icon: 'none' });
-        }
-      },
-      fail: () => {
-        wx.hideLoading();
-        wx.showToast({ title: '网络异常，下单失败', icon: 'none' });
-      }
-    });
+    // 5. 核心：提交订单 (修改后的版本)
+submitOrder() {
+  const { defaultAddress, cartList, totalAll } = this.data;
+  
+  if (!defaultAddress) {
+    wx.showToast({ title: '请选择收货地址', icon: 'none' });
+    return;
   }
+  if (cartList.length === 0) {
+    wx.showToast({ title: '暂无结算商品', icon: 'none' });
+    return;
+  }
+
+  const orderData = {
+    address_id: defaultAddress.id,
+    total_price: totalAll,
+    goods_list: cartList.map(item => ({ cart_id: item.id, num: item.num }))
+  };
+
+  wx.showLoading({ title: '正在下单...', mask: true });
+
+  // 改用 .then 和 .finally 风格，因为你的 getCartList 就是这么用的
+  app.request({
+    url: '/app01/order/add/',
+    method: 'POST',
+    data: orderData
+  })
+  .then(res => {
+    console.log("下单接口成功返回:", res);
+    // 注意：根据你 getCartList 的经验，数据可能在 res.data 
+    const result = res.data; 
+
+    if (result && (result.code === 200 || result.code === '200')) {
+      wx.showToast({ title: '下单成功！', icon: 'success' });
+      setTimeout(() => {
+        wx.switchTab({ 
+          url: '/pages/mall/mall',
+          fail: () => wx.redirectTo({ url: '/pages/mall/mall' })
+        });
+      }, 1500);
+    } else {
+      wx.showToast({ title: result.msg || '下单失败', icon: 'none' });
+    }
+  })
+  .catch(err => {
+    console.error("下单网络请求报错:", err);
+    wx.showToast({ title: '网络异常', icon: 'none' });
+  })
+  .finally(() => {
+    // 无论成功失败，这行必执行，Loading 必消失
+    wx.hideLoading();
+    console.log("请求已彻底完成");
+  });
+}
 });

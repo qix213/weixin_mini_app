@@ -216,36 +216,18 @@ class RegisterAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-# 新增：获取当前用户的推荐码
-class UserRecommendCodeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        # 若未生成推荐码，自动生成
-        if not user.recommend_code:
-            user.generate_recommend_code()
-        return Response({
-            'code': 200,
-            'msg': '获取推荐码成功',
-            'recommend_code': user.recommend_code,
-            'member_id': user.member_id  # 返回自身会员ID（供下级填写）
-        })
-
-# 新增：获取下级消费记录（权限控制：仅TA创粉/蓝明星可查）
 class SubUserConsumeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        # 权限校验：仅等级2/3可查看下级消费
-        if user.user_type not in [2, 3]:
+        # 权限校验：仅等级2/3/4/5可查看下级消费（按需调整）
+        if user.user_type not in [2,3,4,5]:
             return Response({
                 'code': 403,
                 'msg': '无权限查看下级消费记录'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        # 获取下级消费记录
         consume_records = user.get_sub_consume_records()
         return Response({
             'code': 200,
@@ -782,6 +764,13 @@ class AddressAddView(APIView):
 
 
 # ========== 订单接口 ==========
+from django.db import transaction
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class OrderAddView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -790,37 +779,87 @@ class OrderAddView(APIView):
         if not ser.is_valid():
             return Response({"code": 400, "msg": "参数错误", "data": ser.errors})
 
-        # 生成订单编号
-        order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
-        # 创建订单
-        address = Address.objects.get(id=request.data["address_id"], user=request.user)
-        order = Order.objects.create(
-            user=request.user,
-            order_sn=order_sn,
-            address=address,
-            total_price=request.data["total_price"]
-        )
-        # 创建订单商品明细 + 清空购物车
-        goods_list = request.data["goods_list"]
-        for item in goods_list:
-            cart = Cart.objects.get(id=item["cart_id"], user=request.user)
-            OrderItem.objects.create(
-                order=order,
-                goods=cart.goods,
-                num=item["num"],
-                price=cart.goods.member_price
-            )
-            cart.delete()  # 下单成功后删除购物车商品
+        try:
+            with transaction.atomic():
+                address_id = request.data.get("address_id")
+                address = Address.objects.get(id=address_id, user=request.user)
+                total_price = request.data.get("total_price")
+                goods_list = request.data.get("goods_list", [])
 
-        return Response({"code": 200, "msg": "下单成功", "data": {"order_sn": order_sn}})
+                # --- 核心逻辑修改：查找是否存在“待支付”状态的旧订单 ---
+                # 假设 status=1 代表待支付
+                order = Order.objects.filter(user=request.user, status=1).first()
 
+                if order:
+                    # 如果存在旧订单，执行更新
+                    order.address = address
+                    order.total_price = total_price
+                    order.save()
+                    # 清除该订单旧的商品明细，准备重新写入
+                    OrderItem.objects.filter(order=order).delete()
+                    msg = "订单已更新"
+                else:
+                    # 如果不存在，创建新订单
+                    order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+                    order = Order.objects.create(
+                        user=request.user,
+                        order_sn=order_sn,
+                        address=address,
+                        total_price=total_price,
+                        status=1
+                    )
+                    msg = "下单成功"
+
+                # 重新写入商品明细
+                for item in goods_list:
+                    cart = Cart.objects.get(id=item["cart_id"], user=request.user)
+                    OrderItem.objects.create(
+                        order=order,
+                        goods=cart.goods,
+                        num=item["num"],
+                        price=cart.goods.member_price
+                    )
+                    # 注意：如果是更新订单，购物车可能之前已经删过了，这里需要做容错处理
+                    # cart.delete()
+
+            return Response({
+                "code": 200,
+                "msg": msg,
+                "data": {"order_sn": order.order_sn}
+            })
+
+        except Exception as e:
+            return Response({"code": 500, "msg": f"操作失败: {str(e)}"})
+
+class OrderListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 获取当前用户的所有订单，按创建时间倒序排列
+        orders = Order.objects.filter(user=request.user).order_by('-create_time')
+
+        data_list = []
+        for order in orders:
+            # 获取该订单下的商品概览（比如取第一件商品的图，或者统计件数）
+            first_item = OrderItem.objects.filter(order=order).first()
+            item_count = OrderItem.objects.filter(order=order).count()
+
+            data_list.append({
+                "order_sn": order.order_sn,
+                "total_price": str(order.total_price),
+                "create_time": order.create_time.strftime('%Y-%m-%d %H:%M'),
+                "status": order.get_status_display(),  # 获取状态的文字描述（如：待支付/已完成）
+                "first_goods_name": first_item.goods.name if first_item else "未知商品",
+                "item_count": item_count
+            })
+
+        return Response({"code": 200, "data": data_list})
 
 import json
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.request import CommonRequest
 from django.views.decorators.csrf import csrf_exempt
 
-# 阿里云AccessKey配置（替换为你的RAM子账号信息）
 ACCESS_KEY_ID = ""
 ACCESS_KEY_SECRET = ""
 REGION_ID = "cn"  # 固定，号码认证服务仅支持杭州地域

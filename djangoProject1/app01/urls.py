@@ -24,7 +24,7 @@ from .views import (BannerView, CollevtionView, CategoryView, GoodsViewSet,
     ExamQuestionViewSet, ExamRecordViewSet, CertificationViewSet,
     CustomTokenObtainPairView, RegisterAPIView, BenefitViewSet, UserProfileViewSet,
     MemberInfoView,Index_AnnonceView, CartView, CartAddView, CartListView, CartUpdateNumView, CartDeleteView,
-    RecipientView, CheckoutView, AddressView, AddressAddView, OrderAddView, UserRecommendCodeView, SubUserConsumeView,)
+    RecipientView, CheckoutView, AddressView, AddressAddView, OrderAddView, OrderListView, SubUserConsumeView,)
 from . import views  # 导入视图函数
 
 router = SimpleRouter()
@@ -47,8 +47,6 @@ urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='login'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', RegisterAPIView.as_view(), name='register'),
-    # 新增：获取自身推荐码
-    path('user/recommend-code/', UserRecommendCodeView.as_view(), name='user_recommend_code'),
     # 新增：查看下级消费记录
     path('user/sub-consume/', SubUserConsumeView.as_view(), name='sub_consume'),
     path('member/info/', MemberInfoView.as_view(), name='member_info'),
@@ -71,6 +69,7 @@ urlpatterns = [
     path('address/add/', AddressAddView.as_view()),
     # 订单
     path('order/add/', OrderAddView.as_view()),
+    path('order/list/', OrderListView.as_view()),
     # 你的其他接口（如注册接口 /register/）
     path('', include(router.urls)),
     path('send-sms/', views.send_sms_code),  # 发送验证码

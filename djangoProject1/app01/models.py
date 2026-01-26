@@ -174,25 +174,28 @@ class VideoCourse(models.Model):
     def __str__(self):
         return self.title
 
+# app01/models.py
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 import random
 import string
 
-# 其他原有模型保持不变，仅修改 User 模型
 class User(AbstractUser):
-    # 会员类型（保持原有3个等级）
+    # 完整的用户类型（匹配前端1-5）
     USER_TYPE_CHOICES = (
         (1, "蓝朋友"),
         (2, "蓝明星"),
-        (3, "TA创粉"),
+        (3, "护肤私教"),
+        (4, "MINI-studio 主理人"),
+        (5, "Ta创+"),
     )
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, null=True, blank=True, verbose_name="会员等级")
 
-    # 1. 会员ID改为8位数字/字母组合
+    # 会员ID：8位数字+字母，自动生成
     member_id = models.CharField(
         max_length=8,
         unique=True,
+        blank=True,  # 允许空白，由save方法自动生成
         validators=[RegexValidator(r'^[A-Za-z0-9]{8}$', '会员ID必须是8位数字或字母')],
         verbose_name="会员ID"
     )
@@ -209,24 +212,16 @@ class User(AbstractUser):
     city = models.CharField(max_length=20, verbose_name="城市", null=True, blank=True)
     district = models.CharField(max_length=20, verbose_name="区县", null=True, blank=True)
 
-    # 2. 新增上下级关联：外键指向自身，关联推荐人（上级）
+    # 推荐人关联：外键指向自身（上级会员）
     parent_user = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='sub_users', verbose_name="上级会员")
-
-    # 3. 新增推荐码字段（8位数字+字母）
-    recommend_code = models.CharField(
-        max_length=8,
-        unique=True,
-        validators=[RegexValidator(r'^[A-Za-z0-9]{8}$', '推荐码必须是8位数字或字母')],
-        verbose_name="推荐码", null=True, blank=True
-    )
 
     points = models.IntegerField(default=0, verbose_name="积分余额")
     coupon_count = models.IntegerField(default=0, verbose_name="星礼券数量")
     star_level = models.IntegerField(default=1, verbose_name="星级（1-5星）")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="注册时间")
 
-    # 解决 groups / user_permissions 反向访问器冲突（原有逻辑保留）
+    # 解决反向访问器冲突
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='groups',
@@ -250,43 +245,60 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.get_user_type_display()}-{self.member_id}"
 
-    # 原有权益逻辑保留
+    # 原有权益逻辑保留（按需调整）
     def get_benefits(self):
         if self.user_type == 1:  # 蓝朋友
             return [
-                "蓝粉VIP大礼包：3套SSTA旅行mini装，5张100元兑换单品券（单次用一张）",
-                "会员积分：SSTA家居产品，10元积1分，可兑换",
-                "会员价：SSTA家居产品，一年蓝粉星价"
+                "SSTA新人券：2张200元代金券套，只能用来购买368元mini旅行套；",
+                "SSTA价格：零售价格购买产品，不享受会员价；",
+                "SSTA卡券：节日活动或生日优享券，优享活动参与资格；",
+                "公益课程：护肤知识课程。"
             ]
         elif self.user_type == 2:  # 蓝明星
             return [
-                "SSTA产品，15%返点（奇肌币），可提现",
+                "蓝粉VIP大礼包（2选1）:（1）3套SSTA旅行套盒，2张100元兑换单品券（每单限用一张），限期一个月；（2）一套小油净化（6次），4张100元兑换单品券，每单限用一张），限期一个月；",
+                "会员星价：SSTA家居产品，一年蓝粉星价",
                 "会员积分：SSTA家居产品，10元积1分，可兑换",
-                "会员价：SSTA家居产品，一年蓝粉星价"
+                "SSTA卡券：节日活动或生日优享券，优享活动参与资格",
+                "公益课程：家居护肤课程。"
             ]
-        elif self.user_type == 3:  # TA创粉
+        elif self.user_type == 3:  # 护肤私教
             return [
-                "9800元线上会员价产品任选",
-                "SSTA产品，30%或50%返点（奇肌币），可提现",
-                "会员积分：SSTA家居产品，10元积1分，可兑换",
-                "会员价：SSTA家居产品，永久蓝粉星价",
-                "培训赋能：护肤私教证书",
-                "系统化配套标准化工具设备",
-                "蓝色奇肌商学院小程序专业皮肤课程",
-                "高端疗愈营、沙龙活动权限；《她力量》、《明星代言人》首推官资格"
+                "SSTA大礼包（2选1）:（1）3980元SSTA家居产品任选，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；（2）一年24次SSTA小油净化，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；",
+                "SSTA积分：SSTA家居产品积分兑换，10元积1分；",
+                "SSTA奇肌币：裂变客户购买产品15%返点，可提现；",
+                "SSTA卡券：节日或活动优享券；",
+                "专业课程：护肤专业课程。"
+            ]
+        elif self.user_type == 4:  # MINI-studio 主理人
+            return [
+                "产品折扣：享产品零售价5折权益，产品任选；",
+                "培训赋能：护肤私教初级班+初级证书；",
+                "工具系统：系统化配套标准化+工具设备；",
+                "专业课程：蓝色奇肌商学院小程序专业皮肤课程。"
+            ]
+        elif self.user_type == 5:  # Ta创+
+            return [
+                "Ta创+高端俱乐部会员，享奇肌疗愈营，高端沙龙活动；",
+                "产品折扣：享产品零售价2.5折权益，产品任选；",
+                "SSTA运营：运营中心模版店的打造及扶持；",
+                "培训赋能：护肤私教全部体系课程+证书；",
+                "专业课程：蓝色奇肌商学院小程序专业皮肤课程；",
+                "《她力量》，《明星代言人》首推官资格。"
             ]
         return []
 
-    # 新增：生成8位推荐码（关联会员ID）
-    def generate_recommend_code(self):
-        # 基于会员ID生成种子，保证唯一性
-        seed = sum([ord(c) for c in self.member_id])
-        random.seed(seed)
-        chars = string.ascii_letters + string.digits
-        code = ''.join(random.choice(chars) for _ in range(8))
-        self.recommend_code = code
-        self.save()
-        return code
+    # 重写save方法：自动生成唯一member_id
+    def save(self, *args, **kwargs):
+        if not self.member_id:  # 首次保存时生成
+            chars = string.ascii_uppercase + string.digits  # 大写字母+数字，避免大小写冲突
+            while True:
+                member_id = ''.join(random.choice(chars) for _ in range(8))
+                # 确保会员ID唯一
+                if not User.objects.filter(member_id=member_id).exists():
+                    self.member_id = member_id
+                    break
+        super().save(*args, **kwargs)
 
     # 新增：获取下级会员（递归/直接）
     def get_sub_users(self):
@@ -295,7 +307,7 @@ class User(AbstractUser):
         # 若需递归获取所有下级，可扩展此方法
         return direct_subs
 
-    # 新增：获取下级消费记录
+    # 获取下级消费记录
     def get_sub_consume_records(self):
         from .models import Order, OrderItem
         sub_users = self.get_sub_users()

@@ -81,7 +81,8 @@ class VideoCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VideoCourse
-        fields = ['id', 'title', 'category', 'category_name', 'cover_url', 'video_url', 'duration', 'play_count', 'desc', 'create_time']
+        fields = ['id', 'title', 'category', 'category_name', 'cover_url', 'video_url', 'duration', 'play_count',
+                  'desc', 'create_time']
 
     # 拼接完整图片URL
     def get_cover_url(self, obj):
@@ -103,6 +104,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from .models import StudyCheckIn, ExamQuestion, ExamRecord, Certification
 from django.core.validators import RegexValidator
+
 User = get_user_model()  # 自动获取settings.py中配置的User模型
 
 # ====================== 注册登录：序列化器 ======================
@@ -155,16 +157,20 @@ def generate_8bit_member_id():
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    # 新增：前端传递的推荐人ID、推荐码
-    recommender_member_id = serializers.CharField(write_only=True, label="推荐人会员ID")
-    recommender_code = serializers.CharField(write_only=True, label="推荐码")
+    # ========== 核心修改1：删除recommender_code字段，推荐人ID改为可选 ==========
+    recommender_member_id = serializers.CharField(
+        write_only=True,
+        label="推荐人会员ID",
+        required=False,  # 非必填
+        allow_blank=True  # 允许空字符串
+    )
     password_confirm = serializers.CharField(write_only=True, label="确认密码")
 
     class Meta:
         model = User
         fields = [
             'member_id', 'nickname', 'phone', 'password', 'password_confirm',
-            'user_type', 'recommender_member_id', 'recommender_code'
+            'user_type', 'recommender_member_id'  # 移除recommender_code
         ]
         extra_kwargs = {
             'password': {'write_only': True},
@@ -176,33 +182,23 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("两次密码不一致")
 
-        # ============ 2. 核心修改：模拟固定推荐人校验 【替代真实数据库查询】 ============
-        # 模拟规则：推荐人ID=abcd1234  且 推荐码=abcd1234 → 直接通过校验，无需数据库查询
-        recommender_id = attrs.pop('recommender_member_id')
-        recommender_code = attrs.pop('recommender_code')
-        # 模拟固定值校验
-        if recommender_id != "abcd1234" or recommender_code != "abcd1234":
-            raise serializers.ValidationError("推荐人ID或推荐码错误，模拟值为：abcd1234")
+        # ============ 2. 核心修改2：推荐人ID可选校验（仅传递时验证） ============
+        parent_user = None
+        recommender_id = attrs.pop('recommender_member_id', None)
+        # 只有传递了推荐人ID时才校验
+        if recommender_id and recommender_id.strip():
+            try:
+                # 真实数据库校验：通过member_id查找推荐人
+                parent_user = User.objects.get(member_id=recommender_id.strip())
+            except User.DoesNotExist:
+                raise serializers.ValidationError(f"推荐人会员ID不存在：{recommender_id}")
+            # 会员等级校验：下级等级不能高于上级
+            user_type = attrs['user_type']
+            if user_type > parent_user.user_type:
+                raise serializers.ValidationError("下级会员等级不能高于上级推荐人等级")
+        attrs['parent_user'] = parent_user  # 无推荐人则为None，不影响创建
 
-        # ============ 3. 模拟上级用户（解决关联字段必填问题，无真实数据） ============
-        # 手动创建一个虚拟上级，等级为3(TA创粉)，满足【下级等级 ≤ 上级等级】的规则
-        attrs['parent_user'] = None  # 模拟关联，不影响数据库存储，不报错即可
-
-        # # 真实数据库校验代码（后续上线恢复）
-        # recommender_id = attrs.pop('recommender_member_id')
-        # recommender_code = attrs.pop('recommender_code')
-        # try:
-        #     parent_user = User.objects.get(member_id=recommender_id)
-        # except User.DoesNotExist:
-        #     raise serializers.ValidationError("推荐人会员ID不存在")
-        # if parent_user.recommend_code != recommender_code:
-        #     raise serializers.ValidationError("推荐码错误")
-        # attrs['parent_user'] = parent_user
-        # ============ 4. 会员等级权限校验【保留不变】：下级等级 不能高于 上级等级 ============
-        user_type = attrs['user_type']
-        parent_type = 3  # 模拟上级是最高等级3，任何等级都可以注册
-        if user_type > parent_type:
-            raise serializers.ValidationError("下级会员等级不能高于上级")
+        # ============ 3. 移除推荐码相关的模拟校验逻辑 ============
 
         return attrs
 
@@ -217,10 +213,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             phone=validated_data['phone'],
             password=validated_data['password'],
             user_type=validated_data['user_type'],
-            parent_user=validated_data['parent_user']
+            parent_user=validated_data.get('parent_user')  # 推荐人可为None
         )
-        # 为新用户生成推荐码（供其推荐下级使用）
-        user.generate_recommend_code()
+        # ========== 核心修改3：删除生成推荐码的逻辑（不需要推荐码） ==========
+        # user.generate_recommend_code()  # 注释/删除这行
+
         return user
 
 
