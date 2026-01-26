@@ -157,50 +157,50 @@ def generate_8bit_member_id():
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    # ========== 核心修改1：删除recommender_code字段，推荐人ID改为可选 ==========
-    recommender_member_id = serializers.CharField(
-        write_only=True,
-        label="推荐人会员ID",
-        required=False,  # 非必填
-        allow_blank=True  # 允许空字符串
-    )
-    password_confirm = serializers.CharField(write_only=True, label="确认密码")
+    # 新增：接收前端传递的recommender_id（推荐人ID）
+    recommender_id = serializers.CharField(max_length=8, required=False, allow_blank=True)
+    # 密码确认字段
+    password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = [
-            'member_id', 'nickname', 'phone', 'password', 'password_confirm',
-            'user_type', 'recommender_member_id'  # 移除recommender_code
-        ]
+        fields = ['nickname', 'phone', 'password', 'password_confirm', 'user_type', 'recommender_id']
         extra_kwargs = {
-            'password': {'write_only': True},
-            'member_id': {'read_only': True},  # 后端生成，前端不可改
+            'password': {'write_only': True},  # 密码仅写入，不返回
+            'user_type': {'required': True}     # 会员/开店类型必传
         }
 
+    # 验证密码一致性
     def validate(self, attrs):
-        # ============ 1. 密码一致性校验【保留不变】 ============
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("两次密码不一致")
-
-        # ============ 2. 核心修改2：推荐人ID可选校验（仅传递时验证） ============
-        parent_user = None
-        recommender_id = attrs.pop('recommender_member_id', None)
-        # 只有传递了推荐人ID时才校验
-        if recommender_id and recommender_id.strip():
+        # 验证推荐人ID（若传递）
+        recommender_id = attrs.get('recommender_id')
+        if recommender_id:
             try:
-                # 真实数据库校验：通过member_id查找推荐人
-                parent_user = User.objects.get(member_id=recommender_id.strip())
+                # 通过member_id查找推荐人（推荐人ID=会员ID）
+                parent_user = User.objects.get(member_id=recommender_id)
+                attrs['parent_user'] = parent_user  # 关联到parent_user字段
             except User.DoesNotExist:
-                raise serializers.ValidationError(f"推荐人会员ID不存在：{recommender_id}")
-            # 会员等级校验：下级等级不能高于上级
-            user_type = attrs['user_type']
-            if user_type > parent_user.user_type:
-                raise serializers.ValidationError("下级会员等级不能高于上级推荐人等级")
-        attrs['parent_user'] = parent_user  # 无推荐人则为None，不影响创建
-
-        # ============ 3. 移除推荐码相关的模拟校验逻辑 ============
-
+                raise serializers.ValidationError("推荐人ID不存在")
+        # 移除密码确认字段（无需存入数据库）
+        attrs.pop('password_confirm')
         return attrs
+
+    # 重写创建方法：加密密码
+    def create(self, validated_data):
+        # 弹出recommender_id（User模型无此字段，已通过validate关联到parent_user）
+        validated_data.pop('recommender_id', None)
+        # 创建用户并加密密码
+        user = User.objects.create_user(
+            username=validated_data['phone'],  # 用手机号作为Django默认的username
+            nickname=validated_data['nickname'],
+            phone=validated_data['phone'],
+            user_type=validated_data['user_type'],
+            parent_user=validated_data.get('parent_user'),  # 关联推荐人
+            password=validated_data['password']  # create_user会自动加密密码
+        )
+        return user
 
     def create(self, validated_data):
         # 生成8位会员ID

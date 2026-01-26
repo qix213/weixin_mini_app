@@ -1,6 +1,6 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "费用支付中",
+  "navigationBarTitleText": "订单支付",
   "navigationBarBackgroundColor": "#fff",
   "navigationBarTextStyle": "black"
 }

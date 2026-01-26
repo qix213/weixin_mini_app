@@ -1,22 +1,14 @@
 <view class="pay-container">
-  <!-- 订单信息卡片 -->
+  <!-- 订单/会员信息卡片 -->
   <view class="order-card">
-    <view class="order-title">会员开通订单</view>
-    <view class="order-item">
-      <label class="label">所选类型：</label>
-      <text class="value">{{typeName}}</text>
-    </view>
-    <view class="order-item">
-      <label class="label">绑定手机号：</label>
-      <text class="value">{{phone}}</text>
-    </view>
+    <view class="order-title">{{typeName}}</view>
     <view class="order-item amount-item">
-      <label class="label">应付金额：</label>
+      <label class="label">支付金额：</label>
       <text class="amount">¥{{amount}}</text>
     </view>
   </view>
 
-  <!-- ====== 新增：支付方式选择 ====== -->
+  <!-- 支付方式选择 -->
   <view class="pay-methods-title">选择支付方式</view>
   <view class="pay-methods-container">
     <block wx:for="{{payMethods}}" wx:key="id">
@@ -25,11 +17,8 @@
         data-methodid="{{item.id}}"
         bindtap="switchPayMethod"
       >
-        <!-- 支付方式图标 -->
         <image class="pay-method-icon" src="{{item.icon}}" mode="widthFix"></image>
-        <!-- 支付方式名称 -->
         <text class="pay-method-name">{{item.name}}</text>
-        <!-- 选中标记 -->
         <view class="pay-method-check {{item.selected ? 'check-visible' : ''}}">✓</view>
       </view>
     </block>
@@ -40,7 +29,7 @@
     class="pay-btn" 
     bindtap="handlePay"
     loading="{{payLoading}}"
-    disabled="{{payLoading}}"
+    disabled="{{payLoading || amount <= 0}}"
   >
     {{payLoading ? '支付中...' : '确认支付'}}
   </button>

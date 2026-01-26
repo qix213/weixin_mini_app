@@ -205,7 +205,7 @@ class RegisterAPIView(APIView):
                     'nickname': user.nickname,
                     'member_id': user.member_id,
                     'user_type': user.user_type,
-                    'recommend_code': user.recommend_code  # 返回新用户的推荐码
+                    'parent_member_id': user.parent_user.member_id if user.parent_user else None
                 }
             }, status=status.HTTP_201_CREATED)
         except Exception as e:

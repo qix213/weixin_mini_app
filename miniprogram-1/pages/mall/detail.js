@@ -1,5 +1,6 @@
 import Toast from '@vant/weapp/toast/toast';
 const app = getApp(); // 全局获取 app 实例
+
 Page({
   data: {
     goodsId: '', // 商品ID
@@ -25,11 +26,10 @@ Page({
     this.getGoodsDetail();
   },
 
-  // 获取商品详情（对接你的后端详情接口）
+  // 获取商品详情（无需 Token，仅展示数据）
   getGoodsDetail() {
     const { goodsId, baseUrl } = this.data;
     wx.request({
-      // 后端详情接口：goods/{id}/（你的 GoodsViewSet 已支持）
       url: `${baseUrl}/app01/goods/${goodsId}/`,
       method: 'GET',
       timeout: 5000,
@@ -72,7 +72,7 @@ Page({
     this.setData({ cartNum: num < 1 ? 1 : num });
   },
 
-  // 加入购物车（对接后端）
+  // 加入购物车（核心修改：携带 Token 请求）
   addToCart() {
     const { goodsDetail, cartNum } = this.data;
     if (!goodsDetail.id) {
@@ -80,8 +80,9 @@ Page({
       return;
     }
 
-    // 1. 先校验是否登录（无 Token 直接引导登录）
-    if (!app.globalData.token) {
+    // 1. 获取 Token（缓存优先，全局变量兜底）
+    const token = wx.getStorageSync('accessToken') || app.globalData.token;
+    if (!token) {
       wx.showModal({
         title: '提示',
         content: '请先登录后再加入购物车',
@@ -96,24 +97,41 @@ Page({
       return;
     }
 
-    // 2. 调用封装的 request 方法（自动携带 Token）
-    app.request({
-      url: '/app01/cart/add/', // 拼接后是 http://localhost:8000/app01/cart/add/
+    // 2. 直接请求（替换原 app.request，确保 Token 携带）
+    wx.request({
+      url: `${this.data.baseUrl}/app01/cart/add/`,
       method: 'POST',
-      data: { goods_id: goodsDetail.id, num: cartNum }
-    }).then((res) => {
-      if (res.data && res.data.code === 200) {
-        Toast.success(`【${goodsDetail.name}】已加入购物车 x${cartNum}`);
-      } else {
-        Toast.fail(res.data?.msg || '加入购物车失败');
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // 核心：携带 Token
+      },
+      data: { goods_id: goodsDetail.id, num: cartNum },
+      success: (res) => {
+        console.log('加入购物车响应：', res.data);
+        if (res.data && res.data.code === 200) {
+          Toast.success(`【${goodsDetail.name}】已加入购物车 x${cartNum}`);
+        } else {
+          // Token 过期/无效时引导重新登录
+          if (res.data?.detail === "No active account found with the given credentials" || res.statusCode === 401) {
+            wx.removeStorageSync('accessToken'); // 清除无效 Token
+            app.globalData.token = '';
+            Toast.fail('登录状态失效，请重新登录');
+            setTimeout(() => {
+              wx.navigateTo({ url: '/pages/login/login' });
+            }, 1500);
+          } else {
+            Toast.fail(res.data?.msg || '加入购物车失败');
+          }
+        }
+      },
+      fail: (err) => {
+        console.error('加入购物车失败：', err);
+        Toast.fail('网络异常，加入购物车失败');
       }
-    }).catch((err) => {
-      console.error('加入购物车失败：', err);
-      Toast.fail('网络异常，加入购物车失败');
     });
   },
 
-  // 立即购买（修复 Toast 错误 + 跳转购物车 Tab）
+  // 立即购买（携带 Token 校验）
   buyNow() {
     const { goodsDetail } = this.data;
     if (!goodsDetail.id) {
@@ -121,8 +139,9 @@ Page({
       return;
     }
 
-    // 1. 先校验登录（和加入购物车逻辑一致）
-    if (!app.globalData.token) {
+    // 1. 获取 Token（缓存优先，全局变量兜底）
+    const token = wx.getStorageSync('accessToken') || app.globalData.token;
+    if (!token) {
       wx.showModal({
         title: '提示',
         content: '请先登录后再结算',
@@ -137,12 +156,11 @@ Page({
       return;
     }
 
-    // 2. 提示跳转 + 跳转到购物车 Tab（核心修改）
+    // 2. 提示跳转 + 跳转到购物车 Tab
     Toast.success(`即将结算【${goodsDetail.name}】`);
     setTimeout(() => {
-      // 关键：用 switchTab 跳转 Tab 页，路径对应 app.json 中的购物车 Tab 路径
       wx.switchTab({
-        url: '/pages/cart/cart', // 替换为你实际的购物车 Tab 页面路径
+        url: '/pages/cart/cart',
         fail: (err) => {
           console.error('跳转购物车失败：', err);
           Toast.fail('购物车页面不存在');

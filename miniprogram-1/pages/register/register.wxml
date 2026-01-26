@@ -1,7 +1,5 @@
 <view class="register-container">
-  <!-- ====== 移除原页面内的“用户注册”标题 ====== -->
-
-  <!-- ====== 强化版Tab切换栏 ====== -->
+  <!-- 强化版Tab切换栏 -->
   <view class="tab-bar">
     <view 
       class="tab-item {{activeTab === 0 ? 'tab-active' : ''}}"
@@ -34,6 +32,7 @@
       placeholder="请设置昵称" 
       bindinput="handleNicknameInput"
       value="{{nickname}}"
+      type="text"
     />
   </view>
 
@@ -57,6 +56,7 @@
       placeholder="请输入6位验证码" 
       bindinput="handleCodeInput"
       value="{{verifyCode}}"
+      type="number"
     />
     <button 
       class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}"   
@@ -76,6 +76,7 @@
       password
       bindinput="handlePasswordInput"
       value="{{password}}"
+      type="text"
     />
   </view>
 
@@ -88,6 +89,7 @@
       password
       bindinput="handlePasswordConfirmInput"
       value="{{passwordConfirm}}"
+      type="text"
     />
   </view>
 
@@ -101,7 +103,7 @@
       bindchange="handleUserTypeChange" 
       value="{{userTypeIndex}}"
     >
-      <view class="picker-content">{{selectedUserType.name}}</view>
+      <view class="picker-content">{{selectedUserType.name || (activeTab === 0 ? '蓝朋友（0元/年）' : 'MINI-studio 主理人（9800元）')}}</view>
     </picker>
   </view>
 
@@ -112,6 +114,10 @@
       <block wx:for="{{currentBenefits}}" wx:key="index">
         <view class="benefit-item">• {{item}}</view>
       </block>
+      <!-- 空权益兜底 -->
+      <view class="benefit-item empty-benefit" wx:if="{{currentBenefits.length === 0}}">
+        暂无权益信息
+      </view>
     </view>
   </view>
 
@@ -123,9 +129,10 @@
       placeholder="请输入8位数字+字母推荐人ID" 
       bindinput="handleRecommenderIdInput"
       value="{{recommenderId}}"
+      type="text"
     />
   </view>
 
   <!-- 注册按钮 -->
-  <button class="register-btn" bindtap="handleRegister">提交注册</button>
+  <button class="register-btn" bindtap="handleRegister" hover-class="register-btn-hover">提交注册</button>
 </view>

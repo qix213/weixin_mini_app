@@ -84,11 +84,11 @@ Page({
     userTypeIndex: 0,    // 当前Tab下的类型选择索引
     selectedUserType: {}, // 当前选中的会员/开店类型
     currentBenefits: [],  // 当前类型对应的权益
-    // ====== 关键修改3：推荐人ID默认值改为ABCD1234（大写） ======
     recommenderId: 'ABCD1234',    // 推荐人ID（默认大写）
     verifyCode: '123456',       // 验证码（默认123456）
     countDown: 0,
-    timer: null
+    timer: null,
+    bizId: '' // 验证码业务ID（新增，兼容原有getSmsCode逻辑）
   },
 
   onLoad(options) {
@@ -224,13 +224,13 @@ Page({
     wx.showToast({ title: '验证码发送成功（123456）', icon: 'success' });
   },
 
-  // 注册逻辑（已移除验证码和推荐人ID校验）
+  // 注册逻辑（核心优化：跳转支付页时新增scene场景参数）
   handleRegister() {
     const {
       memberId, nickname, phone, password, passwordConfirm,
-      selectedUserType, recommenderId, verifyCode
+      selectedUserType, recommenderId, verifyCode, activeTab
     } = this.data;
-    const app = getApp(); 
+    // 移除重复的getApp()声明（顶部已声明）
     const userType = selectedUserType.value;
     const userTypeName = selectedUserType.name;
     const userTypeAmount = selectedUserType.amount; // 获取费用
@@ -281,17 +281,20 @@ Page({
           wx.setStorageSync('refreshToken', res.data.refresh);
           wx.setStorageSync('isLogin', true);
 
-          // 类型判断跳转逻辑
+          // ====== 核心优化：跳转逻辑（新增scene场景参数） ======
           if (userType === 1) {
+            // 0元会员：直接跳首页
             wx.showToast({ title: '注册成功', icon: 'success', duration:1500 });
             setTimeout(()=>{
               wx.switchTab({ url: '/pages/index/index' });
             },1000);
           } else {
+            // 付费会员/开店：跳转支付页，传递scene区分场景
+            const scene = activeTab === 0 ? 'member' : 'shop'; // 0=会员缴费，1=开店缴费
             wx.showToast({ title: '注册成功，请完成支付', icon: 'success', duration:1500 });
             setTimeout(()=>{
               wx.navigateTo({
-                url: `/pages/pay/pay?typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${phone}`,
+                url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${encodeURIComponent(phone)}`,
               });
             },1000);
           }
@@ -302,6 +305,7 @@ Page({
       fail: (err) => {
         wx.hideLoading();
         wx.showToast({ title: '网络错误', icon: 'none' });
+        console.error('注册请求失败：', err);
       }
     });
   },

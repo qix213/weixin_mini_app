@@ -1,31 +1,46 @@
 const app = getApp();
 Page({
   data: {
-    typeName: '',    // 所选类型名称
-    amount: 0,       // 应付金额
-    phone: '',       // 用户手机号
-    payLoading: false, // 支付加载状态
-    // ====== 新增：支付方式相关 ======
-    payMethods: [
-      { id: 1, name: '微信支付', icon: 'https://mmbiz.qpic.cn/mmbiz_png/9t5m99X9riaT7OiaiaibC9iaGd8XrHiaPicUe2OiaOQ5wTjiaYg6cJ25sUic4s6j9XtQiaiciaaCw/0?wx_fmt=png', selected: true },
-      { id: 2, name: '支付宝支付', icon: 'https://mmbiz.qpic.cn/mmbiz_png/9t5m99X9riaT7OiaiaibC9iaGd8XrHiaPicUe2OiaOQ5wTjiaYg6cJ25sUic4s6j9XtQiaiciaaCw/0?wx_fmt=png', selected: false }
+    typeName: '',        // 支付类型名称（会员缴费/商品订单）
+    amount: 0,           // 支付金额
+    scene: 'order',      // 场景标识：member=会员缴费，order=商品订单
+    payMethods: [        // 支付方式列表
+      { 
+        id: 1, 
+        name: '微信支付', 
+        icon: 'https://mmbiz.qpic.cn/mmbiz_png/ajNVdqHZLLBuyXif9WGH0TsCqZLsNO1G1QN85V1U8ICH9nq4iciaibQDR8iaZs8YF0gE8Cn4u4Y1Q2iaYiciaY9d9iaicw/640?wx_fmt=png', 
+        selected: true 
+      },
+      { 
+        id: 2, 
+        name: '支付宝支付', 
+        icon: 'https://mmbiz.qpic.cn/mmbiz_png/ajNVdqHZLLAib60Jcz9oxrGibHibqV46STP8OSuibPqQ64D508nqVq1Q4y6q0cQic9nZg/640?wx_fmt=png', 
+        selected: false 
+      }
     ],
-    selectedPayMethod: 1 // 默认选中微信支付（id=1）
+    selectedPayMethod: 1, // 默认选中微信支付
+    payLoading: false     // 支付加载状态
   },
 
+  // 页面加载：解析场景和参数
   onLoad(options) {
-    // 接收注册页传递的参数（解码中文）
+    // 1. 获取场景标识（默认商品订单）
+    const scene = options.scene || 'order';
+    // 2. 解析参数（兼容会员/商品场景）
+    const typeName = decodeURIComponent(options.typeName || (scene === 'member' ? '会员缴费' : '商品订单支付'));
+    const amount = Number(options.amount || options.totalAll || 0);
+
     this.setData({
-      typeName: decodeURIComponent(options.typeName),
-      amount: Number(options.amount),
-      phone: options.phone
+      scene,
+      typeName,
+      amount
     });
+    console.log('支付页参数：', this.data);
   },
 
-  // ====== 新增：切换支付方式 ======
+  // 切换支付方式
   switchPayMethod(e) {
     const payMethodId = e.currentTarget.dataset.methodid;
-    // 更新选中状态
     const payMethods = this.data.payMethods.map(method => {
       method.selected = method.id === payMethodId;
       return method;
@@ -36,36 +51,39 @@ Page({
     });
   },
 
-  // 模拟支付操作（适配选中的支付方式）
+  // 核心：模拟支付
   handlePay() {
-    if (this.data.payLoading) return; // 防止重复点击
+    if (this.data.payLoading || this.data.amount <= 0) return;
 
     this.setData({ payLoading: true });
     // 获取选中的支付方式名称
-    const selectedMethod = this.data.payMethods.find(method => method.id === this.data.selectedPayMethod).name;
+    const selectedMethod = this.data.payMethods.find(m => m.id === this.data.selectedPayMethod).name;
 
-    // 模拟支付接口请求（延迟2秒）
+    // 模拟支付接口请求（2秒延迟）
     setTimeout(() => {
       this.setData({ payLoading: false });
-      // 动态提示支付方式
+      // 支付成功提示
       wx.showToast({
-        title: `${selectedMethod}${this.data.amount}元成功`,
+        title: `${selectedMethod}¥${this.data.amount}元支付成功`,
         icon: 'success',
         duration: 2000
       });
-      // 延迟跳转首页
+
+      // 根据场景跳转不同页面
       setTimeout(() => {
-        wx.switchTab({
-          url: '/pages/index/index'
-        });
+        if (this.data.scene === 'member') {
+          // 会员缴费成功跳首页
+          wx.switchTab({ url: '/pages/index/index' });
+        } else {
+          // 商品订单支付成功跳商城
+          wx.switchTab({ url: '/pages/mall/mall' });
+        }
       }, 2000);
     }, 2000);
   },
 
-  // 取消支付（返回注册页）
+  // 取消支付：返回上一级页面
   handleCancel() {
-    wx.navigateBack({
-      delta: 1 // 返回上一级页面
-    });
+    wx.navigateBack({ delta: 1 });
   }
 });

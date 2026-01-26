@@ -48,7 +48,7 @@
     <van-button size="mini" type="primary" bindtap="toCart">返回购物车</van-button>
   </view>
 
-  <!-- 底部价格+提交订单栏 (固定底部) -->
+  <!-- 底部提交栏 -->
   <view class="submit-bar" wx:if="{{cartList.length > 0}}">
     <view class="total-price">总计：¥<span>{{totalAll}}</span></view>
     <van-button 
