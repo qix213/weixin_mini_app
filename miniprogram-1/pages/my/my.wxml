@@ -61,6 +61,14 @@
       <view class="function-name">账单记录</view>
       <view class="function-arrow">→</view>
     </view>
+    
+    <!-- 新增：推荐会员消费记录入口 -->
+    <view class="function-item" bindtap="{{isLogin ? 'goToSubMemberConsume' : 'goToLogin'}}">
+      <view class="function-icon">📊</view>
+      <view class="function-name" style="{{!isLogin || !memberInfo.user_type ? 'color:#999' : ''}}">推荐会员消费记录</view>
+      <view class="function-arrow" style="{{!isLogin || !memberInfo.user_type ? 'color:#ccc' : ''}}">→</view>
+    </view>
+
     <view class="function-item" bindtap="previewQrcode">
       <view class="function-icon">🔍</view>
       <view class="function-name">关注公众号</view>
@@ -71,11 +79,6 @@
       <view class="function-name">我的客服</view>
       <view class="function-arrow">→</view>
     </view>
-    <!--view class="function-item" bindtap="{{isLogin ? 'goToSetting' : 'goToLogin'}}">
-      <view class="function-icon">⚙️</view>
-      <view class="function-name" style="{{!isLogin ? 'color:#999' : ''}}">设置</view>
-      <view class="function-arrow" style="{{!isLogin ? 'color:#ccc' : ''}}">→</view>
-    </view>-->
     <view class="function-item" bindtap="goToLogout">
       <view class="function-icon">⚙️</view>
       <view class="function-name">登出</view>

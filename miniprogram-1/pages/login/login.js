@@ -100,44 +100,35 @@ Page({
       success: (res) => {
         wx.hideLoading();
         // 3. 处理后端返回结果（兼容 SimpleJWT 默认格式 + 自定义格式）
-        if (res.data.access && res.data.refresh) {
-          // SimpleJWT 默认返回：access（访问Token）、refresh（刷新Token）
-          const accessToken = res.data.access;
-          const refreshToken = res.data.refresh;
-          // 修复：1. 存缓存 2. 更新全局Token（关键！）
-          wx.setStorageSync('token', accessToken);
-          app.globalData.token = accessToken; // 同步更新全局变量
+// login.js 中 handleLogin 的 success 回调（仅修改这部分）
+if (res.data.access && res.data.refresh) {
+  // SimpleJWT 默认返回：access（访问Token）、refresh（刷新Token）
+  const accessToken = res.data.access;
+  const refreshToken = res.data.refresh;
+  
+  // 修复：存储到storage的正确字段（和app.js onLaunch对应）
+  wx.setStorageSync('accessToken', accessToken); // 关键！之前存的是token，现在改accessToken
+  wx.setStorageSync('refreshToken', refreshToken);
+  wx.setStorageSync('isLogin', true); // 存储登录状态
+  wx.setStorageSync('userInfo', res.data.user_info || { nickname }); // 存储用户信息
 
-          // 提取用户信息（后端自定义返回，若无则用登录昵称组装）
-          const userInfo = res.data.user_info || {
-            nickname: nickname,
-            star_level: res.data.star_level || 0,
-            points: res.data.points || 0,
-            coupon_count: res.data.coupon_count || 0
-          };
+  // 更新全局变量（统一用accessToken，废弃token字段）
+  app.globalData.isLogin = true;
+  app.globalData.accessToken = accessToken; // 核心：全局请求头依赖这个字段
+  app.globalData.refreshToken = refreshToken;
+  app.globalData.userInfo = res.data.user_info || {
+    nickname: nickname,
+    star_level: res.data.star_level || 0,
+    points: res.data.points || 0,
+    coupon_count: res.data.coupon_count || 0
+  };
+  app.globalData.token = accessToken; // 兼容旧代码，可后续删除
 
-          // 4. 设置全局登录状态（供主页/我的页面使用）
-          app.globalData.isLogin = true;
-          app.globalData.userInfo = userInfo;
-          app.globalData.accessToken = accessToken;
-          app.globalData.refreshToken = refreshToken;
-
-          // 5. 登录成功提示 + 跳转主页
-          wx.showToast({ title: '登录成功', icon: 'success', duration: 1500 });
-          setTimeout(() => {
-            wx.switchTab({
-              url: '/pages/index/index' // 跳回主页，自动显示昵称
-            });
-          }, 1500);
-        } else if (res.data.code === 200) {
-          // 自定义返回格式兼容
-          app.globalData.isLogin = true;
-          app.globalData.userInfo = res.data.data.userInfo;
-          app.globalData.accessToken = res.data.data.token;
-          wx.showToast({ title: '登录成功', icon: 'success', duration: 1500 });
-          setTimeout(() => {
-            wx.switchTab({ url: '/pages/index/index' });
-          }, 1500);
+  // 登录成功提示 + 跳转主页
+  wx.showToast({ title: '登录成功', icon: 'success', duration: 1500 });
+  setTimeout(() => {
+    wx.switchTab({ url: '/pages/index/index' });
+  }, 1500);
         } else {
           // 登录失败提示
           wx.showToast({ title: res.data.msg || '昵称或密码错误', icon: 'none', duration: 2000 });

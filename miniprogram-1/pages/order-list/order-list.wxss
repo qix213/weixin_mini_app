@@ -1,25 +1,76 @@
+/* 全局重置，避免默认样式干扰 */
+page {
+  background-color: #f5f5f5; /* 页面背景，和订单卡片区分 */
+}
+
+/* 订单列表容器（匹配WXML的外层view） */
+.container {
+  padding: 15rpx;
+}
+
+/* 单个订单卡片（匹配WXML的订单卡片view） */
 .order-card {
   background: #fff;
-  margin: 20rpx;
-  padding: 30rpx;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
 }
+
+/* 订单号+状态行（匹配WXML的order-header view） */
 .order-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1rpx solid #eee;
-  padding-bottom: 20rpx;
-  font-size: 24rpx;
+  font-size: 28rpx;
+  margin-bottom: 20rpx;
+}
+.order-header .sn {
+  color: #333;
+}
+.order-header .status {
+  color: #ff6600;
+}
+
+/* 商品列表区域（匹配WXML的商品列表view） */
+.goods-area {
+  margin-bottom: 20rpx;
+}
+/* 商品标题（“商品：”） */
+.goods-title {
+  font-size: 26rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 10rpx;
+}
+/* 单个商品行（匹配WXML的goodsName view） */
+.goods-item {
+  font-size: 26rpx;
+  color: #666; /* 确保文字颜色不是白色（和背景同色会看不见） */
+  margin-bottom: 8rpx;
+  /* 去掉flex，避免挤压文字 */
+  display: block;
+}
+/* 暂无商品提示 */
+.no-goods {
+  font-size: 26rpx;
   color: #999;
 }
-.order-body {
+
+/* 订单时间+总价行 */
+.order-info {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-top: 20rpx;
+  font-size: 26rpx;
+  color: #999;
 }
-.price {
-  font-size: 36rpx;
-  color: #ff4400;
+.order-info .price {
+  color: #333;
   font-weight: bold;
+}
+
+/* 空订单提示 */
+.empty {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
 }

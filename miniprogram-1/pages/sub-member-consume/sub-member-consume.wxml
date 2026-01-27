@@ -1,0 +1,38 @@
+<!-- pages/sub-member-consume/sub-member-consume.wxml -->
+<view class="consume-container">
+  <!-- 加载中 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载消费记录中...</text>
+  </view>
+
+  <!-- 无数据 -->
+  <view class="empty" wx:if="{{!loading && consumeList.length === 0}}">
+    <text>暂无推荐会员消费记录</text>
+  </view>
+
+  <!-- 消费记录列表 -->
+  <view class="consume-list" wx:if="{{!loading && consumeList.length > 0}}">
+    <view class="consume-item" wx:for="{{consumeList}}" wx:key="id">
+      <!-- 订单基础信息 -->
+      <view class="order-header">
+        <view class="order-sn">订单编号：{{item.order_sn}}</view>
+        <view class="order-date">{{item.create_time}}</view>
+        <view class="order-status">{{item.status}}</view>
+      </view>
+
+      <!-- 商品列表（核心：展示商品名称、数量、金额） -->
+      <view class="goods-list">
+        <view class="goods-item" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="goods_name">
+          <view class="goods-name">{{goods.goods_name}}</view>
+          <view class="goods-count">数量：{{goods.num}}</view>
+          <view class="goods-price">单价：¥{{goods.price}} | 小计：¥{{goods.total_price}}</view>
+        </view>
+      </view>
+
+      <!-- 订单总计 -->
+      <view class="order-total">
+        <text>订单总计：¥{{item.total_price}}</text>
+      </view>
+    </view>
+  </view>
+</view>

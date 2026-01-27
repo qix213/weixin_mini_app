@@ -49,7 +49,7 @@ class CollevtionView(ListModelMixin, GenericViewSet):
 class CategoryView(ListModelMixin, GenericViewSet):
     """商品分类接口 - 仅支持列表查询"""
     # 定义查询集（数据源）
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by('id')
     # 注意：DRF 正确属性名是 serializer_class（不是 serializer）
     serializer_class = CategorySerializer
 
@@ -68,7 +68,7 @@ class CategoryView(ListModelMixin, GenericViewSet):
 class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     """商品接口 - 支持列表查询、详情查询，含搜索/分类过滤"""
     # 基础查询集（所有商品）
-    queryset = Goods.objects.all()
+    queryset = Goods.objects.all().order_by('id')
     serializer_class = GoodsSerializer
 
     # 重写list方法：添加搜索/分类过滤 + 自定义响应格式
@@ -172,6 +172,7 @@ from .serializer import RegisterSerializer
 # 放弃 ViewSet，改用 APIView 定义注册接口（更简单、更易生效）
 
 class Index_AnnonceView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         indexan = Index_Annonce.objects.all()  # 获取所有固定图片
         fixed_serializer = IndexSerializer(indexan, many=True)
@@ -595,17 +596,46 @@ class CartAddView(APIView):
 
 
 # 保留原有冗余视图（兼容旧调用，无需删除，不影响功能）
+# 正确的购物车列表视图
 class CartListView(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated]  # 仅要求登录，权限校验由DRF处理
+    # permission_classes = []  # 允许匿名访问
     def get(self, request):
-        cart_list = Cart.objects.filter(user=request.user)
-        serializer = CartSerializer(cart_list, many=True)
-        return Response({
-            'code': 200,
-            'msg': 'success',
-            'data': {'results': serializer.data}
-        })
+        print("===== 购物车视图调试 =====")
+        print(f"请求用户：{request.user}")
+        print(f"用户ID：{request.user.id}")
+        print(f"会员ID：{request.user.member_id}")
+        print(f"是否认证：{request.user.is_authenticated}")
+        print(f"权限通过：{self.check_permissions(request)}")
+        try:
+            # 核心：用DRF认证后的request.user（当前登录用户）查询购物车
+            cart_items = Cart.objects.filter(user=request.user)
+
+            # 序列化购物车数据（包含商品名称、数量、价格等）
+            cart_list = []
+            for item in cart_items:
+                cart_list.append({
+                    "id": item.id,
+                    "goods_name": item.goods.name,
+                    "goods_image": item.goods.image_url,
+                    "num": item.num,
+                    "price": float(item.goods.member_price),
+                    "total_price": float(item.num * item.goods.member_price)
+                })
+
+            return Response({
+                "code": 200,
+                "msg": "获取购物车列表成功",
+                "data": cart_list
+            })
+        except Exception as e:
+            print(f"购物车查询异常：{e}")
+            # 注意：异常时返回500，而非401（避免混淆认证问题）
+            return Response({
+                "code": 500,
+                "msg": "获取购物车失败",
+                "data": []
+            }, status=500)
 
 
 class CartUpdateNumView(APIView):
@@ -659,6 +689,45 @@ class CartDeleteView(APIView):
             'data': {}
         })
 
+
+class CartClearView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id=None):
+        try:
+            # 增加调试日志，便于定位问题
+            logger.info(f"清空购物车请求：用户ID={request.user.id}，订单ID={order_id}")
+
+            if order_id:
+                # 精准清空：删除该订单关联的购物车商品
+                try:
+                    order_id = int(order_id)
+                    # 先查询是否有对应数据
+                    cart_query = Cart.objects.filter(user=request.user, order_id=order_id)
+                    cart_count = cart_query.count()
+
+                    if cart_count == 0:
+                        logger.warning(f"无订单{order_id}关联的购物车数据，执行全清")
+                        # 无精准数据则降级为全清
+                        Cart.objects.filter(user=request.user).delete()
+                    else:
+                        cart_query.delete()
+                        logger.info(f"精准清空{cart_count}条购物车数据")
+                except ValueError:
+                    return Response({"code": 400, "msg": "订单ID格式错误"}, status=400)
+            else:
+                # 全清：删除当前用户所有购物车商品
+                clear_count = Cart.objects.filter(user=request.user).delete()[0]
+                logger.info(f"全清购物车：删除{clear_count}条数据")
+
+            return Response({
+                "code": 200,
+                "msg": "购物车清空成功",
+                "data": {"cleared": True}
+            })
+        except Exception as e:
+            logger.error(f"清空购物车失败：{str(e)}", exc_info=True)
+            return Response({"code": 500, "msg": f"清空失败：{str(e)}"}, status=500)
 
 # ===================== 收件人信息接口 =====================
 class RecipientView(APIView):
@@ -777,83 +846,210 @@ class OrderAddView(APIView):
     def post(self, request):
         ser = OrderAddSerializer(data=request.data)
         if not ser.is_valid():
+            logger.error(f"下单参数错误：{ser.errors}")
             return Response({"code": 400, "msg": "参数错误", "data": ser.errors})
 
         try:
             with transaction.atomic():
+                # ========== 核心修改1：增加关键参数校验 ==========
                 address_id = request.data.get("address_id")
-                address = Address.objects.get(id=address_id, user=request.user)
-                total_price = request.data.get("total_price")
                 goods_list = request.data.get("goods_list", [])
 
-                # --- 核心逻辑修改：查找是否存在“待支付”状态的旧订单 ---
-                # 假设 status=1 代表待支付
-                order = Order.objects.filter(user=request.user, status=1).first()
+                # 1. 校验收货地址
+                if not address_id:
+                    return Response({"code": 400, "msg": "收货地址ID不能为空"})
+                try:
+                    address = Address.objects.get(id=address_id, user=request.user)
+                except Address.DoesNotExist:
+                    return Response({"code": 404, "msg": "收货地址不存在"}, status=404)
 
+                # 2. 校验商品列表非空
+                if not isinstance(goods_list, list) or len(goods_list) == 0:
+                    return Response({"code": 400, "msg": "请选择要购买的商品"})
+
+                # 3. 校验总价（避免前端传递异常值）
+                total_price = request.data.get("total_price", 0)
+                try:
+                    total_price = float(total_price)
+                    if total_price <= 0:
+                        return Response({"code": 400, "msg": "订单总价必须大于0"})
+                except (ValueError, TypeError):
+                    return Response({"code": 400, "msg": "订单总价格式错误"})
+
+                # ========== 核心修改2：确保Order先保存（生成主键） ==========
+                # 查找/创建订单（status=1：待付款）
+                order = Order.objects.filter(user=request.user, status=1).first()
                 if order:
-                    # 如果存在旧订单，执行更新
+                    # 更新现有订单：先保存，确保主键存在
                     order.address = address
                     order.total_price = total_price
-                    order.save()
-                    # 清除该订单旧的商品明细，准备重新写入
+                    order.save()  # 强制保存，更新主键（即使是现有订单，也确保状态同步）
+                    logger.info(f"更新现有订单：order_id={order.id}, order_sn={order.order_sn}")
+                    # 删除旧的订单明细（避免重复）
                     OrderItem.objects.filter(order=order).delete()
                     msg = "订单已更新"
                 else:
-                    # 如果不存在，创建新订单
+                    # 新建订单：create方法会自动保存并生成主键
                     order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
                     order = Order.objects.create(
                         user=request.user,
                         order_sn=order_sn,
                         address=address,
                         total_price=total_price,
-                        status=1
+                        status=1  # 1=待付款
                     )
+                    logger.info(f"创建新订单：order_id={order.id}, order_sn={order_sn}")
                     msg = "下单成功"
 
-                # 重新写入商品明细
-                for item in goods_list:
-                    cart = Cart.objects.get(id=item["cart_id"], user=request.user)
-                    OrderItem.objects.create(
-                        order=order,
-                        goods=cart.goods,
-                        num=item["num"],
-                        price=cart.goods.member_price
-                    )
-                    # 注意：如果是更新订单，购物车可能之前已经删过了，这里需要做容错处理
-                    # cart.delete()
+                # ========== 核心修改3：安全创建OrderItem（增加异常捕获） ==========
+                # 验证Order主键存在（兜底校验）
+                if not order.pk:
+                    raise Exception("订单创建失败，未生成主键ID")
 
+                goods_names = []
+                total_count = 0
+                for item in goods_list:
+                    cart_id = item.get("cart_id")
+                    num = item.get("num", 1)
+
+                    # 校验购物车ID和数量
+                    if not cart_id or not isinstance(num, int) or num < 1:
+                        raise Exception(f"购物车参数错误：cart_id={cart_id}, num={num}")
+
+                    # 查询购物车（仅当前用户）
+                    try:
+                        cart = Cart.objects.get(id=cart_id, user=request.user)
+                    except Cart.DoesNotExist:
+                        raise Exception(f"购物车商品不存在：cart_id={cart_id}")
+
+                    goods = cart.goods
+                    # 库存校验
+                    if goods.stock < num:
+                        raise Exception(f"商品库存不足：{goods.name}（库存{goods.stock}，需{num}）")
+
+                    # 创建订单明细（此时order已有主键，可安全关联）
+                    OrderItem.objects.create(
+                        order=order,  # ✅ 此时order.pk已存在
+                        goods=goods,
+                        num=num,
+                        price=cart.goods.member_price,
+                        goods_name=goods.name,
+                        goods_image=goods.image_url,
+                        goods_specs=goods.specs,
+                        total_price=num * cart.goods.member_price
+                    )
+                    cart.order = order
+                    cart.save()
+                    goods_names.append(goods.name)
+                    total_count += num
+
+                # 更新订单的冗余字段（商品名称、数量）
+                order.goods_names = "、".join(goods_names)
+                order.goods_count = total_count
+                order.save()  # 再次保存，确保冗余字段生效
+
+            # 返回成功响应
             return Response({
                 "code": 200,
                 "msg": msg,
-                "data": {"order_sn": order.order_sn}
+                "data": {
+                    "order_sn": order.order_sn,
+                    "order_id": order.id,
+                    "goods_names": goods_names,
+                    "goods_names_str": order.goods_names,
+                    "goods_count": order.goods_count
+                }
             })
 
         except Exception as e:
+            logger.error(f"下单失败：{str(e)}", exc_info=True)  # 打印完整异常栈
             return Response({"code": 500, "msg": f"操作失败: {str(e)}"})
 
+# 示例：订单列表视图中获取产品名称
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # 获取当前用户的所有订单，按创建时间倒序排列
         orders = Order.objects.filter(user=request.user).order_by('-create_time')
-
         data_list = []
         for order in orders:
-            # 获取该订单下的商品概览（比如取第一件商品的图，或者统计件数）
-            first_item = OrderItem.objects.filter(order=order).first()
-            item_count = OrderItem.objects.filter(order=order).count()
-
             data_list.append({
                 "order_sn": order.order_sn,
                 "total_price": str(order.total_price),
+                "status": order.get_status_display(),
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M'),
-                "status": order.get_status_display(),  # 获取状态的文字描述（如：待支付/已完成）
-                "first_goods_name": first_item.goods.name if first_item else "未知商品",
-                "item_count": item_count
+                # 方案1：调用动态属性
+                "goods_names": order.goods_names,  # 列表：["商品A", "商品B"]
+                "goods_names_str": order.goods_names_str,  # 字符串："商品A、商品B"
+                # 方案2：直接取冗余字段（和方案1返回结果一致）
+                # "goods_names": order.goods_names.split("、") if order.goods_names else [],
+                # "goods_names_str": order.goods_names or "无商品",
+                "goods_count": order.goods_count
             })
-
         return Response({"code": 200, "data": data_list})
+
+class OrderDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 获取前端传递的订单ID/订单编号
+        order_id = request.query_params.get("order_id")
+        order_sn = request.query_params.get("order_sn")
+
+        # 校验参数
+        if not (order_id or order_sn):
+            return Response({"code": 400, "msg": "请传入订单ID或订单编号"}, status=400)
+
+        # 查询订单（仅查询当前用户的订单）
+        try:
+            if order_id:
+                order = Order.objects.get(id=order_id, user=request.user)
+            else:
+                order = Order.objects.get(order_sn=order_sn, user=request.user)
+        except Order.DoesNotExist:
+            return Response({"code": 404, "msg": "订单不存在"}, status=404)
+
+        # 获取订单所有商品明细（关联商品表，提取名称）
+        order_items = OrderItem.objects.filter(order=order).select_related('goods')
+        goods_detail = [
+            {
+                "goods_id": item.goods.id,
+                "goods_name": item.goods.name,  # 商品名称
+                "goods_image": f"http://localhost:8000/media/{item.goods.image_url}" if item.goods.image_url else "",
+                # 商品图片
+                "num": item.num,  # 购买数量
+                "price": str(item.price),  # 单价
+                "total_price": str(item.num * item.price)  # 该商品总价
+            }
+            for item in order_items
+        ]
+
+        # 组装订单详情数据
+        order_detail = {
+            "order_id": order.id,
+            "order_sn": order.order_sn,
+            "total_price": str(order.total_price),
+            "status": order.get_status_display(),
+            "status_code": order.status,  # 状态码（便于前端判断）
+            "create_time": order.create_time.strftime('%Y-%m-%d %H:%M:%S'),
+            "address": {  # 收货地址信息
+                "name": order.address.name,
+                "phone": order.address.phone,
+                "province": order.address.province,
+                "city": order.address.city,
+                "district": order.address.district,
+                "detail": order.address.detail
+            } if hasattr(order, 'address') else {},
+            "goods_detail": goods_detail,  # 所有商品明细（含名称）
+            "goods_names": [item["goods_name"] for item in goods_detail],  # 仅商品名称列表
+            "item_count": len(goods_detail)  # 商品总数
+        }
+
+        return Response({
+            "code": 200,
+            "msg": "获取订单详情成功",
+            "data": order_detail
+        })
 
 import json
 from aliyunsdkcore.client import AcsClient

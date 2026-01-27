@@ -24,7 +24,8 @@ from .views import (BannerView, CollevtionView, CategoryView, GoodsViewSet,
     ExamQuestionViewSet, ExamRecordViewSet, CertificationViewSet,
     CustomTokenObtainPairView, RegisterAPIView, BenefitViewSet, UserProfileViewSet,
     MemberInfoView,Index_AnnonceView, CartView, CartAddView, CartListView, CartUpdateNumView, CartDeleteView,
-    RecipientView, CheckoutView, AddressView, AddressAddView, OrderAddView, OrderListView, SubUserConsumeView,)
+    RecipientView, CheckoutView, AddressView, AddressAddView, OrderAddView, OrderListView, SubUserConsumeView,
+    CartClearView,)
 from . import views  # 导入视图函数
 
 router = SimpleRouter()
@@ -70,9 +71,12 @@ urlpatterns = [
     # 订单
     path('order/add/', OrderAddView.as_view()),
     path('order/list/', OrderListView.as_view()),
+    path('order/detail/', views.OrderDetailView.as_view()),  # 订单详情
     # 你的其他接口（如注册接口 /register/）
     path('', include(router.urls)),
     path('send-sms/', views.send_sms_code),  # 发送验证码
     path('verify-sms/', views.verify_sms_code),  # 验证验证码
+    path('cart/clear/', CartClearView.as_view()),  # 全清
+    path('cart/clear/<int:order_id>/', CartClearView.as_view()),  # 精准清空
 ]
 urlpatterns += router.urls

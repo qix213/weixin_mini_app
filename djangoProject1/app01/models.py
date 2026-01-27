@@ -410,18 +410,7 @@ class Certification(models.Model):
         return f"{self.user.nickname} - {self.get_cert_type_display()} - {self.get_status_display()}"
 
 # 新增：购物车模型
-class Cart(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
-    goods = models.ForeignKey(Goods, on_delete=models.CASCADE, verbose_name='商品')
-    num = models.IntegerField('数量', default=1)  # 商品数量
-    create_time = models.DateTimeField('添加时间', auto_now_add=True)
-    update_time = models.DateTimeField('更新时间', auto_now=True)
 
-    class Meta:
-        db_table = 'cart'
-        verbose_name = '购物车'
-        verbose_name_plural = verbose_name
-        unique_together = ('user', 'goods')  # 一个用户对一个商品只能有一条购物车记录
 
 # 新增：收件人信息模型
 class Recipient(models.Model):
@@ -454,6 +443,7 @@ class Address(models.Model):
         verbose_name = "收货地址"
         verbose_name_plural = "收货地址"
 
+
 # 订单主表
 class Order(models.Model):
     ORDER_STATUS = (
@@ -463,24 +453,130 @@ class Order(models.Model):
         (3, "已完成"),
         (4, "已取消"),
     )
+    # 原有核心字段保留
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
     order_sn = models.CharField(max_length=64, unique=True, verbose_name="订单编号")
-    address = models.ForeignKey(Address, on_delete=models.CASCADE, verbose_name="收货地址")
+    goods_names = models.CharField(max_length=500, null=True, blank=True, verbose_name="订单产品名称（拼接）")
+    goods_count = models.IntegerField(default=0, verbose_name="订单商品总数")
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="收货地址")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="订单总价")
     status = models.IntegerField(choices=ORDER_STATUS, default=0, verbose_name="订单状态")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
+    # ========== 新增订单详情字段 ==========
+    # 1. 支付相关
+    PAY_METHOD_CHOICES = (
+        (1, "微信支付"),
+        (2, "支付宝支付"),
+        (3, "线下支付"),
+    )
+    pay_method = models.IntegerField(choices=PAY_METHOD_CHOICES, null=True, blank=True, verbose_name="支付方式")
+    pay_time = models.DateTimeField(null=True, blank=True, verbose_name="支付时间")  # 支付完成时间
+    pay_no = models.CharField(max_length=64, null=True, blank=True, verbose_name="支付单号（微信/支付宝）")
+
+    # 2. 物流相关
+    logistics_no = models.CharField(max_length=64, null=True, blank=True, verbose_name="物流单号")
+    logistics_company = models.CharField(max_length=32, null=True, blank=True, verbose_name="物流公司")
+    ship_time = models.DateTimeField(null=True, blank=True, verbose_name="发货时间")  # 商家发货时间
+    receive_time = models.DateTimeField(null=True, blank=True, verbose_name="收货时间")  # 用户确认收货时间
+
+    # 3. 取消/售后相关
+    cancel_time = models.DateTimeField(null=True, blank=True, verbose_name="取消时间")
+    cancel_reason = models.CharField(max_length=200, null=True, blank=True, verbose_name="取消原因")
+    remark = models.CharField(max_length=500, null=True, blank=True, verbose_name="用户备注")  # 订单备注
+
+    # 4. 软删除（避免误删订单）
+    is_delete = models.BooleanField(default=False, verbose_name="是否删除")
+
     class Meta:
         verbose_name = "订单"
         verbose_name_plural = "订单"
+        ordering = ["-create_time"]
 
-# 订单商品明细表
+    def __str__(self):
+        return f"{self.order_sn} - {self.get_status_display()}"
+
+    # ✅ 修复1：重写save方法，先保存生成主键，再处理订单商品统计
+    def save(self, *args, **kwargs):
+        # 标记是否是新建订单（无主键）
+        is_new = self.pk is None
+
+        # 第一步：先调用父类save生成主键（关键！）
+        super().save(*args, **kwargs)
+
+        # 第二步：只有订单已保存（有主键），才处理商品名称和数量统计
+        if not is_new and self.items.exists():
+            # 拼接商品名称
+            self.goods_names = "、".join([item.goods_name for item in self.items.all()])
+            # 计算商品总数
+            self.goods_count = sum([item.num for item in self.items.all()])
+            # 再次保存（仅更新统计字段，不会重复创建）
+            super().save(update_fields=['goods_names', 'goods_count'])
+
+    # ✅ 修复2：在Order模型中定义goods_names_str属性（视图需要的字段）
+    @property
+    def goods_names_str(self):
+        """返回订单商品名称拼接字符串，如：商品A、商品B"""
+        if self.goods_names:
+            return self.goods_names
+        # 兜底：如果goods_names为空，从items重新拼接
+        if self.pk and self.items.exists():
+            return "、".join([item.goods_name for item in self.items.all()])
+        return "无商品"
+
+    # 可选：快捷获取订单商品列表
+    @property
+    def goods_list(self):
+        """返回订单商品详情列表"""
+        if self.pk and self.items.exists():
+            return [
+                {
+                    "name": item.goods_name,
+                    "num": item.num,
+                    "price": float(item.price),
+                    "total_price": float(item.total_price)
+                }
+                for item in self.items.all()
+            ]
+        return []
+
+class Cart(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
+    goods = models.ForeignKey(Goods, on_delete=models.CASCADE, verbose_name='商品')
+    num = models.IntegerField('数量', default=1)  # 商品数量
+    create_time = models.DateTimeField('添加时间', auto_now_add=True)
+    update_time = models.DateTimeField('更新时间', auto_now=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="关联订单")
+    class Meta:
+        db_table = 'cart'
+        verbose_name = '购物车'
+        verbose_name_plural = verbose_name
+        unique_together = ('user', 'goods')  # 一个用户对一个商品只能有一条购物车记录
+
+# 订单商品明细表（补充商品快照字段，确保订单详情独立完整）
 class OrderItem(models.Model):
+    # 原有核心字段保留
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items", verbose_name="订单")
-    goods = models.ForeignKey(Goods, on_delete=models.CASCADE, verbose_name="商品")
+    goods = models.ForeignKey(Goods, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="关联商品")
     num = models.IntegerField(verbose_name="购买数量")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="商品单价")
+
+    # ========== 商品快照字段（保留） ==========
+    goods_name = models.CharField(max_length=100, default="未知商品", verbose_name="商品名称")  # 冗余存储商品名
+    goods_image = models.CharField(max_length=255, null=True, blank=True, verbose_name="商品图片URL")  # 冗余存储图片
+    goods_specs = models.CharField(max_length=200, null=True, blank=True, verbose_name="商品规格")  # 存储商品规格
+    total_price = models.DecimalField(max_digits=10, default="0", decimal_places=2,
+                                      verbose_name="该商品总价")  # num*price
 
     class Meta:
         verbose_name = "订单商品"
         verbose_name_plural = "订单商品"
+
+    def __str__(self):
+        return f"{self.order.order_sn} - {self.goods_name} x {self.num}"
+
+    # 可选：重写save方法，自动计算商品总价
+    def save(self, *args, **kwargs):
+        if not self.total_price:
+            self.total_price = self.num * self.price
+        super().save(*args, **kwargs)
