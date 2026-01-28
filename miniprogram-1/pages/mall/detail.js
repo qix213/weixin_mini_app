@@ -11,38 +11,29 @@ Page({
   },
 
   onLoad(options) {
-    // 接收从商品列表传递的商品ID（对应 options.id）
+    // 接收从商品列表传递的商品ID
     const goodsId = options.id;
     if (!goodsId) {
       Toast.fail('无效的商品ID');
-      // 延迟返回上一页，确保提示显示
       setTimeout(() => {
         wx.navigateBack();
       }, 1500);
       return;
     }
     this.setData({ goodsId });
-    // 获取商品详情（适配401授权）
+    // 获取商品详情（核心修改：无需登录，直接请求）
     this.getGoodsDetail();
   },
 
-  // 获取商品详情（核心修复：适配401授权，携带Token请求）
+  // 获取商品详情（核心修改：移除登录校验，纯公开访问）
   getGoodsDetail() {
     const { goodsId, baseUrl } = this.data;
-    // 1. 获取Token（即使商品详情应公开，后端要求则携带）
-    const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    // 2. 构造请求头（有Token则携带）
-    const header = {
-      'Content-Type': 'application/json'
-    };
-    if (token) {
-      header['Authorization'] = `Bearer ${token}`;
-    }
 
+    // 核心修改：不携带token，直接请求（浏览详情无需登录）
     wx.request({
       url: `${baseUrl}/app01/goods/${goodsId}/`,
       method: 'GET',
-      header: header, // 携带Token（如果有）
+      header: { 'Content-Type': 'application/json' }, // 仅基础头，无token
       timeout: 5000,
       success: (res) => {
         console.log('商品详情请求成功：', res.data);
@@ -52,7 +43,7 @@ Page({
           if (res.data.code === 200) {
             this.setData({ goodsDetail: res.data.data });
           }
-          // 情况2：后端返回DRF默认序列化格式（无code，直接是商品数据）
+          // 情况2：后端返回DRF默认序列化格式（无code）
           else if (res.data.id) {
             this.setData({ goodsDetail: res.data });
           } else {
@@ -60,30 +51,15 @@ Page({
             this.setData({ goodsDetail: {} });
           }
         }
-        // 处理401未授权
+        // 核心修改：401时仅提示，不强制登录/返回
         else if (res.statusCode === 401) {
-          Toast.fail('查看商品详情需先登录');
-          this.setData({ goodsDetail: {} });
-          // 提示登录，3秒后自动弹窗
-          setTimeout(() => {
-            wx.showModal({
-              title: '提示',
-              content: '查看商品详情需要登录账号',
-              confirmText: '去登录',
-              cancelText: '取消',
-              success: (res) => {
-                if (res.confirm) {
-                  // 跳转登录页，携带返回参数
-                  wx.navigateTo({ 
-                    url: `/pages/login/login?redirect=detail&id=${goodsId}` 
-                  });
-                } else {
-                  // 取消则返回上一页
-                  wx.navigateBack();
-                }
-              }
-            });
-          }, 1500);
+          Toast.info('部分功能需登录后使用，仍可浏览商品');
+          // 尝试解析无token时的商品数据（如果后端返回）
+          if (res.data.id) {
+            this.setData({ goodsDetail: res.data });
+          } else {
+            this.setData({ goodsDetail: {} });
+          }
         }
         // 其他错误
         else {
@@ -102,34 +78,32 @@ Page({
     });
   },
 
-  // 减少数量
+  // 减少数量（仅本地，无需登录）
   minusNum() {
     const { cartNum } = this.data;
     if (cartNum <= 1) return;
     this.setData({ cartNum: cartNum - 1 });
   },
 
-  // 增加数量
+  // 增加数量（仅本地，无需登录）
   plusNum() {
     const { cartNum } = this.data;
     this.setData({ cartNum: cartNum + 1 });
   },
 
-  // 手动修改数量
+  // 手动修改数量（仅本地，无需登录）
   changeNum(e) {
     const num = parseInt(e.detail.value) || 1;
     this.setData({ cartNum: num < 1 ? 1 : num });
   },
 
-  // 【核心优化】统一获取并校验 Token 的工具方法
+  // 获取Token工具方法（仅用于操作校验）
   getValidToken() {
-    // 统一 Token 来源：缓存的 accessToken 优先，全局变量兜底（和登录页保持一致）
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    console.log('当前获取的 Token：', token ? '已获取有效Token' : '无Token');
     return token;
   },
 
-  // 加入购物车（优化授权校验 + 错误处理）
+  // 加入购物车（仅操作需要登录，浏览无需）
   addToCart() {
     const { goodsDetail, cartNum } = this.data;
     if (!goodsDetail.id) {
@@ -137,67 +111,53 @@ Page({
       return;
     }
 
-    // 1. 校验 Token
+    // 1. 校验 Token（仅操作需要）
     const token = this.getValidToken();
     if (!token) {
-      wx.showModal({
-        title: '提示',
-        content: '请先登录后再加入购物车',
-        confirmText: '去登录',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            // 跳转登录页时携带返回页参数（登录后可回跳）
-            wx.navigateTo({ 
-              url: `/pages/login/login?redirect=detail&id=${goodsDetail.id}` 
-            });
-          }
-        }
-      });
+      // 核心修改：仅提示，不强制弹窗跳转
+      Toast('登录后可将商品同步到购物车（已本地缓存）');
+      // 本地缓存数量
+      const cartList = wx.getStorageSync('cartList') || {};
+      cartList[goodsDetail.id] = cartNum;
+      wx.setStorageSync('cartList', cartList);
       return;
     }
 
-    // 2. 加入购物车请求（携带 Token）
+    // 2. 有token时同步后端
     wx.request({
       url: `${this.data.baseUrl}/app01/cart/add/`,
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // 核心：携带 Token
+        'Authorization': `Bearer ${token}`
       },
       data: { goods_id: goodsDetail.id, num: cartNum },
       success: (res) => {
-        console.log('加入购物车响应：', res.data);
         if (res.data && res.data.code === 200) {
           Toast.success(`【${goodsDetail.name}】已加入购物车 x${cartNum}`);
         } else {
-          // Token 过期/无效的全面判断
           const isTokenInvalid = 
             res.statusCode === 401 || 
             res.data?.detail === "No active account found with the given credentials" ||
             res.data?.msg === "未授权访问";
           
           if (isTokenInvalid) {
-            // 清除无效 Token，引导重新登录
             wx.removeStorageSync('accessToken');
             app.globalData.accessToken = '';
             Toast.fail('登录状态失效，请重新登录');
-            setTimeout(() => {
-              wx.navigateTo({ url: `/pages/login/login?redirect=detail&id=${goodsDetail.id}` });
-            }, 1500);
           } else {
-            Toast.fail(res.data?.msg || '加入购物车失败');
+            Toast.fail(res.data?.msg || '加入购物车失败（本地已缓存）');
           }
         }
       },
       fail: (err) => {
         console.error('加入购物车失败：', err);
-        Toast.fail('网络异常，加入购物车失败');
+        Toast.fail('网络异常，已本地缓存（登录后同步）');
       }
     });
   },
 
-  // 立即购买（优化授权校验 + 跳结算页而非购物车）
+  // 立即购买（仅操作需要登录，浏览无需）
   buyNow() {
     const { goodsDetail, cartNum } = this.data;
     if (!goodsDetail.id) {
@@ -205,27 +165,15 @@ Page({
       return;
     }
 
-    // 1. 校验 Token
+    // 1. 校验 Token（仅操作需要）
     const token = this.getValidToken();
     if (!token) {
-      wx.showModal({
-        title: '提示',
-        content: '请先登录后再结算',
-        confirmText: '去登录',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            // 跳转登录页，携带商品ID（登录后回跳详情页）
-            wx.navigateTo({ 
-              url: `/pages/login/login?redirect=detail&id=${goodsDetail.id}` 
-            });
-          }
-        }
-      });
+      // 核心修改：仅提示，不强制弹窗跳转
+      Toast('登录后可结算商品');
       return;
     }
 
-    // 2. 先加入购物车，再跳结算页（更符合业务逻辑）
+    // 2. 有token时执行结算
     wx.request({
       url: `${this.data.baseUrl}/app01/cart/add/`,
       method: 'POST',
@@ -238,12 +186,10 @@ Page({
         if (res.data && res.data.code === 200) {
           Toast.success(`即将结算【${goodsDetail.name}】x${cartNum}`);
           setTimeout(() => {
-            // 跳转到结算页（而非购物车），携带订单相关参数
             wx.navigateTo({
               url: `/pages/checkout/checkout?goodsId=${goodsDetail.id}&num=${cartNum}`,
               fail: (err) => {
                 console.error('跳转结算页失败：', err);
-                // 兜底跳购物车
                 wx.switchTab({ url: '/pages/cart/cart' });
                 Toast.fail('结算页不存在，已跳购物车');
               }
@@ -260,11 +206,10 @@ Page({
     });
   },
 
-  // 预览商品主图（优化图片拼接）
+  // 预览商品主图（浏览无需登录）
   previewMainImg() {
     const { goodsDetail, baseUrl } = this.data;
     if (!goodsDetail.image_url) return;
-    // 拼接完整图片URL（适配后端返回相对路径的情况）
     const fullImgUrl = goodsDetail.image_url.startsWith('http') 
       ? goodsDetail.image_url 
       : `${baseUrl}/media/${goodsDetail.image_url}`;
