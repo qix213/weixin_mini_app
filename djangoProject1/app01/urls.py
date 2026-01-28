@@ -49,7 +49,7 @@ urlpatterns = [
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', RegisterAPIView.as_view(), name='register'),
     # 新增：查看下级消费记录
-    path('user/sub-consume/', SubUserConsumeView.as_view(), name='sub_consume'),
+    path('member/sub-consume/', SubUserConsumeView.as_view(), name='sub_consume'),
     path('member/info/', MemberInfoView.as_view(), name='member_info'),
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     # 可选：Token 刷新地址 /app01/token/refresh/

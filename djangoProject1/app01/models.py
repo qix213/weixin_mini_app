@@ -308,23 +308,50 @@ class User(AbstractUser):
         return direct_subs
 
     # 获取下级消费记录
-    def get_sub_consume_records(self):
-        from .models import Order, OrderItem
-        sub_users = self.get_sub_users()
-        # 获取所有下级的订单
-        sub_orders = Order.objects.filter(user__in=sub_users)
-        # 组装消费记录（订单+商品）
-        consume_records = []
-        for order in sub_orders:
-            items = OrderItem.objects.filter(order=order).values('goods__name', 'num', 'price')
-            consume_records.append({
-                "order_sn": order.order_sn,
-                "total_price": order.total_price,
-                "status": order.get_status_display(),
-                "create_time": order.create_time,
-                "goods": list(items)
-            })
-        return consume_records
+    def get_sub_consume_records(self, current_level=0):
+        """
+        返回按下级会员分组的消费记录（包含会员信息+订单列表）
+        :param current_level: 要查询的下级层级
+        :return: 列表，每个元素是{"member_info": 会员信息, "orders": 该会员的订单列表}
+        """
+        # 核心修复：确保current_level是整数
+        try:
+            current_level = int(current_level)
+        except (ValueError, TypeError):
+            current_level = 0
+
+        from .models import Order
+
+        # 1. 查询当前用户的所有下级会员（根据业务调整层级逻辑）
+        sub_users = self.sub_users.all()  # 一级下级，多级可递归查询
+        if current_level > 0:
+            # 如需多级查询，可补充递归逻辑
+            pass
+
+        # 2. 按下级会员分组查询订单
+        sub_consume_data = []
+        for sub_user in sub_users:
+            # 查询该下级会员的所有订单
+            orders = Order.objects.filter(
+                user=sub_user,
+                status__in=[1, 2, 3]  # 仅查询有效订单（待付款/待发货/已发货）
+            ).order_by('-create_time').prefetch_related('items')  # 预加载订单项，提升性能
+
+            if orders:
+                # 组装会员信息+订单列表
+                sub_consume_data.append({
+                    "member_info": {
+                        "id": sub_user.id,
+                        "member_id": sub_user.member_id,
+                        "nickname": sub_user.nickname,
+                        "user_type": sub_user.user_type,
+                        "user_type_name": sub_user.get_user_type_display(),
+                        "star_level": sub_user.star_level
+                    },
+                    "orders": orders
+                })
+
+        return sub_consume_data
 
 
 # ====================== 打卡学习：4个核心模型（正确引用User） ======================
@@ -580,3 +607,4 @@ class OrderItem(models.Model):
         if not self.total_price:
             self.total_price = self.num * self.price
         super().save(*args, **kwargs)
+

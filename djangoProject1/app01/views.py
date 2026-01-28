@@ -10,6 +10,7 @@ def index(request):
 
 from .models import Welcome
 from django.http import JsonResponse
+from rest_framework.permissions import AllowAny
 def welcome(request):
     res = Welcome.objects.all().order_by('-order').first()
     # img = 'http://127.0.0.1:8000/media/' +str(res.img)
@@ -25,6 +26,7 @@ from .serializer import BannerSerializer, NoticeSerializer, IndexSerializer, Col
 
 class BannerView(ListModelMixin, GenericViewSet):
     queryset = Banner.objects.filter(is_delete=False).order_by('order')[:4]
+    permission_classes = [AllowAny]
     serializer_class = BannerSerializer
 
     def list(self, request, *args, **kwargs):
@@ -49,6 +51,7 @@ class CollevtionView(ListModelMixin, GenericViewSet):
 class CategoryView(ListModelMixin, GenericViewSet):
     """商品分类接口 - 仅支持列表查询"""
     # 定义查询集（数据源）
+    permission_classes = [AllowAny]
     queryset = Category.objects.all().order_by('id')
     # 注意：DRF 正确属性名是 serializer_class（不是 serializer）
     serializer_class = CategorySerializer
@@ -68,6 +71,7 @@ class CategoryView(ListModelMixin, GenericViewSet):
 class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     """商品接口 - 支持列表查询、详情查询，含搜索/分类过滤"""
     # 基础查询集（所有商品）
+    permission_classes = [AllowAny]
     queryset = Goods.objects.all().order_by('id')
     serializer_class = GoodsSerializer
 
@@ -216,25 +220,42 @@ class RegisterAPIView(APIView):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-
+from .serializer import SubConsumeRecordSerializer  # 导入新增的序列化器
+# app01/views.py
 class SubUserConsumeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # 必须登录
 
     def get(self, request):
-        user = request.user
-        # 权限校验：仅等级2/3/4/5可查看下级消费（按需调整）
-        if user.user_type not in [2,3,4,5]:
+        # 1. 获取当前登录用户（上级）
+        current_user = request.user
+        # 2. 获取并处理前端传递的 current_level 参数（核心修复：类型转换+校验）
+        current_level_str = request.query_params.get('current_level', '0')
+        try:
+            # 转为整数，非数字则抛出异常
+            current_level = int(current_level_str)
+        except ValueError:
+            # 非数字参数默认设为0
+            current_level = 0
+
+        # 3. 权限校验：仅等级≥2的会员可查看下级消费记录（可根据业务调整）
+        if not current_user.user_type or current_user.user_type < 2:
             return Response({
                 'code': 403,
-                'msg': '无权限查看下级消费记录'
+                'msg': '无权限查看下级消费记录，请升级会员等级',
+                'data': []
             }, status=status.HTTP_403_FORBIDDEN)
 
-        consume_records = user.get_sub_consume_records()
+        # 4. 查询下级消费记录（此时current_level已确保是整数）
+        sub_consume_data = current_user.get_sub_consume_records(current_level)
+        # 5. 序列化数据（自动格式化日期、嵌套商品明细）
+        serializer = SubConsumeRecordSerializer(sub_consume_data, many=True)
+
+        # 6. 返回符合前端要求的格式
         return Response({
             'code': 200,
             'msg': '获取下级消费记录成功',
-            'data': consume_records
-        })
+            'data': serializer.data  # 前端直接渲染的消费记录列表
+        }, status=status.HTTP_200_OK)
 
 # 保留你的 MemberInfoView（无需修改，认证通过后会执行）
 class MemberInfoView(APIView):
@@ -839,7 +860,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class OrderAddView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -851,11 +871,21 @@ class OrderAddView(APIView):
 
         try:
             with transaction.atomic():
-                # ========== 核心修改1：增加关键参数校验 ==========
-                address_id = request.data.get("address_id")
-                goods_list = request.data.get("goods_list", [])
+                # ========== 核心修改1：移除「查找待付款订单并复用」的逻辑 ==========
+                # 删掉以下旧代码：
+                # order = Order.objects.filter(user=request.user, status=1).first()
+                # if order:
+                #     order.address = address
+                #     order.total_price = total_price
+                #     order.save()
+                #     OrderItem.objects.filter(order=order).delete()
+                #     msg = "订单已更新"
+                # else:
+                #     新建订单...
 
+                # ========== 核心修改2：每次下单都创建全新订单 ==========
                 # 1. 校验收货地址
+                address_id = request.data.get("address_id")
                 if not address_id:
                     return Response({"code": 400, "msg": "收货地址ID不能为空"})
                 try:
@@ -864,10 +894,11 @@ class OrderAddView(APIView):
                     return Response({"code": 404, "msg": "收货地址不存在"}, status=404)
 
                 # 2. 校验商品列表非空
+                goods_list = request.data.get("goods_list", [])
                 if not isinstance(goods_list, list) or len(goods_list) == 0:
                     return Response({"code": 400, "msg": "请选择要购买的商品"})
 
-                # 3. 校验总价（避免前端传递异常值）
+                # 3. 校验总价
                 total_price = request.data.get("total_price", 0)
                 try:
                     total_price = float(total_price)
@@ -876,33 +907,21 @@ class OrderAddView(APIView):
                 except (ValueError, TypeError):
                     return Response({"code": 400, "msg": "订单总价格式错误"})
 
-                # ========== 核心修改2：确保Order先保存（生成主键） ==========
-                # 查找/创建订单（status=1：待付款）
-                order = Order.objects.filter(user=request.user, status=1).first()
-                if order:
-                    # 更新现有订单：先保存，确保主键存在
-                    order.address = address
-                    order.total_price = total_price
-                    order.save()  # 强制保存，更新主键（即使是现有订单，也确保状态同步）
-                    logger.info(f"更新现有订单：order_id={order.id}, order_sn={order.order_sn}")
-                    # 删除旧的订单明细（避免重复）
-                    OrderItem.objects.filter(order=order).delete()
-                    msg = "订单已更新"
-                else:
-                    # 新建订单：create方法会自动保存并生成主键
-                    order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
-                    order = Order.objects.create(
-                        user=request.user,
-                        order_sn=order_sn,
-                        address=address,
-                        total_price=total_price,
-                        status=1  # 1=待付款
-                    )
-                    logger.info(f"创建新订单：order_id={order.id}, order_sn={order_sn}")
-                    msg = "下单成功"
+                # 4. 生成唯一订单编号（确保不重复）
+                order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+                # 5. 强制创建新订单（不再复用旧订单）
+                order = Order.objects.create(
+                    user=request.user,
+                    order_sn=order_sn,
+                    address=address,
+                    total_price=total_price,
+                    status=1  # 1=待付款
+                )
+                logger.info(f"创建新订单：order_id={order.id}, order_sn={order_sn}")
+                msg = "下单成功"
 
-                # ========== 核心修改3：安全创建OrderItem（增加异常捕获） ==========
-                # 验证Order主键存在（兜底校验）
+                # ========== 核心修改3：保留订单项创建逻辑（无需删除旧项） ==========
+                # 验证Order主键存在
                 if not order.pk:
                     raise Exception("订单创建失败，未生成主键ID")
 
@@ -927,9 +946,9 @@ class OrderAddView(APIView):
                     if goods.stock < num:
                         raise Exception(f"商品库存不足：{goods.name}（库存{goods.stock}，需{num}）")
 
-                    # 创建订单明细（此时order已有主键，可安全关联）
+                    # 创建新订单项（关联新订单，不影响旧订单）
                     OrderItem.objects.create(
-                        order=order,  # ✅ 此时order.pk已存在
+                        order=order,
                         goods=goods,
                         num=num,
                         price=cart.goods.member_price,
@@ -938,15 +957,16 @@ class OrderAddView(APIView):
                         goods_specs=goods.specs,
                         total_price=num * cart.goods.member_price
                     )
+                    # 可选：标记购物车商品关联的订单（不影响历史订单）
                     cart.order = order
                     cart.save()
                     goods_names.append(goods.name)
                     total_count += num
 
-                # 更新订单的冗余字段（商品名称、数量）
+                # 更新订单的冗余字段
                 order.goods_names = "、".join(goods_names)
                 order.goods_count = total_count
-                order.save()  # 再次保存，确保冗余字段生效
+                order.save()
 
             # 返回成功响应
             return Response({
@@ -962,7 +982,7 @@ class OrderAddView(APIView):
             })
 
         except Exception as e:
-            logger.error(f"下单失败：{str(e)}", exc_info=True)  # 打印完整异常栈
+            logger.error(f"下单失败：{str(e)}", exc_info=True)
             return Response({"code": 500, "msg": f"操作失败: {str(e)}"})
 
 # 示例：订单列表视图中获取产品名称

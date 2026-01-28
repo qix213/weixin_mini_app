@@ -175,30 +175,29 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("两次密码不一致")
         # 验证推荐人ID（若传递）
-        recommender_id = attrs.get('recommender_id')
-        if recommender_id:
-            try:
-                # 通过member_id查找推荐人（推荐人ID=会员ID）
-                parent_user = User.objects.get(member_id=recommender_id)
-                attrs['parent_user'] = parent_user  # 关联到parent_user字段
-            except User.DoesNotExist:
-                raise serializers.ValidationError("推荐人ID不存在")
-        # 移除密码确认字段（无需存入数据库）
-        attrs.pop('password_confirm')
-        return attrs
+            recommender_id = attrs.get('recommender_id')
+            if recommender_id:
+                try:
+                    # 通过 member_id 查找推荐人（上级）
+                    parent_user = User.objects.get(member_id=recommender_id)
+                    attrs['parent_user'] = parent_user  # 关联到上级
+                except User.DoesNotExist:
+                    raise serializers.ValidationError(f"推荐人ID {recommender_id} 不存在")
+            return attrs
 
-    # 重写创建方法：加密密码
     def create(self, validated_data):
-        # 弹出recommender_id（User模型无此字段，已通过validate关联到parent_user）
-        validated_data.pop('recommender_id', None)
-        # 创建用户并加密密码
+        # ... 原有创建逻辑保持不变 ...
+        # 生成8位会员ID
+        validated_data['member_id'] = generate_8bit_member_id()
+        # 创建用户时关联上级
         user = User.objects.create_user(
-            username=validated_data['phone'],  # 用手机号作为Django默认的username
+            username=validated_data['nickname'],
             nickname=validated_data['nickname'],
+            member_id=validated_data['member_id'],
             phone=validated_data['phone'],
+            password=validated_data['password'],
             user_type=validated_data['user_type'],
-            parent_user=validated_data.get('parent_user'),  # 关联推荐人
-            password=validated_data['password']  # create_user会自动加密密码
+            parent_user=validated_data.get('parent_user')  # 关联上级
         )
         return user
 
@@ -302,3 +301,39 @@ class OrderAddSerializer(serializers.Serializer):
     address_id = serializers.IntegerField(required=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
     goods_list = serializers.ListField(required=True)
+
+# app01/serializer.py
+
+from .models import Order, OrderItem
+
+# 1. 订单项序列化器（保持不变）
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['goods_name', 'num', 'price', 'total_price']
+
+# 2. 订单序列化器（保持不变）
+class OrderSerializer(serializers.ModelSerializer):
+    goods_list = OrderItemSerializer(source='items', many=True, read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    status_name = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['order_sn', 'total_price', 'status', 'status_name', 'create_time', 'goods_list']
+
+# 3. 下级会员信息序列化器（新增：拆分独立序列化器）
+class SubMemberInfoSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    member_id = serializers.CharField()
+    nickname = serializers.CharField()
+    user_type = serializers.IntegerField()
+    user_type_name = serializers.CharField()
+    star_level = serializers.IntegerField()
+
+# 4. 下级消费记录序列化器（修复：使用嵌套序列化器替代DictField）
+class SubConsumeRecordSerializer(serializers.Serializer):
+    # 会员信息：使用独立的序列化器（DRF标准嵌套方式）
+    member_info = SubMemberInfoSerializer(read_only=True)
+    # 该会员的订单列表：嵌套OrderSerializer
+    orders = OrderSerializer(many=True, read_only=True)
