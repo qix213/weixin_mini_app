@@ -209,3 +209,54 @@ page {
   font-size: 24rpx;
   color: #999;
 }
+
+/* 会员等级标签 */
+.level-tag {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  padding: 5rpx 10rpx;
+  border-radius: 4rpx;
+  font-size: 24rpx;
+  color: #fff;
+}
+/* 有权限的标签样式 */
+.level-allowed {
+  background: #07c160;
+}
+/* 无权限的标签样式 */
+.level-forbidden {
+  background: #ff4757;
+}
+/* 视频信息中的等级提示 */
+.required-level {
+  font-size: 24rpx;
+  color: #999;
+  margin-right: 20rpx;
+}
+/* 自定义导航栏（修复右上角显示） */
+.custom-nav {
+  width: 100%;
+  height: 45px;
+  line-height: 45px;
+  background-color: #1677ff;
+  color: #fff;
+  text-align: center;
+  font-size: 17px;
+  position: relative;
+}
+.nav-title {
+  display: inline-block;
+}
+.nav-right {
+  position: absolute;
+  right: 15px;
+  top: 0;
+}
+
+/* 原有样式保留 */
+.business-school {
+  padding: 10rpx;
+  background: #f5f5f5;
+}
+/* 其他原有样式... */

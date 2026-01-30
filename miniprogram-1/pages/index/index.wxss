@@ -34,12 +34,12 @@ page {
   flex: 1; /* 占满除Logo和登录按钮外的空间 */
 }
 .banner-text .greeting {
-  font-size: 36rpx;
+  font-size: 40rpx;
   font-weight: 600;
   display: block;
 }
 .banner-text .welcome {
-  font-size: 26rpx;
+  font-size: 30rpx;
   opacity: 0.8;
 }
 
@@ -53,7 +53,7 @@ page {
 
 /* 右上角登录按钮 */
 .login-btn {
-  font-size: 26rpx;
+  font-size: 30rpx;
   color:  rgb(35, 123, 158);
   padding: 8rpx 16rpx;
   border: 2rpx solid rgba(255,255,255,0.8);
@@ -62,7 +62,7 @@ page {
 }
 
 .register-btn {
-  font-size: 26rpx;
+  font-size: 30rpx;
   color: rgb(35, 123, 158);
   padding: 8rpx 16rpx;
   border: 2rpx solid rgba(255,255,255,0.8);
@@ -78,7 +78,9 @@ page {
 /* 未登录：登录/注册按钮组 */
 .login-register-btn-group {
   display: flex;
-  gap: 2rpx;
+  flex-direction: row; /* 改为横向排列（关键） */
+  gap: 8rpx; /* 按钮之间的小间距 */
+  align-items:self-start; /* 垂直居中 */
 }
 /* 功能按钮组（匹配截图样式） */
 .banner-btn-group {
@@ -102,17 +104,7 @@ page {
   border-radius: 8rpx;
 }
 
-/* 原有按钮样式（可按需调整） */
-.login-register-btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-  margin-top: 10rpx;
-}
-.login-btn, .register-btn {
-  font-size: 28rpx;
-  padding: 10rpx 20rpx;
-}
+
 .btn {
   width: 280rpx;
   height: 80rpx;

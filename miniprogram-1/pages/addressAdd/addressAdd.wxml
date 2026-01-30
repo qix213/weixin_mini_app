@@ -1,2 +1,63 @@
-<!--pages/addressAdd/addressAdd.wxml-->
-<text>pages/addressAdd/addressAdd.wxml</text>
+<form bindsubmit="saveAddress">
+  <view class="form-box" style="padding: 20rpx;">
+    <view class="row" style="display: flex; margin-bottom: 30rpx; align-items: center;">
+      <text style="width: 120rpx; font-size: 28rpx;">收货人</text>
+      <input 
+        name="name" 
+        placeholder="请填写收货人姓名" 
+        placeholder-style="color:#ccc;" 
+        style="flex:1; padding: 10rpx; border: 1rpx solid #eee; border-radius: 8rpx;"
+        value="{{formData.name}}"
+        data-name="name"
+        bindinput="onInputChange"
+      />
+    </view>
+    
+    <view class="row" style="display: flex; margin-bottom: 30rpx; align-items: center;">
+      <text style="width: 120rpx; font-size: 28rpx;">手机号码</text>
+      <input 
+        name="phone" 
+        type="number" 
+        maxlength="11" 
+        placeholder="请填写手机号码" 
+        placeholder-style="color:#ccc;"
+        style="flex:1; padding: 10rpx; border: 1rpx solid #eee; border-radius: 8rpx;"
+        value="{{formData.phone}}"
+        data-name="phone"
+        bindinput="onInputChange"
+      />
+    </view>
+    
+    <view class="row" style="display: flex; margin-bottom: 30rpx; align-items: center;">
+      <text style="width: 120rpx; font-size: 28rpx;">所在地区</text>
+      <picker mode="region" bindchange="bindRegionChange" value="{{region}}">
+        <view class="picker-text" style="flex:1; padding: 10rpx; border: 1rpx solid #eee; border-radius: 8rpx;">
+          {{region[0]}} {{region[1]}} {{region[2]}}
+        </view>
+      </picker>
+    </view>
+    
+    <view class="row" style="display: flex; margin-bottom: 30rpx; align-items: flex-start;">
+      <text style="width: 120rpx; font-size: 28rpx; margin-top:10rpx;">详细地址</text>
+      <textarea 
+        name="detail" 
+        placeholder="街道、楼牌号等" 
+        placeholder-style="color:#ccc;"
+        style="flex:1; padding: 10rpx; border: 1rpx solid #eee; border-radius: 8rpx; min-height: 120rpx;"
+        value="{{formData.detail}}"
+        data-name="detail"
+        bindinput="onInputChange"
+      ></textarea>
+    </view>
+  </view>
+
+  <view class="save-btn-wrap" style="padding: 20rpx;">
+    <button 
+      form-type="submit" 
+      class="save-btn"
+      style="background: #1E88E5; color: #fff; border-radius: 8rpx; height: 80rpx; line-height: 80rpx; font-size: 30rpx;"
+    >
+      {{addressId ? '修改地址' : '保存地址'}}
+    </button>
+  </view>
+</form>

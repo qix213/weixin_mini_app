@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Collection,Category, Goods,
-CourseCategory, VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
+ VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
                      Address, Order)
 
 admin.site.register(Welcome)
@@ -14,7 +14,6 @@ admin.site.register(Area)
 admin.site.register(Collection)
 admin.site.register(Category)
 admin.site.register(Goods)
-admin.site.register(CourseCategory)
 admin.site.register(VideoCourse)
 admin.site.register(StudyCheckIn)
 admin.site.register(ExamQuestion)

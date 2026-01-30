@@ -74,3 +74,35 @@ page {
   color: #999;
   font-size: 28rpx;
 }
+
+/* 所有会员总消费栏 */
+.total-all-bar {
+  padding: 10rpx 20rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  margin-bottom: 10rpx;
+}
+.total-all-label {
+  font-size: 28rpx;
+  color: #333;
+}
+.total-all-amount {
+  font-size: 30rpx;
+  color: #e64340;
+  font-weight: bold;
+  margin-left: 10rpx;
+}
+
+/* 会员项外层包裹（每个会员独立） */
+.member-item-wrapper {
+  margin-bottom: 15rpx;
+  border: 1px solid #eee;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+/* 原有样式保留，仅补充 */
+.consume-detail {
+  background: #fafafa;
+  padding: 15rpx;
+}

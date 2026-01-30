@@ -1,31 +1,73 @@
-<form bindsubmit="saveAddress">
-  <view class="form-box">
-    <view class="row">
-      <text>收货人</text>
-      <input name="name" placeholder="请填写收货人姓名" placeholder-style="color:#ccc;" />
-    </view>
-    
-    <view class="row">
-      <text>手机号码</text>
-      <input name="phone" type="number" maxlength="11" placeholder="请填写手机号码" placeholder-style="color:#ccc;" />
-    </view>
-    
-    <view class="row">
-      <text>所在地区</text>
-      <picker mode="region" bindchange="bindRegionChange" value="{{region}}">
-        <view class="picker-text">
-          {{region[0]}} {{region[1]}} {{region[2]}}
-        </view>
-      </picker>
-    </view>
-    
-    <view class="row" style="align-items: flex-start;">
-      <text style="margin-top:10rpx;">详细地址</text>
-      <textarea name="detail" placeholder="街道、楼牌号等" placeholder-style="color:#ccc;"></textarea>
+<view class="address-container">
+  <!-- 新增地址按钮 -->
+  <view class="add-btn" bindtap="goToAddAddress">
+    <text>+ 添加新地址</text>
+  </view>
+
+  <!-- 地址列表 -->
+  <view class="address-list" wx:if="{{addressList.length > 0}}">
+    <view 
+      class="address-item" 
+      wx:for="{{addressList}}" 
+      wx:key="id"
+    >
+      <!-- 默认地址标签 -->
+      <view class="default-tag" wx:if="{{item.is_default}}">
+        默认
+      </view>
+
+      <!-- 地址信息 -->
+      <view class="info-row">
+        <text>{{item.name}}</text>
+        <text class="phone">{{item.phone}}</text>
+      </view>
+      <view class="address-row">
+        {{item.address}} {{item.detail_address}}
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="btn-group">
+        <button 
+          size="mini" 
+          bindtap="goToEditAddress"
+          data-addressid="{{item.id}}"
+          style="color: #1E88E5; border: 1rpx solid #1E88E5; background: #fff;"
+        >
+          编辑
+        </button>
+        <!-- 核心修复：第42行 style 语法错误 -->
+        <button 
+          size="mini" 
+          bindtap="setDefaultAddress"
+          data-addressid="{{item.id}}"
+          style="{{item.is_default ? 'color: #999; border: 1rpx solid #999; background: #fff;' : 'color: #1E88E5; border: 1rpx solid #1E88E5; background: #fff;'}}"
+          disabled="{{item.is_default}}"
+        >
+          {{item.is_default ? '已默认' : '设为默认'}}
+        </button>
+        <button 
+          size="mini" 
+          bindtap="deleteAddress"
+          data-addressid="{{item.id}}"
+          style="color: #f00; border: 1rpx solid #f00; background: #fff;"
+        >
+          删除
+        </button>
+      </view>
+
+      <!-- 选择地址按钮 -->
+      <button 
+        class="select-btn"
+        bindtap="selectAddress"
+        data-address="{{item}}"
+      >
+        选择此地址
+      </button>
     </view>
   </view>
 
-  <view class="save-btn-wrap">
-    <button form-type="submit" class="save-btn">保存并使用</button>
+  <!-- 空地址提示 -->
+  <view class="empty-tip" wx:else>
+    <text>暂无收货地址，点击添加</text>
   </view>
-</form>
+</view>

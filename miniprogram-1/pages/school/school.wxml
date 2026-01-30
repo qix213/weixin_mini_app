@@ -1,16 +1,17 @@
 <view class="business-school">
-  <!-- 原生搜索栏 -->
+  <!-- 搜索栏 -->
   <view class="search-bar">
     <view class="search-input-wrap">
       <icon type="search" size="16" color="#fff" class="search-icon"></icon>
-      <input type="text" placeholder="搜索课程/视频关键词" placeholder-class="search-placeholder" value="{{searchValue}}"
-        bindinput="onSearchChange" confirm-type="search" bindconfirm="onSearch" class="search-input" />
+      <input type="text" placeholder="搜索课程/视频关键词" placeholder-class="search-placeholder" 
+             value="{{searchValue}}" bindinput="onSearchChange" confirm-type="search" 
+             bindconfirm="onSearch" class="search-input" />
       <text bindtap="clearSearch" wx:if="{{searchValue}}" class="clear-icon">×</text>
     </view>
     <button bindtap="onSearch" class="search-btn">搜索</button>
   </view>
 
-  <!-- 核心功能入口（原生按钮） -->
+  <!-- 功能入口 -->
   <view class="func-group">
     <button bindtap="toCourseStudy" class="func-btn primary-btn">课程学习</button>
     <button bindtap="toCheckInList" class="func-btn primary-btn">学习打卡</button>
@@ -18,50 +19,51 @@
     <button bindtap="toCertification" class="func-btn warning-btn">线下认证</button>
   </view>
 
-  <!-- 课程分类标签（原生滚动标签） -->
+  <!-- 分类标签 -->
   <view class="category-wrap">
     <scroll-view scroll-x="true" class="category-scroll">
-      <view class="category-item {{activeTab === index ? 'active' : ''}}" wx:for="{{categoryList}}" wx:key="index"
-        bindtap="onTabChange" data-index="{{index}}">
+      <view class="category-item {{activeTab === index ? 'active' : ''}}" 
+            wx:for="{{categoryList}}" wx:key="index"
+            bindtap="onTabChange" data-index="{{index}}">
         {{item}}
       </view>
     </scroll-view>
   </view>
 
-  <!-- 视频课程列表（纯原生） -->
+  <!-- 视频列表：展示所有加载的视频（无等级过滤） -->
   <view class="video-list">
-    <!-- 加载骨架屏（原生模拟） -->
+    <!-- 加载骨架屏 -->
     <view class="skeleton-item" wx:if="{{loading && videoList.length === 0}}" wx:for="3" wx:key="index">
       <view class="skeleton-thumb"></view>
       <view class="skeleton-title"></view>
       <view class="skeleton-desc"></view>
     </view>
 
-    <!-- 视频列表项（原生卡片） -->
+    <!-- 所有视频都展示，包括等级不足的 -->
     <view class="video-card" wx:for="{{videoList}}" wx:key="id" bindtap="toVideoPlay" data-id="{{item.id}}">
       <image class="video-thumb" src="{{item.cover_url}}" mode="aspectFill"></image>
       <view class="video-info">
         <view class="video-title">{{item.title}}</view>
-        <view class="video-desc">分类：{{item.category_name}} | {{item.duration}} 秒</view>
+        <view class="video-desc">时长：{{item.duration}} | 播放 {{item.play_count}} 次</view>
         <view class="video-footer">
-          <text class="play-count">播放 {{item.play_count}} 次</text>
-          <button bindtap="toStudy" data-id="{{item.id}}" catchtap="true" class="study-btn">立即学习</button>
+          <text class="required-level">需{{item.required_level_name}}及以上等级</text>
+          <button bindtap="toVideoPlay" data-id="{{item.id}}" catchtap="true" class="study-btn">立即学习</button>
         </view>
       </view>
     </view>
 
-    <!-- 空数据提示（原生） -->
+    <!-- 空数据提示 -->
     <view class="empty-tip" wx:if="{{!loading && videoList.length === 0}}">
       <image src="/images/icont/empty.png" class="empty-img" mode="widthFix"></image>
       <text class="empty-text">暂无相关课程</text>
     </view>
 
-    <!-- 加载更多提示（原生） -->
+    <!-- 加载更多 -->
     <view class="load-more" wx:if="{{loading && videoList.length > 0}}">
       <text>加载中...</text>
     </view>
 
-    <!-- 没有更多数据提示（原生） -->
+    <!-- 无更多数据 -->
     <view class="no-more" wx:if="{{finished && videoList.length > 0}}">
       <text>没有更多课程了</text>
     </view>

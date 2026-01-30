@@ -105,7 +105,7 @@ if (res.data.access && res.data.refresh) {
   // SimpleJWT 默认返回：access（访问Token）、refresh（刷新Token）
   const accessToken = res.data.access;
   const refreshToken = res.data.refresh;
-  
+
   // 修复：存储到storage的正确字段（和app.js onLaunch对应）
   wx.setStorageSync('accessToken', accessToken); // 关键！之前存的是token，现在改accessToken
   wx.setStorageSync('refreshToken', refreshToken);

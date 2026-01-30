@@ -11,80 +11,89 @@
 
   <!-- 第一层：会员列表（显示真实会员信息） -->
   <view class="member-list" wx:if="{{!loading && memberList.length > 0}}">
-    <view class="member-item" wx:for="{{memberList}}" wx:key="id" bindtap="onMemberClick" data-member-id="{{item.id}}">
-      <!-- 会员基本信息（横向排版更紧凑） -->
-      <view class="member-info flex-row">
-        <view class="member-main">
-          <text class="member-nickname">{{item.nickname}}</text>
-          <text class="member-code" wx:if="{{item.member_code}}">【{{item.member_code}}】</text>
-          <text class="member-level"> | {{item.level_name}}（星级：{{item.star_level}}）</text>
-        </view>
-        <view class="member-total">
-          <text>合计消费：¥{{item.totalConsume}}</text>
-        </view>
-      </view>
-      <!-- 展开/收起图标 -->
-      <view class="toggle-icon">
-        <text>{{currentMemberId === item.id ? '▼' : '▶'}}</text>
-      </view>
+    <!-- 新增：所有会员总消费展示 -->
+    <view class="total-all-bar">
+      <text class="total-all-label">所有推荐会员合计消费：</text>
+      <text class="total-all-amount">¥{{totalAllConsume}}</text>
     </view>
 
-    <!-- 第二层：当前选中会员的详细消费记录（默认收起） -->
-    <view class="consume-detail" wx:if="{{currentMemberId}}">
-      <!-- 选中会员的合计金额 -->
-      <view class="total-consume-bar">
-        <text class="total-label">【{{currentMemberInfo.nickname || '未知会员'}}】 消费明细</text>
-        <text class="total-amount">合计：¥{{currentMemberInfo.totalConsume || 0}}</text>
-      </view>
-
-      <!-- 该会员的消费记录列表（表格布局） -->
-      <view class="consume-list" wx:if="{{currentMemberInfo.consumeRecords.length > 0}}">
-        <!-- 订单列表循环 -->
-        <view class="order-item" wx:for="{{currentMemberInfo.consumeRecords || []}}" wx:key="id">
-          <!-- 订单头部（表格标题行） -->
-          <view class="order-header table-header flex-row">
-            <view class="col-sn">订单编号</view>
-            <view class="col-date">下单时间</view>
-            <view class="col-status">订单状态</view>
-            <view class="col-total">订单金额</view>
+    <!-- 会员列表循环（每个会员独立，下拉仅显示自身详情） -->
+    <view wx:for="{{memberList}}" wx:key="id" class="member-item-wrapper">
+      <!-- 会员基本信息行（点击展开/收起自身详情） -->
+      <view class="member-item flex-row" bindtap="onMemberClick" data-member-id="{{item.id}}">
+        <view class="member-info flex-row">
+          <view class="member-main">
+            <text class="member-nickname">{{item.nickname}}</text>
+            <text class="member-code" wx:if="{{item.member_code}}">【{{item.member_code}}】</text>
+            <text class="member-level"> | {{item.level_name}}（星级：{{item.star_level}}）</text>
           </view>
-          <!-- 订单内容行 -->
-          <view class="order-content flex-row">
-            <view class="col-sn">{{item.order_sn}}</view>
-            <view class="col-date">{{item.create_time}}</view>
-            <view class="col-status">{{item.status_name || '未知状态'}}</view>
-            <view class="col-total">¥{{item.total_price}}</view>
+          <view class="member-total">
+            <!-- 单个会员的消费合计（保留） -->
+            <text>个人消费：¥{{item.totalConsume}}</text>
           </view>
-
-          <!-- 商品明细表格（带表头） -->
-          <view class="goods-table" wx:if="{{item.goods.length > 0}}">
-            <view class="goods-header table-header flex-row">
-              <view class="col-goods">商品名称</view>
-              <view class="col-count">数量</view>
-              <view class="col-price">单价</view>
-              <view class="col-subtotal">小计</view>
-            </view>
-            <view class="goods-body">
-              <view class="goods-item flex-row" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="goods_name">
-                <view class="col-goods">{{goods.goods_name}}</view>
-                <view class="col-count">{{goods.num}}</view>
-                <view class="col-price">¥{{goods.price}}</view>
-                <view class="col-subtotal">¥{{goods.total_price}}</view>
-              </view>
-            </view>
-          </view>
-          <!-- 无商品提示 -->
-          <view class="no-goods" wx:else>
-            <text>暂无商品信息</text>
-          </view>
-
-          <!-- 订单分隔线 -->
-          <view class="order-divider"></view>
+        </view>
+        <view class="toggle-icon">
+          <text>{{currentMemberId === item.id ? '▼' : '▶'}}</text>
         </view>
       </view>
-      <!-- 无订单提示 -->
-      <view class="empty-order" wx:else>
-        <text>该会员暂无订单记录</text>
+
+      <!-- 该会员的详情（仅当前选中时显示，每个会员独立） -->
+      <view class="consume-detail" wx:if="{{currentMemberId === item.id}}">
+        <!-- 选中会员的个人合计金额 -->
+        <view class="total-consume-bar">
+          <text class="total-label">【{{item.nickname || '未知会员'}}】 消费明细</text>
+          <text class="total-amount">个人合计：¥{{item.totalConsume || 0}}</text>
+        </view>
+
+        <!-- 该会员的消费记录列表（表格布局） -->
+        <view class="consume-list" wx:if="{{item.consumeRecords.length > 0}}">
+          <!-- 订单列表循环 -->
+          <view class="order-item" wx:for="{{item.consumeRecords || []}}" wx:key="id">
+            <!-- 订单头部（表格标题行） -->
+            <view class="order-header table-header flex-row">
+              <view class="col-sn">订单编号</view>
+              <view class="col-date">下单时间</view>
+              <view class="col-status">订单状态</view>
+              <view class="col-total">订单金额</view>
+            </view>
+            <!-- 订单内容行 -->
+            <view class="order-content flex-row">
+              <view class="col-sn">{{item.order_sn}}</view>
+              <view class="col-date">{{item.create_time}}</view>
+              <view class="col-status">{{item.status_name || '未知状态'}}</view>
+              <view class="col-total">¥{{item.total_price}}</view>
+            </view>
+
+            <!-- 商品明细表格（带表头） -->
+            <view class="goods-table" wx:if="{{item.goods.length > 0}}">
+              <view class="goods-header table-header flex-row">
+                <view class="col-goods">商品名称</view>
+                <view class="col-count">数量</view>
+                <view class="col-price">单价</view>
+                <view class="col-subtotal">小计</view>
+              </view>
+              <view class="goods-body">
+                <view class="goods-item flex-row" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="goods_name">
+                  <view class="col-goods">{{goods.goods_name}}</view>
+                  <view class="col-count">{{goods.num}}</view>
+                  <view class="col-price">¥{{goods.price}}</view>
+                  <view class="col-subtotal">¥{{goods.total_price}}</view>
+                </view>
+              </view>
+            </view>
+            <!-- 无商品提示 -->
+            <view class="no-goods" wx:else>
+              <text>暂无商品信息</text>
+            </view>
+
+            <!-- 订单分隔线 -->
+            <view class="order-divider"></view>
+          </view>
+        </view>
+        <!-- 无订单提示 -->
+        <view class="empty-order" wx:else>
+          <text>该会员暂无订单记录</text>
+        </view>
       </view>
     </view>
   </view>

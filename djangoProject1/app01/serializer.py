@@ -65,23 +65,16 @@ class RecipientSerializer(serializers.ModelSerializer):
             'address': {'required': True}
         }
 
-from .models import CourseCategory, VideoCourse
-
-# 课程分类序列化器
-class CourseCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CourseCategory
-        fields = "__all__"
-
+from .models import VideoCourse
 # 视频课程序列化器
 class VideoCourseSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    required_level_name = serializers.CharField(source='get_required_level_display', read_only=True)
     cover_url = serializers.SerializerMethodField()
     video_url = serializers.SerializerMethodField()
 
     class Meta:
         model = VideoCourse
-        fields = ['id', 'title', 'category', 'category_name', 'cover_url', 'video_url', 'duration', 'play_count',
+        fields = ['id', 'title', 'required_level', 'required_level_name', 'cover_url', 'video_url', 'duration', 'play_count',
                   'desc', 'create_time']
 
     # 拼接完整图片URL
@@ -142,9 +135,12 @@ class BenefitSerializer(serializers.Serializer):
     benefits = serializers.ListField(child=serializers.CharField())
 
 
-# 3. 注册序列化器（动态验证字段）
+# app01/serializer.py（仅保留修复后的 RegisterSerializer 核心部分，其他序列化器不变）
+from django.contrib.auth import get_user_model
 import random
 import string
+
+User = get_user_model()
 
 
 # 生成8位会员ID（数字+字母）
@@ -167,55 +163,52 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['nickname', 'phone', 'password', 'password_confirm', 'user_type', 'recommender_id']
         extra_kwargs = {
             'password': {'write_only': True},  # 密码仅写入，不返回
-            'user_type': {'required': True}     # 会员/开店类型必传
+            'user_type': {'required': True}  # 会员/开店类型必传
         }
 
-    # 验证密码一致性
+    # 验证密码一致性 + 推荐人ID（核心修复：缩进+返回逻辑）
     def validate(self, attrs):
+        # 1. 校验两次密码是否一致
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("两次密码不一致")
-        # 验证推荐人ID（若传递）
-            recommender_id = attrs.get('recommender_id')
-            if recommender_id:
-                try:
-                    # 通过 member_id 查找推荐人（上级）
-                    parent_user = User.objects.get(member_id=recommender_id)
-                    attrs['parent_user'] = parent_user  # 关联到上级
-                except User.DoesNotExist:
-                    raise serializers.ValidationError(f"推荐人ID {recommender_id} 不存在")
-            return attrs
 
+        # 2. 验证推荐人ID（若传递了非空值）
+        recommender_id = attrs.get('recommender_id', '').strip()
+        if recommender_id:  # 仅当推荐人ID非空时校验
+            try:
+                # 通过 member_id 查找推荐人（上级）
+                parent_user = User.objects.get(member_id=recommender_id)
+                attrs['parent_user'] = parent_user  # 关联到上级
+            except User.DoesNotExist:
+                raise serializers.ValidationError(f"推荐人ID {recommender_id} 不存在")
+
+        # ========== 核心：必须返回校验后的 attrs ==========
+        # 移除确认密码（不需要存入数据库）
+        attrs.pop('password_confirm')
+        return attrs
+
+    # 修复：仅保留一个 create 方法（合并原有逻辑）
     def create(self, validated_data):
-        # ... 原有创建逻辑保持不变 ...
         # 生成8位会员ID
         validated_data['member_id'] = generate_8bit_member_id()
-        # 创建用户时关联上级
+
+        # 移除 parent_user（避免 create_user 接收未知参数）
+        parent_user = validated_data.pop('parent_user', None)
+
+        # 创建用户（密码自动加密）
         user = User.objects.create_user(
-            username=validated_data['nickname'],
+            username=validated_data['nickname'],  # 复用username字段（Django auth要求）
             nickname=validated_data['nickname'],
             member_id=validated_data['member_id'],
             phone=validated_data['phone'],
             password=validated_data['password'],
-            user_type=validated_data['user_type'],
-            parent_user=validated_data.get('parent_user')  # 关联上级
+            user_type=validated_data['user_type']
         )
-        return user
 
-    def create(self, validated_data):
-        # 生成8位会员ID
-        validated_data['member_id'] = generate_8bit_member_id()
-        # 密码加密（Django AbstractUser 自带）
-        user = User.objects.create_user(
-            username=validated_data['nickname'],  # 复用username字段
-            nickname=validated_data['nickname'],
-            member_id=validated_data['member_id'],
-            phone=validated_data['phone'],
-            password=validated_data['password'],
-            user_type=validated_data['user_type'],
-            parent_user=validated_data.get('parent_user')  # 推荐人可为None
-        )
-        # ========== 核心修改3：删除生成推荐码的逻辑（不需要推荐码） ==========
-        # user.generate_recommend_code()  # 注释/删除这行
+        # 关联推荐人（上级）
+        if parent_user:
+            user.parent_user = parent_user
+            user.save()
 
         return user
 
@@ -290,13 +283,10 @@ class MemberInfoSerializer(serializers.ModelSerializer):
 from .models import Address
 
 class AddressSerializer(serializers.ModelSerializer):
-    # user 由 request.user 提供，设为只读
-    user = serializers.ReadOnlyField(source='user.username')
-
     class Meta:
         model = Address
-        fields = ['id', 'user', 'name', 'phone', 'address', 'detail_address', 'create_time']
-
+        fields = ['id', 'name', 'phone', 'province', 'city', 'district', 'address', 'detail', 'is_default', 'user']
+        read_only_fields = ['user']  # 仅限制user字段只读，无其他验证
 class OrderAddSerializer(serializers.Serializer):
     address_id = serializers.IntegerField(required=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)

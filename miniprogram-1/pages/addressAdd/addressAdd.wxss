@@ -1,1 +1,62 @@
-/* pages/addressAdd/addressAdd.wxss */
+/* 表单容器 */
+.form-box {
+  padding: 20rpx;
+  background-color: #fff;
+  margin-bottom: 20rpx;
+}
+
+/* 表单行 */
+.row {
+  display: flex;
+  margin-bottom: 30rpx;
+  align-items: center;
+}
+
+.row text {
+  width: 120rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 输入框/选择器样式 */
+.row input, .row .picker-text, .row textarea {
+  flex: 1;
+  padding: 15rpx;
+  border: 1rpx solid #eee;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.row textarea {
+  min-height: 120rpx;
+  align-self: flex-start;
+  line-height: 1.4;
+  padding: 15rpx;
+}
+
+/* 选择器文本 */
+.row .picker-text {
+  color: #666;
+  background-color: #f9f9f9;
+}
+
+/* 保存按钮容器 */
+.save-btn-wrap {
+  padding: 20rpx;
+}
+
+/* 保存按钮 */
+.save-btn {
+  background: #1E88E5;
+  color: #fff;
+  border-radius: 8rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 30rpx;
+  border: none;
+}
+
+.save-btn::after {
+  border: none;
+}

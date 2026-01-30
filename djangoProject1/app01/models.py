@@ -132,31 +132,10 @@ class Goods(models.Model):
 
 from django.contrib.auth.models import User
 
-# 课程分类模型
-
-class CourseCategory(models.Model):
-    # 自定义主键：IntegerField + primary_key=True + auto_created=False（关闭自增）
-    id = models.IntegerField(
-        primary_key=True,  # 设为主键
-        auto_created=False,  # 关闭自动生成（手动输入ID）
-        verbose_name="分类ID"
-    )
-    name = models.CharField(max_length=50, verbose_name="分类名称")
-    desc = models.CharField(max_length=200, blank=True, null=True, verbose_name="分类描述")
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-
-    class Meta:
-        verbose_name = "课程分类"
-        verbose_name_plural = verbose_name
-        ordering = ['id']
-
-    def __str__(self):
-        return self.name
-
 # 视频课程模型
 class VideoCourse(models.Model):
     title = models.CharField(max_length=100, verbose_name="课程标题")
-    category = models.ForeignKey(CourseCategory, on_delete=models.CASCADE, verbose_name="课程分类")
+    # category = models.ForeignKey(CourseCategory, on_delete=models.CASCADE, verbose_name="课程分类")
     cover_url = models.ImageField(upload_to='course/cover/', verbose_name="封面图片")
     video_url = models.FileField(upload_to='course/video/', verbose_name="视频文件")
     duration = models.CharField(max_length=20, verbose_name="视频时长")  # 如：05:30
@@ -165,7 +144,19 @@ class VideoCourse(models.Model):
     is_publish = models.BooleanField(default=True, verbose_name="是否发布")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-
+    # 新增：观看该视频的最低会员等级（关联User的user_type）
+    REQUIRED_LEVEL_CHOICES = (
+        (1, "蓝朋友"),
+        (2, "蓝明星"),
+        (3, "护肤私教"),
+        (4, "MINI-studio 主理人"),
+        (5, "Ta创+"),
+    )
+    required_level = models.IntegerField(
+        choices=REQUIRED_LEVEL_CHOICES,
+        default=1,
+        verbose_name="最低观看会员等级"
+    )
     class Meta:
         verbose_name = "视频课程"
         verbose_name_plural = verbose_name
@@ -458,18 +449,27 @@ class Recipient(models.Model):
         verbose_name_plural = verbose_name
 
 # 收货地址模型
+# app01/models.py
 class Address(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
-    name = models.CharField(max_length=50, verbose_name="收货人")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="关联用户")
+    name = models.CharField(max_length=50, verbose_name="收件人姓名")
     phone = models.CharField(max_length=11, verbose_name="手机号")
-    address = models.CharField(max_length=255, verbose_name="省市区地址")
-    detail_address = models.CharField(max_length=255, verbose_name="详细地址")
+    province = models.CharField(max_length=20, blank=True, null=True, verbose_name="省份")  # 新增
+    city = models.CharField(max_length=20, blank=True, null=True, verbose_name="城市")      # 新增
+    district = models.CharField(max_length=20, blank=True, null=True, verbose_name="区县")  # 新增
+    address = models.CharField(max_length=200, verbose_name="省市区拼接")                 # 原有的拼接字段
+    detail = models.CharField(max_length=200, verbose_name="详细地址")                    # 核心：确保字段名是detail
+    is_default = models.BooleanField(default=False, verbose_name="是否默认地址")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 
     class Meta:
         verbose_name = "收货地址"
         verbose_name_plural = "收货地址"
+        ordering = ["-update_time"]  # 按更新时间倒序
 
+    def __str__(self):
+        return f"{self.name} - {self.address}{self.detail_address}"
 
 # 订单主表
 class Order(models.Model):

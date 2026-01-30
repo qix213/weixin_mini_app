@@ -3,9 +3,10 @@ Page({
     loading: true,
     consumeList: [], // 原始消费记录列表（备用）
     memberList: [], // 分组后的会员列表（真实会员信息）
-    currentMemberId: '', // 当前选中的会员ID
+    currentMemberId: '', // 当前选中的会员ID（默认空=全部收起）
     currentMemberInfo: {}, // 当前选中会员的完整信息
-    currentLevel: 0 // 当前会员等级
+    currentLevel: 0, // 当前会员等级
+    totalAllConsume: '0.00' // 新增：所有会员总消费
   },
 
   onLoad(options) {
@@ -35,8 +36,10 @@ Page({
           const memberMap = {};
           // 临时存储所有消费记录（备用）
           let allConsumeList = [];
+          // 新增：累计所有会员总消费
+          let totalAllConsume = 0;
 
-          // 遍历后端返回的每个会员数据（核心修改：解析member_info和orders）
+          // 遍历后端返回的每个会员数据
           res.data.data.forEach(memberItem => {
             // 提取会员基础信息（兜底处理，避免字段缺失）
             const memberInfo = memberItem.member_info || {};
@@ -88,6 +91,8 @@ Page({
             const memberTotalConsume = formatOrders.reduce((sum, item) => {
               return sum + item.total_price;
             }, 0);
+            // 累加至总消费
+            totalAllConsume += memberTotalConsume;
 
             // 将该会员加入映射表
             memberMap[memberId] = {
@@ -98,27 +103,24 @@ Page({
               level_name: memberTypeName, // 会员等级名称
               star_level: memberStarLevel, // 星级
               consumeRecords: formatOrders, // 该会员的订单列表
-              totalConsume: memberTotalConsume.toFixed(2) // 合计消费（保留2位小数）
+              totalConsume: memberTotalConsume.toFixed(2) // 单个会员合计（保留2位小数）
             };
           });
 
           // 2. 转换为会员列表（供前端渲染）
           const memberList = Object.values(memberMap);
 
-          // 3. 设置默认选中第一个会员
-          let defaultMemberId = '';
+          // 3. 核心修改：默认全部收起（不选中任何会员）
+          let defaultMemberId = ''; // 空=默认收起
           let defaultMemberInfo = {};
-          if (memberList.length > 0) {
-            defaultMemberId = memberList[0].id;
-            defaultMemberInfo = memberList[0];
-          }
 
-          // 4. 更新页面数据
+          // 4. 更新页面数据（包含总消费）
           this.setData({
             consumeList: allConsumeList,
             memberList: memberList,
             currentMemberId: defaultMemberId,
-            currentMemberInfo: defaultMemberInfo
+            currentMemberInfo: defaultMemberInfo,
+            totalAllConsume: totalAllConsume.toFixed(2) // 所有会员总消费（保留2位小数）
           });
         } else {
           wx.showToast({ title: res.data.msg || '获取消费记录失败', icon: 'none' });
@@ -154,7 +156,7 @@ Page({
     }
   },
 
-  // 点击会员切换选中状态
+  // 点击会员切换选中状态（每个会员独立展开/收起）
   onMemberClick(e) {
     const memberId = e.currentTarget.dataset.memberId;
     const { memberList } = this.data;

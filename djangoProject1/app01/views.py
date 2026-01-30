@@ -1,29 +1,67 @@
-from django.shortcuts import render
-
-# Create your views here.
+"""
+视图文件 - 修复logger未定义 + 冗余代码 + 语法错误
+"""
+from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
+from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 import time
+import datetime
+import random
+import json
+import logging
 
+# 第三方库导入
+# 第三方库导入
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.decorators import action  # 新增：导入action装饰器
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.response import Response
+from rest_framework import permissions, status, filters
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from django_filters.rest_framework import DjangoFilterBackend
+from aliyunsdkcore.client import AcsClient
+from aliyunsdkcore.request import CommonRequest
+
+# 本地导入
+from .models import (
+    Welcome, Banner, Notice, Index_Annonce, Category, Goods, User,
+    Collection, VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification,
+    Cart, Recipient, Address, Order, OrderItem
+)
+from .serializer import (
+    BannerSerializer, NoticeSerializer, IndexSerializer, CollectionSerializer,
+    CategorySerializer, GoodsSerializer, VideoCourseSerializer,
+    BenefitSerializer, UserProfileSerializer, StudyCheckInSerializer, ExamQuestionSerializer,
+    ExamRecordSerializer, CertificationSerializer, RegisterSerializer, MemberInfoSerializer,
+    SubConsumeRecordSerializer, CartSerializer, CartAddSerializer, RecipientSerializer,
+    AddressSerializer, OrderAddSerializer
+)
+
+# 全局日志配置（修复CartClearView中logger未定义问题）
+logger = logging.getLogger(__name__)
+
+# 阿里云短信配置（需替换为真实密钥）
+ACCESS_KEY_ID = ""
+ACCESS_KEY_SECRET = ""
+REGION_ID = "cn-hangzhou"  # 修正：号码认证服务正确地域为cn-hangzhou
+client = AcsClient(ACCESS_KEY_ID, ACCESS_KEY_SECRET, REGION_ID)
+
+# ===================== 基础视图 =====================
 def index(request):
     time.sleep(1)
     return JsonResponse({'name':'嘉俊','sex':'男','age':'18'})
 
-from .models import Welcome
-from django.http import JsonResponse
-from rest_framework.permissions import AllowAny
 def welcome(request):
     res = Welcome.objects.all().order_by('-order').first()
-    # img = 'http://127.0.0.1:8000/media/' +str(res.img)
     img = 'http://localhost:8000/media/' + str(res.img)
     return JsonResponse({'code':100, 'msg':'成功', 'result':img})
 
-from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.response import Response
-from .models import Banner, Notice, Index_Annonce, Category, Goods, User
-from .serializer import BannerSerializer, NoticeSerializer, IndexSerializer, CollectionSerializer,CategorySerializer, GoodsSerializer
-
-
+# ===================== Banner/公告视图 =====================
 class BannerView(ListModelMixin, GenericViewSet):
     queryset = Banner.objects.filter(is_delete=False).order_by('order')[:4]
     permission_classes = [AllowAny]
@@ -35,10 +73,8 @@ class BannerView(ListModelMixin, GenericViewSet):
         serializer_notice = NoticeSerializer(instance=notice)
         return Response({'code':100, 'msg':'成功','banner':res.data, 'notice':serializer_notice.data})
 
-from .models import Collection
-from datetime import datetime
 class CollevtionView(ListModelMixin, GenericViewSet):
-    queryset = Collection.objects.all().filter(create_time__gte=datetime.now().date())
+    queryset = Collection.objects.all().filter(create_time__gte=datetime.datetime.now().date())
     serializer_class = CollectionSerializer
 
     def list(self, request, *args, **kwargs):
@@ -46,63 +82,45 @@ class CollevtionView(ListModelMixin, GenericViewSet):
         today_count = len(self.get_queryset())
         return Response({'code':100, 'msg':'成功','result':res.data, 'today_count':today_count})
 
-
-# 商品分类视图（仅列表查询）
+# ===================== 商品分类/商品视图 =====================
 class CategoryView(ListModelMixin, GenericViewSet):
-    """商品分类接口 - 仅支持列表查询"""
-    # 定义查询集（数据源）
     permission_classes = [AllowAny]
     queryset = Category.objects.all().order_by('id')
-    # 注意：DRF 正确属性名是 serializer_class（不是 serializer）
     serializer_class = CategorySerializer
 
-    # 重写list方法，统一响应格式
     def list(self, request, *args, **kwargs):
-        # 调用父类ListModelMixin的list方法，获取序列化后的数据
         res = super().list(request, *args, **kwargs)
-        # 返回自定义格式响应
         return Response({
             'code': 200,
             'msg': 'success',
             'data': res.data
         })
 
-# 商品视图（支持列表查询 + 详情查询）
 class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
-    """商品接口 - 支持列表查询、详情查询，含搜索/分类过滤"""
-    # 基础查询集（所有商品）
     permission_classes = [AllowAny]
     queryset = Goods.objects.all().order_by('id')
     serializer_class = GoodsSerializer
 
-    # 重写list方法：添加搜索/分类过滤 + 自定义响应格式
     def list(self, request, *args, **kwargs):
-        # 1. 获取前端传参（搜索关键词、分类ID）
         keyword = request.query_params.get('keyword', '')
         category_id = request.query_params.get('category_id', '')
 
-        # 2. 基于基础queryset做过滤
-        queryset = self.get_queryset()  # 获取基础查询集
+        queryset = self.get_queryset()
         if keyword:
-            queryset = queryset.filter(name__icontains=keyword)  # 模糊搜索商品名
-        if category_id and category_id.isdigit():  # 校验分类ID是数字
+            queryset = queryset.filter(name__icontains=keyword)
+        if category_id and category_id.isdigit():
             queryset = queryset.filter(category_id=int(category_id))
 
-        # 3. 重新赋值过滤后的queryset（传给序列化器）
         self.queryset = queryset
-        # 4. 调用父类list方法获取序列化数据
         res = super().list(request, *args, **kwargs)
-        # 5. 返回自定义格式响应
         return Response({
             'code': 200,
             'msg': 'success',
             'data': res.data
         })
 
-    # 重写retrieve方法：商品详情 + 自定义响应格式
     def retrieve(self, request, *args, **kwargs):
         try:
-            # 调用父类RetrieveModelMixin的retrieve方法
             res = super().retrieve(request, *args, **kwargs)
             return Response({
                 'code': 200,
@@ -110,7 +128,6 @@ class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
                 'data': res.data
             })
         except Exception as e:
-            # 商品不存在时返回错误格式
             return Response({
                 'code': 404,
                 'msg': '商品不存在',
@@ -118,78 +135,100 @@ class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             })
 
 
-from rest_framework import viewsets, filters, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import CourseCategory, VideoCourse
-from .serializer import CourseCategorySerializer, VideoCourseSerializer
-# 课程分类视图
-class CourseCategoryViewSet(viewsets.ModelViewSet):
-    queryset = CourseCategory.objects.all()
-    serializer_class = CourseCategorySerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name']
-
-
-# 视频课程视图
-class VideoCourseViewSet(viewsets.ModelViewSet):
-    queryset = VideoCourse.objects.filter(is_publish=True)  # 仅显示已发布课程
+class VideoCourseViewSet(ModelViewSet):
+    queryset = VideoCourse.objects.filter(is_publish=True)
     serializer_class = VideoCourseSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['category']  # 确保筛选字段是category（与前端参数名一致）
-    search_fields = ['title', 'desc']
-    # 可选：重写list方法，打印筛选参数，便于调试
-    def list(self, request, *args, **kwargs):
-        print('后端接收筛选参数：', request.query_params)  # 打印前端传递的参数
-        return super().list(request, *args, **kwargs)
-    # 播放次数增加
+    permission_classes = [IsAuthenticated]  # 必须登录才能访问
+
+    def get_queryset(self):
+        """
+        重构过滤逻辑：
+        1. 前端不传required_level（全部视频）：返回所有已发布视频，不做等级过滤
+        2. 前端传required_level（其他分类）：按传的等级+用户等级过滤
+        """
+        # 基础查询：只取已发布的视频
+        queryset = VideoCourse.objects.filter(is_publish=True)
+
+        # 1. 处理搜索功能（保留）
+        search = self.request.query_params.get('search', '')
+        if search:
+            queryset = queryset.filter(title__icontains=search)
+
+        # 2. 获取前端传递的required_level参数
+        required_level = self.request.query_params.get('required_level', '')
+        user = self.request.user
+        user_level = user.user_type or 1  # 默认蓝朋友（等级1）
+
+        # 核心逻辑：仅当前端传了有效的required_level时，才做等级过滤
+        if required_level and required_level.isdigit():
+            required_level_int = int(required_level)
+            # 过滤逻辑：视频所需等级 = 前端传的等级 且 ≤ 用户等级（保持原有分类逻辑）
+            queryset = queryset.filter(
+                required_level=required_level_int,
+                required_level__lte=user_level
+            )
+        # 前端不传required_level（全部视频）：不添加任何等级过滤条件，返回所有已发布视频
+
+        return queryset
+
+    # 以下方法（check_permission、add_play_count）保持不变
+    @action(detail=True, methods=['get'])
+    def check_permission(self, request, pk=None):
+        """校验当前用户是否有权限观看该视频"""
+        video = self.get_object()
+        user_level = request.user.user_type or 1
+
+        if user_level >= video.required_level:
+            return Response({
+                "code": 200,
+                "msg": "有权限观看",
+                "has_permission": True,
+                "video_url": self.get_serializer(video).data['video_url']
+            })
+        else:
+            return Response({
+                "code": 403,
+                "msg": f"很抱歉，观看该视频需要升级到{video.get_required_level_display()}以上会员等级",
+                "has_permission": False,
+                "required_level_name": video.get_required_level_display()
+            })
+
     @action(detail=True, methods=['post'])
     def add_play_count(self, request, pk=None):
         course = self.get_object()
         course.play_count += 1
         course.save()
-        # 核心修改：返回更新后的播放次数，供前端使用
         return Response({
             "code": 200,
             "msg": "播放次数更新成功",
-            "play_count": course.play_count  # 返回最新次数
+            "play_count": course.play_count
         })
 
-from rest_framework import permissions
-from rest_framework.response import Response
+# ===================== 登录/注册视图 =====================
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['nickname'] = user.nickname
+        token['star_level'] = user.star_level
+        return token
 
-from .models import StudyCheckIn, ExamQuestion, ExamRecord, Certification
-from .serializer import (
-    BenefitSerializer, UserProfileSerializer,
-    StudyCheckInSerializer, ExamQuestionSerializer, ExamRecordSerializer, CertificationSerializer
-)
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        data['user_info'] = {
+            'nickname': user.nickname,
+            'star_level': user.star_level,
+            'points': user.points,
+            'coupon_count': user.coupon_count,
+            'member_id': user.member_id,
+            'user_type': user.user_type
+        }
+        return data
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
-# ====================== 注册登录：视图 ======================
-# app01/views.py
-from rest_framework.views import APIView  # 导入 APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny
-
-from .serializer import RegisterSerializer
-# 放弃 ViewSet，改用 APIView 定义注册接口（更简单、更易生效）
-
-class Index_AnnonceView(APIView):
-    permission_classes = [AllowAny]
-    def get(self, request):
-        indexan = Index_Annonce.objects.all()  # 获取所有固定图片
-        fixed_serializer = IndexSerializer(indexan, many=True)
-        return Response({
-            'code': 200,
-            'msg': '获取固定图片成功',
-            'fixed_images': fixed_serializer.data  # 返回固定图片数组
-        })
-
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializer import RegisterSerializer
-
-# 注册接口（原有逻辑重构）
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -199,7 +238,6 @@ class RegisterAPIView(APIView):
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
 
-            # 生成JWT Token
             refresh = RefreshToken.for_user(user)
             return Response({
                 'code': 200,
@@ -220,24 +258,50 @@ class RegisterAPIView(APIView):
                 'data': None
             }, status=status.HTTP_400_BAD_REQUEST)
 
-from .serializer import SubConsumeRecordSerializer  # 导入新增的序列化器
-# app01/views.py
-class SubUserConsumeView(APIView):
-    permission_classes = [IsAuthenticated]  # 必须登录
+# ===================== 会员相关视图 =====================
+class DebugIsAuthenticated(IsAuthenticated):
+    def has_permission(self, request, view):
+        print("===== 权限校验调试日志 =====")
+        print("当前请求用户是否为匿名用户：", request.user.is_anonymous)
+        print("当前请求用户对象：", request.user)
+        print("当前请求 Authorization 头：", request.META.get('HTTP_AUTHORIZATION', '无'))
+        print("===========================")
+
+        permission_result = super().has_permission(request, view)
+        print("权限校验结果（True=通过，False=失败）：", permission_result)
+        return permission_result
+
+class MemberInfoView(APIView):
+    permission_classes = [DebugIsAuthenticated]
 
     def get(self, request):
-        # 1. 获取当前登录用户（上级）
+        try:
+            print('当前登录用户：', request.user.nickname)
+            serializer = MemberInfoSerializer(request.user)
+            return Response({
+                'code': 200,
+                'msg': '获取会员信息成功',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            print('获取会员信息异常：', str(e))
+            return Response({
+                'code': 500,
+                'msg': f'获取会员信息失败：{str(e)}',
+                'data': None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class SubUserConsumeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
         current_user = request.user
-        # 2. 获取并处理前端传递的 current_level 参数（核心修复：类型转换+校验）
         current_level_str = request.query_params.get('current_level', '0')
         try:
-            # 转为整数，非数字则抛出异常
             current_level = int(current_level_str)
         except ValueError:
-            # 非数字参数默认设为0
             current_level = 0
 
-        # 3. 权限校验：仅等级≥2的会员可查看下级消费记录（可根据业务调整）
         if not current_user.user_type or current_user.user_type < 2:
             return Response({
                 'code': 403,
@@ -245,49 +309,16 @@ class SubUserConsumeView(APIView):
                 'data': []
             }, status=status.HTTP_403_FORBIDDEN)
 
-        # 4. 查询下级消费记录（此时current_level已确保是整数）
         sub_consume_data = current_user.get_sub_consume_records(current_level)
-        # 5. 序列化数据（自动格式化日期、嵌套商品明细）
         serializer = SubConsumeRecordSerializer(sub_consume_data, many=True)
 
-        # 6. 返回符合前端要求的格式
         return Response({
             'code': 200,
             'msg': '获取下级消费记录成功',
-            'data': serializer.data  # 前端直接渲染的消费记录列表
+            'data': serializer.data
         }, status=status.HTTP_200_OK)
 
-# 保留你的 MemberInfoView（无需修改，认证通过后会执行）
-class MemberInfoView(APIView):
-    # 无需手动配置 permission_classes，默认使用 JWT 认证
-    def get(self, request):
-        print("===== 进入会员信息接口 =====")
-        # 获取当前登录用户（JWT 认证通过后，request.user 即为当前用户）
-        user = request.user
-        if not user.is_authenticated:
-            return Response({
-                'code': 401,
-                'msg': '未授权访问',
-                'data': None
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        # 组装会员信息
-        member_info = {
-            'nickname': user.nickname,
-            'member_id': user.member_id,
-            'user_type': user.user_type,
-            'star_level': user.star_level,
-            'points': user.points
-        }
-        print(f"===== 会员信息返回成功：{user.nickname} =====")
-        return Response({
-            'code': 200,
-            'msg': '获取会员信息成功',
-            'data': member_info
-        }, status=status.HTTP_200_OK)
-
-# 3. 会员权益预览视图
-class BenefitViewSet(viewsets.GenericViewSet):
+class BenefitViewSet(GenericViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = BenefitSerializer
 
@@ -350,8 +381,7 @@ class BenefitViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data)
         return Response({'code': 200, 'data': serializer.data})
 
-# 4. 我的页面用户信息视图
-class UserProfileViewSet(viewsets.ReadOnlyModelViewSet):
+class UserProfileViewSet(ReadOnlyModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -363,8 +393,8 @@ class UserProfileViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(instance)
         return Response({'code': 200, 'data': serializer.data})
 
-# ====================== 打卡学习：视图 ======================
-class StudyCheckInViewSet(viewsets.ModelViewSet):
+# ===================== 打卡/考试/认证视图 =====================
+class StudyCheckInViewSet(ModelViewSet):
     serializer_class = StudyCheckInSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -374,12 +404,12 @@ class StudyCheckInViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class ExamQuestionViewSet(viewsets.ReadOnlyModelViewSet):
+class ExamQuestionViewSet(ReadOnlyModelViewSet):
     queryset = ExamQuestion.objects.all()
     serializer_class = ExamQuestionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class ExamRecordViewSet(viewsets.ModelViewSet):
+class ExamRecordViewSet(ModelViewSet):
     serializer_class = ExamRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -387,11 +417,10 @@ class ExamRecordViewSet(viewsets.ModelViewSet):
         return ExamRecord.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # 自动判断是否通过（默认60分及格）
         score = serializer.validated_data.get('score', 0)
         serializer.save(user=self.request.user, is_pass=score >= 60)
 
-class CertificationViewSet(viewsets.ModelViewSet):
+class CertificationViewSet(ModelViewSet):
     serializer_class = CertificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -401,127 +430,47 @@ class CertificationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-
-# app01/views.py
-
-from rest_framework.permissions import IsAuthenticated
-from .serializer import MemberInfoSerializer
-
-
-# 自定义带调试日志的权限类，继承 IsAuthenticated
-class DebugIsAuthenticated(IsAuthenticated):
-    """自定义权限类：添加调试日志，查看权限校验失败原因"""
-
-    def has_permission(self, request, view):
-        # 打印当前请求的用户信息（权限校验阶段）
-        print("===== 权限校验调试日志 =====")
-        print("当前请求用户是否为匿名用户：", request.user.is_anonymous)
-        print("当前请求用户对象：", request.user)
-        print("当前请求 Authorization 头：", request.META.get('HTTP_AUTHORIZATION', '无'))
-        print("===========================")
-
-        # 调用父类的权限校验逻辑（保持原有 IsAuthenticated 功能）
-        permission_result = super().has_permission(request, view)
-        # 打印权限校验结果
-        print("权限校验结果（True=通过，False=失败）：", permission_result)
-        return permission_result
-
-
-class MemberInfoView(APIView):
-    """会员信息接口：使用自定义调试权限类"""
-    permission_classes = [DebugIsAuthenticated]  # 替换为自定义调试权限类
-
+# ===================== 首页固定图片视图 =====================
+class Index_AnnonceView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
-        try:
-            print('当前登录用户：', request.user.nickname)
-            serializer = MemberInfoSerializer(request.user)
-            return Response({
-                'code': 200,
-                'msg': '获取会员信息成功',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            print('获取会员信息异常：', str(e))
-            return Response({
-                'code': 500,
-                'msg': f'获取会员信息失败：{str(e)}',
-                'data': None
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        indexan = Index_Annonce.objects.all()
+        fixed_serializer = IndexSerializer(indexan, many=True)
+        return Response({
+            'code': 200,
+            'msg': '获取固定图片成功',
+            'fixed_images': fixed_serializer.data
+        })
 
-# app01/views.py
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-# 自定义 Token 序列化器：返回用户信息
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        # 可选：在 Token 中存储用户信息（前端可解析，但不推荐存储敏感信息）
-        token['nickname'] = user.nickname
-        token['star_level'] = user.star_level
-        return token
-
-    # 关键：重写 validate 方法，自定义返回数据（包含用户信息）
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        # 获取当前登录用户
-        user = self.user
-        # 补充用户信息到返回数据中
-        data['user_info'] = {
-            'nickname': user.nickname,
-            'star_level': user.star_level,
-            'points': user.points,
-            'coupon_count': user.coupon_count,
-            'member_id': user.member_id,
-            'user_type': user.user_type
-        }
-        return data
-
-# 自定义 Token 视图：使用上面的序列化器
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-
-# app01/views.py
-
-
-from django.db import transaction
-from .models import Cart,  Recipient
-from .serializer import CartSerializer, RecipientSerializer, CartAddSerializer
-from django.shortcuts import get_object_or_404
-# ===================== 购物车接口 【核心修复区 ✅✅✅】=====================
+# ===================== 购物车视图 =====================
 class CartView(APIView):
-    permission_classes = [IsAuthenticated]  # 需要登录
+    permission_classes = [IsAuthenticated]
 
-    # 1. 获取购物车列表 ✔️ 原有逻辑，正常使用
     def get(self, request):
         cart_list = Cart.objects.filter(user=request.user).select_related('goods')
         serializer = CartSerializer(cart_list, many=True)
-        # 计算购物车总价
         total_all = sum([item['total_price'] for item in serializer.data])
         return Response({
             'code': 200,
             'msg': '获取购物车成功',
             'data': {
                 'cart_list': serializer.data,
-                'total_all': round(total_all, 2)  # 购物车商品总价
+                'total_all': round(total_all, 2)
             }
         })
 
-    # 2. 添加商品到购物车 ✔️ 原有逻辑，正常使用
     def post(self, request):
         goods_id = request.data.get('goods_id')
         num = int(request.data.get('num', 1))
         if not goods_id:
             return Response({'code': 400, 'msg': '商品ID不能为空'}, status=400)
-        # 校验商品是否存在、库存是否足够
         try:
             goods = Goods.objects.get(id=goods_id)
             if goods.stock < num:
                 return Response({'code': 400, 'msg': '商品库存不足'}, status=400)
         except Goods.DoesNotExist:
             return Response({'code': 404, 'msg': '商品不存在'}, status=404)
-        # 新增/更新购物车
+
         with transaction.atomic():
             cart, created = Cart.objects.get_or_create(
                 user=request.user,
@@ -529,50 +478,38 @@ class CartView(APIView):
                 defaults={'num': num}
             )
             if not created:
-                # 已存在则增加数量
                 cart.num += num
                 if cart.num > goods.stock:
                     return Response({'code': 400, 'msg': '商品库存不足'}, status=400)
                 cart.save()
         return Response({'code': 200, 'msg': '添加购物车成功'})
 
-    # ✅【核心修复1】修改购物车商品数量 - 从URL路径接收cart_id，适配前端PUT请求 http://xxx/cart/1/
     def put(self, request, cart_id=None):
-        # 从URL路径获取cart_id，替代原有的request.data.get('cart_id')
         if not cart_id:
             return Response({'code': 400, 'msg': '购物车ID不能为空'}, status=400)
-        num = int(request.data.get('num', 1))  # 正数增加，负数减少
+        num = int(request.data.get('num', 1))
         try:
-            # 只允许修改当前登录用户的购物车商品
             cart = Cart.objects.get(id=cart_id, user=request.user)
-            # 计算新数量，保证数量≥1
             new_num = cart.num + num
             if new_num < 1:
                 return Response({'code': 400, 'msg': '商品数量不能小于1'}, status=400)
-            # 库存校验
             if new_num > cart.goods.stock:
                 return Response({'code': 400, 'msg': '商品库存不足'}, status=400)
-            # 更新数量并保存
             cart.num = new_num
             cart.save()
             return Response({'code': 200, 'msg': '修改数量成功', 'data': {'num': new_num}})
         except Cart.DoesNotExist:
             return Response({'code': 404, 'msg': '购物车商品不存在'}, status=404)
 
-    # ✅【核心修复2】删除购物车商品 - 从URL路径接收cart_id，适配前端DELETE请求 http://xxx/cart/1/
     def delete(self, request, cart_id=None):
-        # 从URL路径获取cart_id，替代原有的request.data.get('cart_id')
         if not cart_id:
             return Response({'code': 400, 'msg': '购物车ID不能为空'}, status=400)
         try:
-            # 只允许删除当前登录用户的购物车商品
             Cart.objects.filter(id=cart_id, user=request.user).delete()
             return Response({'code': 200, 'msg': '删除成功'})
         except Exception as e:
             return Response({'code': 500, 'msg': f'删除失败：{str(e)}'}, status=500)
 
-
-# ✅【修复加购逻辑BUG】原有CartAddView的数量累加错误修复
 class CartAddView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -588,7 +525,6 @@ class CartAddView(APIView):
         num = serializer.validated_data['num']
         user = request.user
 
-        # 库存校验
         goods = get_object_or_404(Goods, id=goods_id)
         if goods.stock < num:
             return Response({
@@ -597,14 +533,13 @@ class CartAddView(APIView):
                 'data': {}
             })
 
-        # 新增/更新购物车 - 修复原逻辑：if not created 时应该累加，不是直接赋值
         cart, created = Cart.objects.get_or_create(
             user=user,
             goods=goods,
             defaults={'num': num}
         )
         if not created:
-            cart.num += num  # 修复BUG：累加数量
+            cart.num += num
             if cart.num > goods.stock:
                 return Response({'code':400, 'msg':'库存不足'}, status=400)
         cart.save()
@@ -615,12 +550,8 @@ class CartAddView(APIView):
             'data': {'cart_id': cart.id, 'num': cart.num}
         })
 
-
-# 保留原有冗余视图（兼容旧调用，无需删除，不影响功能）
-# 正确的购物车列表视图
 class CartListView(APIView):
-    permission_classes = [IsAuthenticated]  # 仅要求登录，权限校验由DRF处理
-    # permission_classes = []  # 允许匿名访问
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         print("===== 购物车视图调试 =====")
         print(f"请求用户：{request.user}")
@@ -629,10 +560,8 @@ class CartListView(APIView):
         print(f"是否认证：{request.user.is_authenticated}")
         print(f"权限通过：{self.check_permissions(request)}")
         try:
-            # 核心：用DRF认证后的request.user（当前登录用户）查询购物车
             cart_items = Cart.objects.filter(user=request.user)
 
-            # 序列化购物车数据（包含商品名称、数量、价格等）
             cart_list = []
             for item in cart_items:
                 cart_list.append({
@@ -651,13 +580,11 @@ class CartListView(APIView):
             })
         except Exception as e:
             print(f"购物车查询异常：{e}")
-            # 注意：异常时返回500，而非401（避免混淆认证问题）
             return Response({
                 "code": 500,
                 "msg": "获取购物车失败",
                 "data": []
             }, status=500)
-
 
 class CartUpdateNumView(APIView):
     permission_classes = [IsAuthenticated]
@@ -673,7 +600,6 @@ class CartUpdateNumView(APIView):
             })
 
         cart = get_object_or_404(Cart, id=cart_id, user=request.user)
-        # 库存校验
         if cart.goods.stock < num:
             return Response({
                 'code': 400,
@@ -688,7 +614,6 @@ class CartUpdateNumView(APIView):
             'msg': '修改数量成功',
             'data': {'num': cart.num}
         })
-
 
 class CartDeleteView(APIView):
     permission_classes = [IsAuthenticated]
@@ -710,26 +635,21 @@ class CartDeleteView(APIView):
             'data': {}
         })
 
-
 class CartClearView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, order_id=None):
         try:
-            # 增加调试日志，便于定位问题
             logger.info(f"清空购物车请求：用户ID={request.user.id}，订单ID={order_id}")
 
             if order_id:
-                # 精准清空：删除该订单关联的购物车商品
                 try:
                     order_id = int(order_id)
-                    # 先查询是否有对应数据
                     cart_query = Cart.objects.filter(user=request.user, order_id=order_id)
                     cart_count = cart_query.count()
 
                     if cart_count == 0:
                         logger.warning(f"无订单{order_id}关联的购物车数据，执行全清")
-                        # 无精准数据则降级为全清
                         Cart.objects.filter(user=request.user).delete()
                     else:
                         cart_query.delete()
@@ -737,7 +657,6 @@ class CartClearView(APIView):
                 except ValueError:
                     return Response({"code": 400, "msg": "订单ID格式错误"}, status=400)
             else:
-                # 全清：删除当前用户所有购物车商品
                 clear_count = Cart.objects.filter(user=request.user).delete()[0]
                 logger.info(f"全清购物车：删除{clear_count}条数据")
 
@@ -750,15 +669,13 @@ class CartClearView(APIView):
             logger.error(f"清空购物车失败：{str(e)}", exc_info=True)
             return Response({"code": 500, "msg": f"清空失败：{str(e)}"}, status=500)
 
-# ===================== 收件人信息接口 =====================
+# ===================== 收件人/地址视图 =====================
 class RecipientView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # 1. 获取收件人列表
     def get(self, request):
         recipient_list = Recipient.objects.filter(user=request.user)
         serializer = RecipientSerializer(recipient_list, many=True)
-        # 获取默认收件人
         default_recipient = recipient_list.filter(is_default=True).first()
         default_data = RecipientSerializer(default_recipient).data if default_recipient else None
         return Response({
@@ -770,13 +687,11 @@ class RecipientView(APIView):
             }
         })
 
-    # 2. 新增/修改收件人信息
     def post(self, request):
-        recipient_id = request.data.get('id')  # 有id则为修改，无则为新增
-        # 处理默认收件人：若设置为默认，取消其他收件人的默认状态
+        recipient_id = request.data.get('id')
         if request.data.get('is_default'):
             Recipient.objects.filter(user=request.user, is_default=True).update(is_default=False)
-        # 序列化数据
+
         if recipient_id:
             try:
                 recipient = Recipient.objects.get(id=recipient_id, user=request.user)
@@ -785,28 +700,26 @@ class RecipientView(APIView):
                 return Response({'code': 404, 'msg': '收件人信息不存在'}, status=404)
         else:
             serializer = RecipientSerializer(data={**request.data, 'user': request.user.id})
-        # 验证并保存
+
         if serializer.is_valid():
             serializer.save()
             return Response({'code': 200, 'msg': '保存成功', 'data': serializer.data})
         return Response({'code': 400, 'msg': '参数错误', 'error': serializer.errors}, status=400)
 
-# ===================== 结算接口（草稿） =====================
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         recipient_id = request.data.get('recipient_id')
-        # 校验收件人
         try:
             recipient = Recipient.objects.get(id=recipient_id, user=request.user)
         except Recipient.DoesNotExist:
             return Response({'code': 404, 'msg': '收件人信息不存在'}, status=404)
-        # 获取购物车商品
+
         cart_list = Cart.objects.filter(user=request.user).select_related('goods')
         if not cart_list:
             return Response({'code': 400, 'msg': '购物车为空'}, status=400)
-        # 计算总价（实际项目中可生成订单，此处仅返回结算信息）
+
         total_all = sum([cart.num * cart.goods.member_price for cart in cart_list])
         return Response({
             'code': 200,
@@ -818,48 +731,218 @@ class CheckoutView(APIView):
             }
         })
 
-
-from .models import Address, Order, OrderItem
-from .serializer import AddressSerializer, OrderAddSerializer
-import datetime, random
-
-
-# ========== 收货地址接口 ==========
 class AddressView(APIView):
     permission_classes = [IsAuthenticated]
 
-    # 获取地址列表
     def get(self, request):
         address_list = Address.objects.filter(user=request.user)
         return Response(
             {"code": 200, "msg": "success", "data": {"address_list": AddressSerializer(address_list, many=True).data}})
 
 
-# 新增地址
-class AddressAddView(APIView):
+class AddressManageView(APIView):
+    # 确保权限验证生效（必须登录才能访问）
     permission_classes = [IsAuthenticated]
 
-    # POST 用于新增 (不带 pk)
-    # views.py 这种方式不需要修改 URL，也不需要 pk
+    def get(self, request):
+        try:
+            # 仅查询当前登录用户的地址（核心：request.user是登录用户）
+            address_list = Address.objects.filter(user=request.user).order_by('-update_time')
+            serializer = AddressSerializer(address_list, many=True)
+
+            default_address = address_list.filter(is_default=True).first()
+            default_address_id = default_address.id if default_address else ""
+
+            return Response({
+                "code": 200,
+                "msg": "success",
+                "data": {
+                    "address_list": serializer.data,
+                    "default_address_id": default_address_id
+                }
+            })
+        except Exception as e:
+            print(f"获取地址列表失败：{str(e)}")
+            return Response({
+                "code": 500,
+                "msg": f"获取地址列表失败：{str(e)}",
+                "data": {
+                    "address_list": [],
+                    "default_address_id": ""
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request):
-        # 1. 先把该用户之前的地址全部删掉
-        Address.objects.filter(user=request.user).delete()
+        try:
+            # 调试：打印当前登录用户（确认不是匿名用户）
+            print(f"当前登录用户：{request.user} | 是否匿名：{request.user.is_anonymous}")
+            # 强制校验：必须是登录用户
+            if request.user.is_anonymous:
+                return Response({
+                    "code": 401,
+                    "msg": "未登录，无法添加地址",
+                    "data": {}
+                }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # 2. 存入这条新地址
-        ser = AddressSerializer(data=request.data)
-        if ser.is_valid():
-            ser.save(user=request.user)
-            return Response({"code": 200, "msg": "地址已覆盖更新"})
-        return Response({"code": 400, "data": ser.errors})
+            is_default = request.data.get('is_default', False)
 
+            with transaction.atomic():
+                if is_default:
+                    Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
 
-# ========== 订单接口 ==========
-from django.db import transaction
+                # 核心修复：直接构造数据库可识别的字段，明确赋值user（用对象而非ID）
+                address_data = {
+                    # 关键：直接传user对象，Django会自动处理user_id赋值
+                    'user': request.user,
+                    'name': request.data.get('name', '').strip(),
+                    'phone': request.data.get('phone', '').strip(),
+                    'address': request.data.get('address', '').strip(),
+                    'detail': request.data.get('detail', '').strip(),
+                    'is_default': is_default
+                }
 
-import logging
+                # 校验必填字段（避免空值）
+                if not address_data['name'] or not address_data['phone'] or not address_data['detail']:
+                    return Response({
+                        "code": 400,
+                        "msg": "姓名、手机号、详细地址不能为空",
+                        "data": {}
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
-logger = logging.getLogger(__name__)
+                # 跳过序列化器，直接入库（避免序列化器字段映射问题）
+                address = Address.objects.create(**address_data)
 
+                return Response({
+                    "code": 200,
+                    "msg": "添加地址成功",
+                    "data": AddressSerializer(address).data
+                }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"添加地址异常：{str(e)}")
+            # 明确返回数据库约束错误
+            if "NOT NULL constraint failed" in str(e):
+                return Response({
+                    "code": 400,
+                    "msg": "添加地址失败：用户未登录或用户信息缺失",
+                    "data": {}
+                }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "code": 400,
+                "msg": f"添加地址失败：{str(e)}",
+                "data": {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class AddressDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            address = Address.objects.get(id=pk, user=request.user)
+            serializer = AddressSerializer(address)
+            return Response({
+                "code": 200,
+                "msg": "success",
+                "data": serializer.data
+            })
+        except Address.DoesNotExist:
+            return Response({
+                "code": 404,
+                "msg": "地址不存在",
+                "data": {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                "code": 500,
+                "msg": f"获取地址详情失败：{str(e)}",
+                "data": {}
+            })
+
+    def put(self, request, pk):
+        try:
+            address = Address.objects.get(id=pk, user=request.user)
+
+            region = request.data.pop('region', [])
+            if region and len(region) >= 3:
+                request.data['address'] = " ".join(region)
+
+            is_default = request.data.get('is_default', address.is_default)
+            with transaction.atomic():
+                if is_default and not address.is_default:
+                    Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+
+            serializer = AddressSerializer(address, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({
+                    "code": 200,
+                    "msg": "修改地址成功",
+                    "data": serializer.data
+                })
+        except Address.DoesNotExist:
+            return Response({
+                "code": 404,
+                "msg": "地址不存在",
+                "data": {}
+            })
+        except Exception as e:
+            return Response({
+                "code": 400,
+                "msg": f"修改地址失败：{str(e)}",
+                "data": serializer.errors if 'serializer' in locals() else {}
+            })
+
+    def delete(self, request, pk):
+        try:
+            address = Address.objects.get(id=pk, user=request.user)
+            address.delete()
+            return Response({
+                "code": 200,
+                "msg": "删除地址成功",
+                "data": {}
+            })
+        except Address.DoesNotExist:
+            return Response({
+                "code": 404,
+                "msg": "地址不存在",
+                "data": {}
+            })
+        except Exception as e:
+            return Response({
+                "code": 500,
+                "msg": f"删除地址失败：{str(e)}",
+                "data": {}
+            })
+
+class SetDefaultAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            with transaction.atomic():
+                Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+                address = Address.objects.get(id=pk, user=request.user)
+                address.is_default = True
+                address.save()
+
+            return Response({
+                "code": 200,
+                "msg": "设置默认地址成功",
+                "data": {"default_address_id": pk}
+            })
+        except Address.DoesNotExist:
+            return Response({
+                "code": 404,
+                "msg": "地址不存在",
+                "data": {}
+            })
+        except Exception as e:
+            return Response({
+                "code": 500,
+                "msg": f"设置默认地址失败：{str(e)}",
+                "data": {}
+            })
+
+# ===================== 订单视图 =====================
 class OrderAddView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -871,20 +954,6 @@ class OrderAddView(APIView):
 
         try:
             with transaction.atomic():
-                # ========== 核心修改1：移除「查找待付款订单并复用」的逻辑 ==========
-                # 删掉以下旧代码：
-                # order = Order.objects.filter(user=request.user, status=1).first()
-                # if order:
-                #     order.address = address
-                #     order.total_price = total_price
-                #     order.save()
-                #     OrderItem.objects.filter(order=order).delete()
-                #     msg = "订单已更新"
-                # else:
-                #     新建订单...
-
-                # ========== 核心修改2：每次下单都创建全新订单 ==========
-                # 1. 校验收货地址
                 address_id = request.data.get("address_id")
                 if not address_id:
                     return Response({"code": 400, "msg": "收货地址ID不能为空"})
@@ -893,12 +962,10 @@ class OrderAddView(APIView):
                 except Address.DoesNotExist:
                     return Response({"code": 404, "msg": "收货地址不存在"}, status=404)
 
-                # 2. 校验商品列表非空
                 goods_list = request.data.get("goods_list", [])
                 if not isinstance(goods_list, list) or len(goods_list) == 0:
                     return Response({"code": 400, "msg": "请选择要购买的商品"})
 
-                # 3. 校验总价
                 total_price = request.data.get("total_price", 0)
                 try:
                     total_price = float(total_price)
@@ -907,21 +974,17 @@ class OrderAddView(APIView):
                 except (ValueError, TypeError):
                     return Response({"code": 400, "msg": "订单总价格式错误"})
 
-                # 4. 生成唯一订单编号（确保不重复）
                 order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
-                # 5. 强制创建新订单（不再复用旧订单）
                 order = Order.objects.create(
                     user=request.user,
                     order_sn=order_sn,
                     address=address,
                     total_price=total_price,
-                    status=1  # 1=待付款
+                    status=1
                 )
                 logger.info(f"创建新订单：order_id={order.id}, order_sn={order_sn}")
                 msg = "下单成功"
 
-                # ========== 核心修改3：保留订单项创建逻辑（无需删除旧项） ==========
-                # 验证Order主键存在
                 if not order.pk:
                     raise Exception("订单创建失败，未生成主键ID")
 
@@ -931,22 +994,18 @@ class OrderAddView(APIView):
                     cart_id = item.get("cart_id")
                     num = item.get("num", 1)
 
-                    # 校验购物车ID和数量
                     if not cart_id or not isinstance(num, int) or num < 1:
                         raise Exception(f"购物车参数错误：cart_id={cart_id}, num={num}")
 
-                    # 查询购物车（仅当前用户）
                     try:
                         cart = Cart.objects.get(id=cart_id, user=request.user)
                     except Cart.DoesNotExist:
                         raise Exception(f"购物车商品不存在：cart_id={cart_id}")
 
                     goods = cart.goods
-                    # 库存校验
                     if goods.stock < num:
                         raise Exception(f"商品库存不足：{goods.name}（库存{goods.stock}，需{num}）")
 
-                    # 创建新订单项（关联新订单，不影响旧订单）
                     OrderItem.objects.create(
                         order=order,
                         goods=goods,
@@ -957,18 +1016,15 @@ class OrderAddView(APIView):
                         goods_specs=goods.specs,
                         total_price=num * cart.goods.member_price
                     )
-                    # 可选：标记购物车商品关联的订单（不影响历史订单）
                     cart.order = order
                     cart.save()
                     goods_names.append(goods.name)
                     total_count += num
 
-                # 更新订单的冗余字段
                 order.goods_names = "、".join(goods_names)
                 order.goods_count = total_count
                 order.save()
 
-            # 返回成功响应
             return Response({
                 "code": 200,
                 "msg": msg,
@@ -985,7 +1041,6 @@ class OrderAddView(APIView):
             logger.error(f"下单失败：{str(e)}", exc_info=True)
             return Response({"code": 500, "msg": f"操作失败: {str(e)}"})
 
-# 示例：订单列表视图中获取产品名称
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -998,12 +1053,8 @@ class OrderListView(APIView):
                 "total_price": str(order.total_price),
                 "status": order.get_status_display(),
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M'),
-                # 方案1：调用动态属性
-                "goods_names": order.goods_names,  # 列表：["商品A", "商品B"]
-                "goods_names_str": order.goods_names_str,  # 字符串："商品A、商品B"
-                # 方案2：直接取冗余字段（和方案1返回结果一致）
-                # "goods_names": order.goods_names.split("、") if order.goods_names else [],
-                # "goods_names_str": order.goods_names or "无商品",
+                "goods_names": order.goods_names,
+                "goods_names_str": order.goods_names,
                 "goods_count": order.goods_count
             })
         return Response({"code": 200, "data": data_list})
@@ -1012,15 +1063,12 @@ class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # 获取前端传递的订单ID/订单编号
         order_id = request.query_params.get("order_id")
         order_sn = request.query_params.get("order_sn")
 
-        # 校验参数
         if not (order_id or order_sn):
             return Response({"code": 400, "msg": "请传入订单ID或订单编号"}, status=400)
 
-        # 查询订单（仅查询当前用户的订单）
         try:
             if order_id:
                 order = Order.objects.get(id=order_id, user=request.user)
@@ -1029,30 +1077,27 @@ class OrderDetailView(APIView):
         except Order.DoesNotExist:
             return Response({"code": 404, "msg": "订单不存在"}, status=404)
 
-        # 获取订单所有商品明细（关联商品表，提取名称）
         order_items = OrderItem.objects.filter(order=order).select_related('goods')
         goods_detail = [
             {
                 "goods_id": item.goods.id,
-                "goods_name": item.goods.name,  # 商品名称
+                "goods_name": item.goods.name,
                 "goods_image": f"http://localhost:8000/media/{item.goods.image_url}" if item.goods.image_url else "",
-                # 商品图片
-                "num": item.num,  # 购买数量
-                "price": str(item.price),  # 单价
-                "total_price": str(item.num * item.price)  # 该商品总价
+                "num": item.num,
+                "price": str(item.price),
+                "total_price": str(item.num * item.price)
             }
             for item in order_items
         ]
 
-        # 组装订单详情数据
         order_detail = {
             "order_id": order.id,
             "order_sn": order.order_sn,
             "total_price": str(order.total_price),
             "status": order.get_status_display(),
-            "status_code": order.status,  # 状态码（便于前端判断）
+            "status_code": order.status,
             "create_time": order.create_time.strftime('%Y-%m-%d %H:%M:%S'),
-            "address": {  # 收货地址信息
+            "address": {
                 "name": order.address.name,
                 "phone": order.address.phone,
                 "province": order.address.province,
@@ -1060,9 +1105,9 @@ class OrderDetailView(APIView):
                 "district": order.address.district,
                 "detail": order.address.detail
             } if hasattr(order, 'address') else {},
-            "goods_detail": goods_detail,  # 所有商品明细（含名称）
-            "goods_names": [item["goods_name"] for item in goods_detail],  # 仅商品名称列表
-            "item_count": len(goods_detail)  # 商品总数
+            "goods_detail": goods_detail,
+            "goods_names": [item["goods_name"] for item in goods_detail],
+            "item_count": len(goods_detail)
         }
 
         return Response({
@@ -1071,48 +1116,30 @@ class OrderDetailView(APIView):
             "data": order_detail
         })
 
-import json
-from aliyunsdkcore.client import AcsClient
-from aliyunsdkcore.request import CommonRequest
-from django.views.decorators.csrf import csrf_exempt
-
-ACCESS_KEY_ID = ""
-ACCESS_KEY_SECRET = ""
-REGION_ID = "cn"  # 固定，号码认证服务仅支持杭州地域
-
-# 初始化阿里云客户端
-client = AcsClient(ACCESS_KEY_ID, ACCESS_KEY_SECRET, REGION_ID)
-
-
+# ===================== 短信验证码视图 =====================
 @csrf_exempt
 def send_sms_code(request):
-    """发送短信验证码接口"""
     if request.method != "POST":
         return JsonResponse({"code": -1, "msg": "仅支持POST请求"})
 
-    # 获取前端传递的手机号
     data = json.loads(request.body)
     phone = data.get("phone")
     if not phone or not phone.startswith("1") or len(phone) != 11:
         return JsonResponse({"code": -1, "msg": "手机号格式错误"})
 
-    # 构造阿里云短信验证请求
     request = CommonRequest()
     request.set_domain("dypnsapi.aliyuncs.com")
     request.set_version("2017-05-25")
     request.set_action_name("SendSmsVerifyCode")
     request.set_method("POST")
-    # 请求参数（必填）
-    request.add_query_param("PhoneNumber", phone)  # 接收验证码的手机号
-    request.add_query_param("SceneCode", "SMS_LOGIN")  # 场景码（固定：登录场景）
-    request.add_query_param("OutId", "your_out_id")  # 自定义标识（可选）
+    request.add_query_param("PhoneNumber", phone)
+    request.add_query_param("SceneCode", "SMS_LOGIN")
+    request.add_query_param("OutId", "your_out_id")
 
     try:
-        # 调用阿里云API
         response = client.do_action_with_exception(request)
         res_data = json.loads(response.decode("utf-8"))
         if res_data.get("Code") == "OK":
-            # 返回BizId（验证时需要）
             return JsonResponse({
                 "code": 200,
                 "msg": "验证码发送成功",
@@ -1126,14 +1153,11 @@ def send_sms_code(request):
     except Exception as e:
         return JsonResponse({"code": -1, "msg": f"系统异常：{str(e)}"})
 
-
 @csrf_exempt
 def verify_sms_code(request):
-    """验证短信验证码接口"""
     if request.method != "POST":
         return JsonResponse({"code": -1, "msg": "仅支持POST请求"})
 
-    # 获取前端传递的参数
     data = json.loads(request.body)
     phone = data.get("phone")
     code = data.get("code")
@@ -1141,16 +1165,14 @@ def verify_sms_code(request):
     if not (phone and code and biz_id):
         return JsonResponse({"code": -1, "msg": "参数不完整"})
 
-    # 构造阿里云验证请求
     request = CommonRequest()
     request.set_domain("dypnsapi.aliyuncs.com")
     request.set_version("2017-05-25")
     request.set_action_name("VerifySmsVerifyCode")
     request.set_method("POST")
-    # 请求参数（必填）
     request.add_query_param("PhoneNumber", phone)
-    request.add_query_param("VerifyCode", code)  # 用户输入的验证码
-    request.add_query_param("BizId", biz_id)  # 发送时返回的BizId
+    request.add_query_param("VerifyCode", code)
+    request.add_query_param("BizId", biz_id)
 
     try:
         response = client.do_action_with_exception(request)
