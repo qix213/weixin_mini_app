@@ -1,8 +1,0 @@
-{
-  "usingComponents": {},
-  "navigationBarTitleText": "SSTA商学院",
-  "navigationBarBackgroundColor": "#1E88E5",
-  "navigationBarTextStyle": "white",
-  "enablePullDownRefresh": true,
-  "onReachBottomDistance": 100
-}
