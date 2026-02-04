@@ -27,5 +27,4 @@
   bindfocus="onFocus"
   bindconfirm="onConfirm"
   bindkeyboardheightchange="onKeyboardHeightChange"
-  bindnicknamereview="onBindNicknameReview"
 />

@@ -26,14 +26,13 @@
   </view>
 </view>
 
-<!-- 以下代码保持不变 -->
 <!-- 公告区域 -->
 <view class="notice">
   <image src="/images/home/board.png" mode="aspectFit" style="width: 100rpx; height: 100rpx;" />
   <text>最新优惠活动信息：{{notice}} {{content}}</text>
 </view>
 
-<!-- 轮播图（修复wx:for绑定错误，正常渲染） -->
+<!-- 轮播图 -->
 <view class="banner" wx:if="{{banner_list.length > 0}}">
   <swiper autoplay indicator-dots circular indicator-color="#FFFFFF" interval="4000">
     <swiper-item wx:for="{{banner_list}}" wx:key="index">
@@ -42,9 +41,34 @@
   </swiper>
 </view>
 
-<view class="notice">
-  <text>明星家居产品</text>
+<!-- 明星产品区域（重构优化） -->
+<view class="section-title-wrap">
+  <text class="section-title">明星家居产品</text>
 </view>
+<view class="star-goods-section" wx:if="{{star_goods.length > 0}}">
+  <view class="star-goods-container">
+    <block wx:for="{{star_goods}}" wx:key="id">
+      <view class="star-goods-item" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+        <image 
+          src="{{item.image}}" 
+          mode="aspectFit"  
+          class="star-goods-img"
+          lazy-load="true"
+          default-src="/images/home/default-img.png"
+        />
+        <view class="goods-info">
+          <text class="goods-name">{{item.name}}</text>
+          <view class="price-wrap">
+            <text class="current-price">¥{{item.price}}</text>
+            <text class="original-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>
+
+<!-- 原有固定图片区域（保留）
 <view class="fixed-images-section" wx:if="{{fixed_images.length > 0}}">
   <view class="fixed-images-container">
     <block wx:for="{{fixed_images}}" wx:key="id">
@@ -62,4 +86,4 @@
       </view>
     </block>
   </view>
-</view>
+</view> -->

@@ -19,7 +19,6 @@
   color="{{ activeColor }}"
   border="{{ false }}"
   swipeable="{{ swipeable }}"
-  ellipsis="{{ ellipsis }}"
   bind:click="onClickTab"
 >
   <van-tab

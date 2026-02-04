@@ -3,7 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Collection,Category, Goods,
  VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
-                     Address, Order)
+                     Address, Order,GoodsImage)
 
 admin.site.register(Welcome)
 admin.site.register(Banner)
@@ -14,6 +14,7 @@ admin.site.register(Area)
 admin.site.register(Collection)
 admin.site.register(Category)
 admin.site.register(Goods)
+admin.site.register(GoodsImage)
 admin.site.register(VideoCourse)
 admin.site.register(StudyCheckIn)
 admin.site.register(ExamQuestion)

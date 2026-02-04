@@ -3,32 +3,11 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/school/school",
-          "pathName": "pages/school/school",
-          "query": "",
-          "scene": null,
-          "launchMode": "default"
-        },
-        {
-          "name": "pages/address/address",
-          "pathName": "pages/address/address",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
           "name": "pages/index/index",
           "pathName": "pages/index/index",
           "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
-          "name": "pages/register/register",
-          "pathName": "pages/register/register",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
@@ -51,5 +30,5 @@
     "bigPackageSizeSupport": false
   },
   "libVersion": "3.14.0",
-  "projectname": "miniprogram-test"
+  "projectname": "demo1"
 }

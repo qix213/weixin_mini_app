@@ -90,16 +90,15 @@ var utils_1 = require("../common/utils");
             this.close('overlay');
         },
         close: function (action) {
+            var _this = this;
             this.setData({ show: false });
-            this.closeAction = action;
-        },
-        onAfterLeave: function () {
-            var action = this.closeAction;
-            this.$emit('close', action);
-            var callback = this.data.callback;
-            if (callback) {
-                callback(action, this);
-            }
+            wx.nextTick(function () {
+                _this.$emit('close', action);
+                var callback = _this.data.callback;
+                if (callback) {
+                    callback(action, _this);
+                }
+            });
         },
         stopLoading: function () {
             this.setData({

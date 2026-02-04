@@ -1,7 +1,7 @@
-"""
-视图文件 - 修复logger未定义 + 冗余代码 + 语法错误
-"""
-from django.shortcuts import render, get_object_or_404
+
+# 视图文件 - 修复logger未定义 + 冗余代码 + 语法错误
+
+from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
@@ -25,7 +25,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django_filters.rest_framework import DjangoFilterBackend
 from aliyunsdkcore.client import AcsClient
-from aliyunsdkcore.request import CommonRequest
+from aliyunsdkcore.request import AcsRequest
 
 # 本地导入
 from .models import (
@@ -95,10 +95,10 @@ class CategoryView(ListModelMixin, GenericViewSet):
             'msg': 'success',
             'data': res.data
         })
-
 class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     permission_classes = [AllowAny]
-    queryset = Goods.objects.all().order_by('id')
+    # 关联查询images，避免N+1查询，提升性能
+    queryset = Goods.objects.all().order_by('id').prefetch_related('images')
     serializer_class = GoodsSerializer
 
     def list(self, request, *args, **kwargs):
@@ -133,8 +133,6 @@ class GoodsViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
                 'msg': '商品不存在',
                 'data': {}
             })
-
-
 class VideoCourseViewSet(ModelViewSet):
     queryset = VideoCourse.objects.filter(is_publish=True)
     serializer_class = VideoCourseSerializer
@@ -1127,7 +1125,7 @@ def send_sms_code(request):
     if not phone or not phone.startswith("1") or len(phone) != 11:
         return JsonResponse({"code": -1, "msg": "手机号格式错误"})
 
-    request = CommonRequest()
+    request = AcsRequest()
     request.set_domain("dypnsapi.aliyuncs.com")
     request.set_version("2017-05-25")
     request.set_action_name("SendSmsVerifyCode")
@@ -1165,7 +1163,7 @@ def verify_sms_code(request):
     if not (phone and code and biz_id):
         return JsonResponse({"code": -1, "msg": "参数不完整"})
 
-    request = CommonRequest()
+    request = AcsRequest()
     request.set_domain("dypnsapi.aliyuncs.com")
     request.set_version("2017-05-25")
     request.set_action_name("VerifySmsVerifyCode")

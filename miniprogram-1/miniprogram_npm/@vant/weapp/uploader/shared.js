@@ -34,10 +34,6 @@ exports.videoProps = {
         type: String,
         value: 'back',
     },
-    referrerPolicy: {
-        type: String,
-        value: 'no-referrer',
-    },
 };
 // props for media
 exports.mediaProps = {
@@ -61,8 +57,4 @@ exports.mediaProps = {
 // props for file
 exports.messageFileProps = {
     extension: null,
-    previewFile: {
-        type: Boolean,
-        value: true,
-    },
 };

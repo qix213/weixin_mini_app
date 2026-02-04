@@ -102,8 +102,33 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+# 原有Goods模型保持不变，新增GoodsImage模型存储多组介绍图
+class GoodsImage(models.Model):
+    """商品多图模型（关联主商品）"""
+    goods = models.ForeignKey(
+        'Goods',
+        on_delete=models.CASCADE,
+        related_name='images',  # 反向关联名，用于查询商品的所有图片
+        verbose_name='所属商品'
+    )
+    image = models.ImageField('商品介绍图', upload_to='goods/images/')  # 图片存储路径
+    order = models.IntegerField('排序', default=0)  # 图片展示顺序
+    create_time = models.DateTimeField('创建时间', auto_now_add=True)
 
-# 商品信息
+    class Meta:
+        verbose_name = '商品图片'
+        verbose_name_plural = verbose_name
+        ordering = ['order']  # 按排序字段升序展示
+
+    def __str__(self):
+        return f"{self.goods.name} - 图片{self.order}"
+
+    # 序列化时返回完整图片URL
+    @property
+    def image_url(self):
+        return f"http://localhost:8000{self.image.url}"
+
+# 原有Goods模型（补充注释，无需修改）
 class Goods(models.Model):
     name = models.CharField('商品名称', max_length=100)
     brief_intro = models.CharField('简短介绍', max_length=200)
@@ -113,10 +138,10 @@ class Goods(models.Model):
     member_price = models.DecimalField('会员价', max_digits=10, decimal_places=2)
     stock = models.IntegerField('库存', default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='所属分类')
-    # 商品主图（可多图，这里简化为单图，多图可新建GoodsImage模型）
-    image = models.ImageField('商品图片', upload_to='goods/')
+    image = models.ImageField('商品主图', upload_to='goods/')  # 主图保留
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
+    is_star = models.BooleanField('是否明星产品', default=False)
 
     class Meta:
         verbose_name = '商品'
@@ -125,10 +150,9 @@ class Goods(models.Model):
     def __str__(self):
         return self.name
 
-    # 序列化时返回图片完整URL
     @property
     def image_url(self):
-        return f"http://localhost:8000/{self.image.url}"
+        return f"http://localhost:8000{self.image.url}"
 
 from django.contrib.auth.models import User
 
@@ -208,7 +232,7 @@ class User(AbstractUser):
                                     related_name='sub_users', verbose_name="上级会员")
 
     points = models.IntegerField(default=0, verbose_name="积分余额")
-    coupon_count = models.IntegerField(default=0, verbose_name="星礼券数量")
+    coupon_count = models.IntegerField(default=0, verbose_name="优惠量")
     star_level = models.IntegerField(default=1, verbose_name="星级（1-5星）")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="注册时间")
 

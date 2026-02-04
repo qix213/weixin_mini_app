@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Banner, Notice, Collection, Category, Goods, Index_Annonce
+from .models import Banner, Notice, Collection, Category, Goods, GoodsImage, Index_Annonce
 class BannerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Banner
@@ -26,11 +26,26 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+# 新增商品图片序列化器
+class GoodsImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.CharField(read_only=True)  # 读取自定义的URL属性
+
+    class Meta:
+        model = GoodsImage
+        fields = ['id', 'image_url', 'order']
+
+# 修改原有GoodsSerializer，嵌套图片序列化器
 class GoodsSerializer(serializers.ModelSerializer):
-    image_url = serializers.CharField(read_only=True) # 自定义图片URL字段
+    image_url = serializers.CharField(read_only=True)
+    is_star = serializers.BooleanField(read_only=True)
+    original_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    member_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    # 嵌套序列化商品的所有图片（related_name='images'）
+    images = GoodsImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Goods
-        fields = '__all__'
+        fields = '__all__'  # 包含images字段
 
 from .models import Cart, Recipient
 class CartSerializer(serializers.ModelSerializer):

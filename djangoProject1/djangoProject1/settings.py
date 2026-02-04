@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'app01.apps.App01Config',
     'rest_framework',
     'corsheaders',  # 跨域处理
+    'rest_framework_simplejwt',
     'django_filters',
 ]
 
@@ -156,9 +157,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 找到 REST_FRAMEWORK 配置部分，修正如下：
 REST_FRAMEWORK = {
     # 启用JWT认证（删除空列表的重复定义）
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES':
+        [   'rest_framework_simplejwt.authentication.JWTAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+        ],
+    # 权限类：默认要求登录，视图可单独覆盖
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     # 渲染器配置
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -167,6 +173,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'UNAUTHENTICATED_USER': None,
+    'UNAUTHENTICATED_TOKEN': None,
 }
 
 # 保持 SIMPLE_JWT 配置不变（已正确设置）

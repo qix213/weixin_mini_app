@@ -251,7 +251,7 @@ Page({
       Toast.fail("无效的商品ID");
       return;
     }
-    const detailPath = `/pages/mall/detail?id=${goodsId}`;
+    const detailPath = `/pages/mall/detail?goods_id=${goodsId}`;
     wx.navigateTo({
       url: detailPath,
       fail: (err) => {

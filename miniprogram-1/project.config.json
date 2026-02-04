@@ -35,5 +35,15 @@
     "include": []
   },
   "appid": "wx30761f21fdf24487",
-  "editorSetting": {}
+  "editorSetting": {},
+  "nodeModules": true,
+  "packNpmManually": true,
+  "packNpmRelationList": [
+    {
+      "packageJsonPath": "./package.json",
+      "miniprogramNpmDistDir": "./"
+    }
+  ],
+  "miniprogramRoot": "./",
+  "libVersion": "3.14.0"
 }

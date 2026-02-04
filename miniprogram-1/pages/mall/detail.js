@@ -1,18 +1,19 @@
 import Toast from '@vant/weapp/toast/toast';
-const app = getApp(); // 全局获取 app 实例
+const app = getApp();
 
 Page({
   data: {
-    goodsId: '', // 商品ID
-    goodsDetail: {}, // 商品详情数据
-    loading: true, // 加载状态
+    goodsId: '',
+    goodsDetail: {},
+    loading: true,
     baseUrl: 'http://localhost:8000',
-    cartNum: 1, // 默认购买数量
+    cartNum: 1,
+    currentSwipeIndex: 0,
+    imageList: []
   },
 
   onLoad(options) {
-    // 接收从商品列表传递的商品ID
-    const goodsId = options.id;
+    const goodsId = options.goods_id;
     if (!goodsId) {
       Toast.fail('无效的商品ID');
       setTimeout(() => {
@@ -21,89 +22,104 @@ Page({
       return;
     }
     this.setData({ goodsId });
-    // 获取商品详情（核心修改：无需登录，直接请求）
     this.getGoodsDetail();
   },
 
-  // 获取商品详情（核心修改：移除登录校验，纯公开访问）
+  // 修复：处理URL双斜杠 + 强化空值判断
   getGoodsDetail() {
     const { goodsId, baseUrl } = this.data;
 
-    // 核心修改：不携带token，直接请求（浏览详情无需登录）
     wx.request({
       url: `${baseUrl}/app01/goods/${goodsId}/`,
       method: 'GET',
-      header: { 'Content-Type': 'application/json' }, // 仅基础头，无token
+      header: { 'Content-Type': 'application/json' },
       timeout: 5000,
       success: (res) => {
-        console.log('商品详情请求成功：', res.data);
-        // 处理后端不同的响应格式
-        if (res.statusCode === 200) {
-          // 情况1：后端返回自定义格式（code=200）
-          if (res.data.code === 200) {
-            this.setData({ goodsDetail: res.data.data });
+        console.log('商品详情完整返回数据：', res.data);
+        if (res.statusCode === 200 && res.data.code === 200) {
+          let goodsData = res.data.data;
+          let imageList = [];
+
+          // 修复1：处理主图URL双斜杠
+          if (goodsData.image_url) {
+            const fixedMainUrl = goodsData.image_url.replace('//media/', '/media/');
+            imageList.push(fixedMainUrl);
           }
-          // 情况2：后端返回DRF默认序列化格式（无code）
-          else if (res.data.id) {
-            this.setData({ goodsDetail: res.data });
-          } else {
-            Toast.fail('获取商品详情失败：数据格式异常');
-            this.setData({ goodsDetail: {} });
+
+          // 修复2：处理组图URL双斜杠 + 按order排序
+          if (goodsData.images && goodsData.images.length > 0) {
+            // 先按order排序（避免图片顺序混乱）
+            const sortedImages = goodsData.images.sort((a, b) => a.order - b.order);
+            sortedImages.forEach(img => {
+              if (img.image_url) {
+                const fixedImgUrl = img.image_url.replace('//media/', '/media/');
+                imageList.push(fixedImgUrl);
+              }
+            });
           }
-        }
-        // 核心修改：401时仅提示，不强制登录/返回
-        else if (res.statusCode === 401) {
-          Toast.info('部分功能需登录后使用，仍可浏览商品');
-          // 尝试解析无token时的商品数据（如果后端返回）
-          if (res.data.id) {
-            this.setData({ goodsDetail: res.data });
-          } else {
-            this.setData({ goodsDetail: {} });
-          }
-        }
-        // 其他错误
-        else {
-          Toast.fail(`获取商品详情失败：${res.data?.detail || res.statusCode}`);
-          this.setData({ goodsDetail: {} });
+
+          // 验证：打印最终的图片列表
+          console.log('整理后的轮播图列表：', imageList);
+          this.setData({ 
+            goodsDetail: goodsData,
+            imageList: imageList 
+          });
+        } else {
+          Toast.fail('获取商品详情失败：' + (res.data?.msg || '数据格式异常'));
         }
       },
       fail: (err) => {
         console.error('商品详情请求失败：', err);
         Toast.fail('网络异常，详情加载失败');
-        this.setData({ goodsDetail: {} });
       },
       complete: () => {
         this.setData({ loading: false });
       }
     });
   },
+  imageLoadError(e) {
+    console.error('图片加载失败：', e.detail.errMsg, 'URL：', e.currentTarget.src);
+    Toast.fail('图片加载失败，请检查URL');
+  },
+  // 图片加载成功监听
+  imageLoadSuccess(e) {
+    console.log('图片加载成功：', e.currentTarget.src);
+  },
+  onSwipeChange(e) {
+    this.setData({ currentSwipeIndex: e.detail.current });
+  },
 
-  // 减少数量（仅本地，无需登录）
+  previewImages(e) {
+    const { imageList } = this.data;
+    if (imageList.length === 0) return;
+    const currentIndex = e.currentTarget.dataset.index || 0;
+    wx.previewImage({
+      current: imageList[currentIndex],
+      urls: imageList
+    });
+  },
+
   minusNum() {
     const { cartNum } = this.data;
     if (cartNum <= 1) return;
     this.setData({ cartNum: cartNum - 1 });
   },
 
-  // 增加数量（仅本地，无需登录）
   plusNum() {
     const { cartNum } = this.data;
     this.setData({ cartNum: cartNum + 1 });
   },
 
-  // 手动修改数量（仅本地，无需登录）
   changeNum(e) {
     const num = parseInt(e.detail.value) || 1;
     this.setData({ cartNum: num < 1 ? 1 : num });
   },
 
-  // 获取Token工具方法（仅用于操作校验）
   getValidToken() {
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     return token;
   },
 
-  // 加入购物车（仅操作需要登录，浏览无需）
   addToCart() {
     const { goodsDetail, cartNum } = this.data;
     if (!goodsDetail.id) {
@@ -111,19 +127,15 @@ Page({
       return;
     }
 
-    // 1. 校验 Token（仅操作需要）
     const token = this.getValidToken();
     if (!token) {
-      // 核心修改：仅提示，不强制弹窗跳转
       Toast('登录后可将商品同步到购物车（已本地缓存）');
-      // 本地缓存数量
       const cartList = wx.getStorageSync('cartList') || {};
       cartList[goodsDetail.id] = cartNum;
       wx.setStorageSync('cartList', cartList);
       return;
     }
 
-    // 2. 有token时同步后端
     wx.request({
       url: `${this.data.baseUrl}/app01/cart/add/`,
       method: 'POST',
@@ -157,7 +169,6 @@ Page({
     });
   },
 
-  // 立即购买（仅操作需要登录，浏览无需）
   buyNow() {
     const { goodsDetail, cartNum } = this.data;
     if (!goodsDetail.id) {
@@ -165,15 +176,12 @@ Page({
       return;
     }
 
-    // 1. 校验 Token（仅操作需要）
     const token = this.getValidToken();
     if (!token) {
-      // 核心修改：仅提示，不强制弹窗跳转
       Toast('登录后可结算商品');
       return;
     }
 
-    // 2. 有token时执行结算
     wx.request({
       url: `${this.data.baseUrl}/app01/cart/add/`,
       method: 'POST',
@@ -206,16 +214,5 @@ Page({
     });
   },
 
-  // 预览商品主图（浏览无需登录）
-  previewMainImg() {
-    const { goodsDetail, baseUrl } = this.data;
-    if (!goodsDetail.image_url) return;
-    const fullImgUrl = goodsDetail.image_url.startsWith('http') 
-      ? goodsDetail.image_url 
-      : `${baseUrl}/media/${goodsDetail.image_url}`;
-    wx.previewImage({
-      current: fullImgUrl,
-      urls: [fullImgUrl]
-    });
-  }
+  previewMainImg() {}
 });

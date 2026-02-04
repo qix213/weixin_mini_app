@@ -17,8 +17,7 @@ from .views import (
     # 收件人/地址相关
     RecipientView, CheckoutView, AddressView, AddressManageView, AddressDetailView, SetDefaultAddressView,
     # 订单相关
-    OrderAddView, OrderListView,
-)
+    OrderAddView, OrderListView)
 
 # 初始化路由路由器
 router = SimpleRouter()
