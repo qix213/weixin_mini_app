@@ -224,6 +224,31 @@ Page({
     wx.showToast({ title: '验证码发送成功（123456）', icon: 'success' });
   },
 
+ sendRegisterPoints(phone) {
+   if (!phone) return;
+   wx.request({
+     url: `${app.globalData.baseUrl}/app01/member/give-register-points/`, // 后端赠积分接口
+     method: 'POST',
+     header: {
+       'Content-Type': 'application/json',
+       'Authorization': `Bearer ${app.globalData.accessToken}` // 注册成功后已有token
+     },
+     data: {
+       phone: phone,
+       points: 1000 // 赠送的积分值
+     },
+     success: (res) => {
+       if (res.data.code === 200) {
+         console.log('注册送1000积分成功：', res.data);
+       } else {
+         console.warn('注册送积分失败：', res.data.msg);
+       }
+     },
+     fail: (err) => {
+       console.error('注册送积分接口请求失败：', err);
+     }
+   });
+ },
   // 注册逻辑（核心优化：跳转支付页时新增scene场景参数）
   handleRegister() {
     const {
@@ -280,7 +305,8 @@ Page({
           wx.setStorageSync('accessToken', res.data.access);
           wx.setStorageSync('refreshToken', res.data.refresh);
           wx.setStorageSync('isLogin', true);
-
+          this.sendRegisterPoints(phone); // 传手机号，异步执行不阻塞跳转
+          
           // ====== 核心优化：跳转逻辑（新增scene场景参数） ======
           if (userType === 1) {
             // 0元会员：直接跳首页

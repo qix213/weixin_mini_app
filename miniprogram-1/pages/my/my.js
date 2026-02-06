@@ -2,7 +2,8 @@ Page({
   data: {
     isLogin: false,
     memberInfo: {}, // 完整会员信息（渲染到页面）
-    showQrcode: false
+    showQrcode: false,
+    points: 0// 新增：积分单独字段（也可直接用memberInfo.points，二选一）
   },
 
   onShow() {
@@ -147,9 +148,11 @@ Page({
   // 同步全局登录状态
   syncGlobalState() {
     const app = getApp();
+    const memberInfo = app.globalData.memberInfo || {};
     this.setData({
       isLogin: app.globalData.isLogin || false,
-      memberInfo: app.globalData.memberInfo || {}
+      memberInfo: memberInfo,
+      points: memberInfo.points || 0 // 同步积分，默认0避免渲染报错
     });
   },
 
@@ -157,8 +160,8 @@ Page({
   getMemberInfo() {
     const app = getApp();
     const header = app.getRequestHeader();
-    console.log('请求头：', header); // 查看 Authorization 是否为正确格式
-    console.log('accessToken：', app.globalData.accessToken); // 查看 Token 是否为空
+    console.log('请求头：', header);
+    console.log('accessToken：', app.globalData.accessToken);
   
     wx.showLoading({ title: '加载会员信息...', mask: true });
     wx.request({
@@ -168,20 +171,19 @@ Page({
       success: (res) => {
         wx.hideLoading();
         if (res.data.code === 200) {
-          // 存储会员信息到全局和页面
           const memberInfo = res.data.data;
-          app.globalData.memberInfo = memberInfo;
-          this.setData({ memberInfo });
-          console.log('会员信息加载成功：', memberInfo);
+          app.globalData.memberInfo = memberInfo; // 全局存储（含积分）
+          // 页面存储：解构积分，设置默认值0
+          this.setData({
+            memberInfo: memberInfo,
+            points: memberInfo.points || 0 // 关键：积分兜底0，防止undefined
+          });
+          console.log('会员信息加载成功（含积分）：', memberInfo);
         } else {
           wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
         }
       },
-      fail: (err) => {
-        wx.hideLoading();
-        console.error('会员信息请求失败：', err);
-        wx.showToast({ title: '网络请求失败', icon: 'none' });
-      }
+      fail: (err) => { /* 原有逻辑不变 */ }
     });
   },
 

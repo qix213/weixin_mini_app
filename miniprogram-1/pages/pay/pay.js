@@ -73,7 +73,7 @@ Page({
         duration: 2000
       });
 
-      // ========== 核心修改：调用paySuccess清空购物车 ==========
+      // ========== 核心修改：调用paySuccess清空购物车+触发积分 ==========
       this.paySuccess(this.data.orderId);
       // ======================================================
 
@@ -85,9 +85,9 @@ Page({
     wx.navigateBack({ delta: 1 });
   },
 
-  // 支付成功后的逻辑（修复：清空后跳商城页面）
+  // 支付成功后的逻辑（新增：调用支付回调接口触发积分）
   paySuccess(orderId) {
-    console.log('开始清空购物车：', { orderId }); // 先打印日志，确认进入函数
+    console.log('开始清空购物车+触发积分：', { orderId }); // 先打印日志，确认进入函数
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     console.log('当前token：', accessToken); // 打印token，确认有值
 
@@ -96,6 +96,31 @@ Page({
       wx.switchTab({url: '/pages/mall/mall'}); // 无token时直接跳商城
       return;
     }
+
+    // ========== 新增：调用支付回调接口（触发积分赠送） ==========
+    const callPaySuccessApi = () => {
+      return new Promise((resolve) => {
+        wx.request({
+          url: 'http://localhost:8000/app01/order/pay_success/', // 支付回调接口地址
+          method: 'POST',
+          header: {
+            'content-type': 'application/json',
+            'Authorization': `Bearer ${accessToken}` // 必须带token（接口需要登录权限）
+          },
+          data: {
+            order_id: orderId, // 传递订单ID
+            pay_method: this.data.selectedPayMethod // 传递支付方式（1=微信，2=支付宝）
+          },
+          success: (res) => {
+            console.log('支付回调接口调用成功（积分已赠送）：', res.data);
+          },
+          fail: (err) => {
+            console.error('支付回调接口调用失败（积分未赠送）：', err);
+          },
+          complete: () => resolve()
+        });
+      });
+    };
 
     // 定义清空购物车的通用方法
     const clearCart = (isPrecise = false) => {
@@ -123,16 +148,15 @@ Page({
       });
     };
 
-    // 先尝试精准清空，失败则全清，最后跳商城
-    clearCart(true).finally(() => {
-      clearCart(false).finally(() => {
-        // ========== 核心修改：跳转到商城页面（tabBar页面用switchTab） ==========
-        wx.switchTab({
-          url: '/pages/mall/mall'
+    // 执行顺序：先调用支付回调（触发积分）→ 再清空购物车 → 最后跳商城
+    callPaySuccessApi().then(() => {
+      clearCart(true).finally(() => {
+        clearCart(false).finally(() => {
+          wx.switchTab({
+            url: '/pages/mall/mall'
+          });
         });
-        // ================================================================
       });
     });
   }
-
 });

@@ -34,7 +34,7 @@
   <view class="asset-container" wx:if="{{isLogin}}">
     <view class="asset-item" bindtap="goToPoints">
       <view class="asset-title">会员积分</view>
-      <view class="asset-value">{{memberInfo.points || 0}}</view>
+      <view class="asset-value">{{points || 0}}</view>
     </view>
     <view class="asset-divider"></view>
     <view class="asset-item" bindtap="goToCoupon">

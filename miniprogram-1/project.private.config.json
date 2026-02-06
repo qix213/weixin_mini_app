@@ -3,11 +3,18 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/index/index",
-          "pathName": "pages/index/index",
+          "name": "pages/cart/cart",
+          "pathName": "pages/cart/cart",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

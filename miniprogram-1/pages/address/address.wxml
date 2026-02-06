@@ -22,7 +22,7 @@
         <text class="phone">{{item.phone}}</text>
       </view>
       <view class="address-row">
-        {{item.address}} {{item.detail_address}}
+        {{item.address}} {{item.detail}}
       </view>
 
       <!-- 操作按钮 -->
