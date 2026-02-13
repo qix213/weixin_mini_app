@@ -235,7 +235,7 @@ Page({
      },
      data: {
        phone: phone,
-       points: 1000 // 赠送的积分值
+       points: 0 // 赠送的积分值
      },
      success: (res) => {
        if (res.data.code === 200) {

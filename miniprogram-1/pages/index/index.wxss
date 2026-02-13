@@ -200,7 +200,7 @@ page {
 .notice>text {
   flex-grow: 1;
   font-size: medium;
-  color: blue;
+  color:  #1e95e5;
 }
 
 /* 明星产品区域样式（核心优化）↑ */

@@ -47,21 +47,6 @@ class Index_Annonce(models.Model):
     def __str__(self):
         return str(self.img)
 
-class Collection(models.Model):
-    name = models.CharField(max_length=32, verbose_name='姓名')
-    name_pinyin = models.CharField(max_length=32, verbose_name='姓名拼音', null=True)
-    avatar = models.ImageField(upload_to='collection/%Y/%m/%d', default='default.png', verbose_name='头像')
-    create_time = models.DateTimeField(auto_now=True, verbose_name='采集时间')
-    score = models.IntegerField(verbose_name='积分', default=0)
-    area = models.ForeignKey(to='Area', null=True, verbose_name='门店名称', on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = '会员信息采集表'
-        verbose_name_plural = verbose_name
-
-    def __str__(self):
-        return self.name
-
 class Area(models.Model):
     name = models.CharField(max_length=32, verbose_name='门店全名')
     desc = models.CharField(max_length=32, verbose_name='门店简称')
@@ -168,6 +153,7 @@ class VideoCourse(models.Model):
     is_publish = models.BooleanField(default=True, verbose_name="是否发布")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+    duration_seconds = models.IntegerField(default=0, verbose_name="视频总时长(秒)")
     # 新增：观看该视频的最低会员等级（关联User的user_type）
     REQUIRED_LEVEL_CHOICES = (
         (1, "蓝朋友"),
@@ -189,12 +175,142 @@ class VideoCourse(models.Model):
     def __str__(self):
         return self.title
 
+
+# 恢复为稳定版本的 VideoWatchLog（无类型冲突）
+# 务必确保导入在文件中正确位置（建议放在VideoCourse模型下方）
+from django.db import models
+from django.conf import settings
+from django.utils import timezone  # 引入Django时区工具（适配时间字段）
+
+# 视频观看日志模型（完整、无冲突版本）
+class VideoWatchLog(models.Model):
+    """视频观看日志：记录用户观看视频的全生命周期数据"""
+    # 关联用户（使用settings.AUTH_USER_MODEL适配自定义User，避免硬编码）
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="video_watch_logs",  # 反向关联：user.video_watch_logs 查用户所有观看记录
+        verbose_name="观看用户"
+    )
+    # 关联视频课程（外键关联VideoCourse，允许null/blank适配异常场景）
+    video = models.ForeignKey(
+        'VideoCourse',
+        on_delete=models.CASCADE,
+        related_name="watch_logs",  # 反向关联：video.watch_logs 查视频所有观看记录
+        null=True,
+        blank=True,
+        verbose_name="关联视频课程"
+    )
+    # 核心时间字段
+    watch_start = models.DateTimeField(
+        default=timezone.now,  # 默认当前时间，兼容手动创建场景
+        verbose_name="开始观看时间"
+    )
+    watch_end = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="结束观看时间"  # 视频播放完成/用户退出时更新
+    )
+    # 播放数据字段
+    total_watch_sec = models.IntegerField(
+        default=0,
+        verbose_name="累计观看秒数"  # 记录用户实际观看时长
+    )
+    last_progress_sec = models.IntegerField(
+        default=0,
+        verbose_name="最后上报进度（秒）"  # 新增：适配前端进度上报，避免重复统计
+    )
+    is_finished = models.BooleanField(
+        default=False,
+        verbose_name="是否完整观看"  # 累计时长≥视频总时长则标记为True
+    )
+    point_given = models.BooleanField(
+        default=False,
+        verbose_name="是否已发放积分"
+    )
+
+    class Meta:
+        verbose_name = "视频观看日志"
+        verbose_name_plural = "视频观看日志"
+        # 唯一约束：同一用户对同一视频仅保留一条有效观看记录（按业务需求调整）
+        unique_together = ('user', 'video')
+        # 排序：按开始观看时间倒序，最新记录在前
+        ordering = ['-watch_start']
+        # 索引：优化查询（用户+视频、开始时间）
+        indexes = [
+            models.Index(fields=['user', 'video']),
+            models.Index(fields=['watch_start']),
+        ]
+
+    def __str__(self):
+        """友好的字符串展示，避免video为null时报错"""
+        video_title = self.video.title if self.video else "未知视频"
+        user_name = getattr(self.user, 'nickname', self.user.username)  # 兼容nickname/用户名
+        return f"{user_name} - {video_title} - {self.watch_start.strftime('%Y-%m-%d %H:%M')}"
+
+    # 新增：快捷方法 - 计算实际观看时长（秒）
+    @property
+    def watch_duration_sec(self):
+        """返回用户实际观看时长（秒），未结束则计算到当前时间"""
+        if self.watch_end:
+            return int((self.watch_end - self.watch_start).total_seconds())
+        else:
+            return int((timezone.now() - self.watch_start).total_seconds())
+
+    # 新增：更新观看完成状态（适配业务逻辑）
+    def update_finished_status(self, video_total_sec):
+        """
+        根据累计观看时长更新是否完整观看
+        :param video_total_sec: 视频总时长（秒）
+        """
+        if self.total_watch_sec >= video_total_sec:
+            self.is_finished = True
+            self.watch_end = self.watch_end or timezone.now()  # 未设置结束时间则补全
+            self.save(update_fields=['is_finished', 'watch_end'])
+
 # app01/models.py
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 import random
 import string
 
+class PointsRecord(models.Model):
+    """会员积分变动记录（注册/消费/观看视频均生成记录）"""
+    # 积分类型：和三大送分场景严格对应，预留扩展
+    POINTS_TYPE_CHOICES = (
+        (1, '注册赠送'),
+        (2, '消费赠送'),  # 订单支付成功
+        (3, '观看视频赠送'),
+        (4, '打卡赠送'),  # 预留：学习打卡
+        (5, '活动赠送'),  # 预留：营销活动
+    )
+    # 外键指向自定义User模型，级联删除
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='points_records',
+        verbose_name='所属会员'
+    )
+    points = models.IntegerField(verbose_name='积分值', help_text='正整数=增加，负整数=扣除（暂仅用增加）')
+    points_type = models.IntegerField(choices=POINTS_TYPE_CHOICES, verbose_name='积分类型')
+    related_id = models.CharField(max_length=64, blank=True, null=True, verbose_name='关联业务ID', help_text='消费=订单号，视频=视频ID，注册=空')
+    description = models.CharField(max_length=256, blank=True, null=True, verbose_name='变动描述', help_text='前端展示用，如「消费100元赠10分」')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='变动时间')
+
+    class Meta:
+        verbose_name = '会员积分记录'
+        verbose_name_plural = verbose_name
+        ordering = ['-create_time']  # 按时间倒序展示
+        # 联合索引：核心防重复赠送（同一用户+同一场景+同一业务ID，仅能送1次）
+        indexes = [
+            models.Index(fields=['user', 'points_type', 'related_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.nickname}-{self.get_points_type_display()}-{self.points}分"
+
+import logging  # 必须导入logging（模型里没导入会触发新错误）
+logger = logging.getLogger(__name__)  # 定义logger
 class User(AbstractUser):
     # 完整的用户类型（匹配前端1-5）
     USER_TYPE_CHOICES = (
@@ -368,7 +484,81 @@ class User(AbstractUser):
 
         return sub_consume_data
 
+    # 在你的User模型中补充/修复add_points方法
+    def add_points(self, points, points_type, related_id='', related_desc=''):
+        """
+        通用加积分方法（防重复、防负数）
+        :param points: 要添加的积分（正数）
+        :param points_type: 积分类型（1=注册，2=消费，3=观看视频）
+        :param related_id: 关联ID（订单号/视频ID）
+        :param related_desc: 描述
+        :return: (success: bool, msg: str)
+        """
+        from django.db import transaction
+        try:
+            if points <= 0:
+                return False, '积分必须为正数'
 
+            # 防重复：同一related_id+points_type只允许赠送一次
+            if related_id:
+                exists = PointsRecord.objects.filter(
+                    user=self,
+                    points_type=points_type,
+                    related_id=related_id
+                ).exists()
+                if exists:
+                    return False, f'该{related_desc}积分已赠送过，不可重复领取'
+
+            # 原子操作更新积分+记录明细
+            with transaction.atomic():
+                # 更新用户积分
+                self.points += points
+                self.save(update_fields=['points'])
+                # 记录积分明细
+                PointsRecord.objects.create(
+                    user=self,
+                    points=points,
+                    points_type=points_type,
+                    related_id=related_id,
+                    description=related_desc
+                )
+            return True, f'成功添加{points}积分'
+        except Exception as e:
+            logger.error(f'用户{self.member_id}添加积分失败：{str(e)}', exc_info=True)
+            return False, f'添加积分失败：{str(e)[:20]}'
+
+    def get_coupons(self, only_valid=False, coupon_type=None):
+        """
+        查询用户的优惠券
+        :param only_valid: 是否仅返回可用优惠券（未使用+未过期）
+        :param coupon_type: 筛选类型（1=代金券，2=折扣券）
+        :return: UserCoupon查询集
+        """
+        queryset = self.user_coupons.all().select_related("coupon")  # 预加载优惠券模板，提升性能
+
+        # 筛选可用优惠券
+        if only_valid:
+            queryset = queryset.filter(is_used=False).filter(end_time__gt=timezone.now())
+
+        # 筛选优惠券类型
+        if coupon_type in [1, 2]:
+            queryset = queryset.filter(coupon__coupon_type=coupon_type)
+
+        return queryset
+
+    def get_coupon_stats(self):
+        """获取用户优惠券统计（总数/可用数/过期数/已使用数）"""
+        all_coupons = self.user_coupons.all()
+        valid_coupons = self.get_coupons(only_valid=True)
+        expired_coupons = all_coupons.filter(is_used=False, end_time__lt=timezone.now())
+        used_coupons = all_coupons.filter(is_used=True)
+
+        return {
+            "total": all_coupons.count(),
+            "valid": valid_coupons.count(),
+            "expired": expired_coupons.count(),
+            "used": used_coupons.count()
+        }
 # ====================== 打卡学习：4个核心模型（正确引用User） ======================
 
 # 1. 学习打卡模型
@@ -493,16 +683,28 @@ class Address(models.Model):
         ordering = ["-update_time"]  # 按更新时间倒序
 
     def __str__(self):
-        return f"{self.name} - {self.address}{self.detail_address}"
+        return f"{self.name} - {self.address}{self.detail}"
 
 # 订单主表
 class Order(models.Model):
     ORDER_STATUS = (
         (0, "待付款"),
-        (1, "待发货"),
-        (2, "待收货"),
+        (1, "待发货"),   # 快递专用：待发货；到店专用：待取货（通过方法动态替换）
+        (2, "待收货"),   # 仅快递专用
         (3, "已完成"),
         (4, "已取消"),
+    )
+    # 到店自取专用状态映射（覆盖原状态名）
+    PICK_UP_STATUS_MAP = {
+        0: "待付款",
+        1: "待取货",  # 把原“待发货”替换为“待取货”
+        3: "已完成",
+        4: "已取消",
+    }
+
+    DELIVERY_TYPE_CHOICES = (
+        (1, "快递上门"),
+        (2, "到店自取"),
     )
     # 原有核心字段保留
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
@@ -513,7 +715,19 @@ class Order(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="订单总价")
     status = models.IntegerField(choices=ORDER_STATUS, default=0, verbose_name="订单状态")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-
+    # ========== 新增配送相关字段 ==========
+    delivery_type = models.IntegerField(
+        choices=DELIVERY_TYPE_CHOICES,
+        default=1,  # 默认快递上门
+        verbose_name="配送方式"
+    )
+    pick_up_store = models.ForeignKey(
+        Area,  # 关联门店表
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="取货门店"
+    )
     # ========== 新增订单详情字段 ==========
     # 1. 支付相关
     PAY_METHOD_CHOICES = (
@@ -547,9 +761,27 @@ class Order(models.Model):
     def __str__(self):
         return f"{self.order_sn} - {self.get_status_display()}"
 
+    def get_status_name(self):
+        """根据配送类型，返回对应的状态名称"""
+        # 到店自取：使用专用状态映射
+        if self.delivery_type == 2:
+            return self.PICK_UP_STATUS_MAP.get(self.status, f"未知状态({self.status})")
+        # 快递配送：使用原状态名称
+        else:
+            return self.get_status_display()
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        # 到店自取订单，禁止设置状态2（待收货）
+        if self.delivery_type == 2 and self.status == 2:
+            raise ValidationError("到店自取订单不支持「待收货」状态")
+        # 到店自取订单，仅允许状态：0/1/3/4
+        if self.delivery_type == 2 and self.status not in [0, 1, 3, 4]:
+            raise ValidationError("到店自取订单仅支持状态：待付款(0)、待取货(1)、已完成(3)、已取消(4)")
+
     # ✅ 修复1：重写save方法，先保存生成主键，再处理订单商品统计
     def save(self, *args, **kwargs):
-        # 标记是否是新建订单（无主键）
+        self.clean()  # 保存前校验状态合法性
         is_new = self.pk is None
 
         # 第一步：先调用父类save生成主键（关键！）
@@ -590,6 +822,9 @@ class Order(models.Model):
                 for item in self.items.all()
             ]
         return []
+    @property
+    def status_display(self):
+        return self.get_status_name()
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
@@ -632,3 +867,76 @@ class OrderItem(models.Model):
             self.total_price = self.num * self.price
         super().save(*args, **kwargs)
 
+
+import datetime
+
+class Coupon(models.Model):
+    """优惠券模板模型（定义优惠券规则，不直接关联用户）"""
+    # 优惠券类型
+    COUPON_TYPE_CHOICES = (
+        (1, "代金券"),  # 直接抵扣金额
+        (2, "折扣券"),  # 按折扣系数计算
+    )
+    title = models.CharField(max_length=64, verbose_name="优惠券名称")
+    coupon_type = models.IntegerField(choices=COUPON_TYPE_CHOICES, default=1, verbose_name="优惠券类型")
+
+    # 代金券专属字段
+    money = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="抵扣金额（元）")
+
+    # 折扣券专属字段（0.1-0.99，如0.9=9折）
+    discount_rate = models.DecimalField(max_digits=3, decimal_places=2, default=1.00, verbose_name="折扣系数")
+
+    # 通用使用规则
+    min_consume = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="最低使用门槛（元）")
+    valid_days = models.IntegerField(default=90, verbose_name="有效期天数")  # 领取后N天有效
+    is_active = models.BooleanField(default=True, verbose_name="是否启用")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        verbose_name = "优惠券模板"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        if self.coupon_type == 1:
+            return f"{self.title} - 代金券{self.money}元"
+        else:
+            return f"{self.title} - {self.discount_rate * 10}折券"
+
+
+class UserCoupon(models.Model):
+    """用户持有的优惠券（关联用户和优惠券模板）"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_coupons",
+                             verbose_name="所属用户")
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="user_coupons", verbose_name="优惠券模板")
+
+    # 核心状态字段
+    start_time = models.DateTimeField(auto_now_add=True, verbose_name="领取时间")
+    end_time = models.DateTimeField(verbose_name="过期时间")  # 自动计算：start_time + valid_days
+    is_used = models.BooleanField(default=False, verbose_name="是否已使用")
+    used_time = models.DateTimeField(null=True, blank=True, verbose_name="使用时间")
+    order_sn = models.CharField(max_length=64, null=True, blank=True, verbose_name="关联订单号")  # 关联使用的订单
+
+    class Meta:
+        verbose_name = "用户优惠券"
+        verbose_name_plural = verbose_name
+        ordering = ["-start_time"]
+
+    def __str__(self):
+        status = "已使用" if self.is_used else ("已过期" if self.is_expired else "未使用")
+        return f"{self.user.nickname} - {self.coupon.title} - {status}"
+
+    def save(self, *args, **kwargs):
+        # 自动计算过期时间（领取时间 + 模板的有效期天数）
+        if not self.end_time:
+            self.end_time = self.start_time + datetime.timedelta(days=self.coupon.valid_days)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        """判断优惠券是否过期"""
+        return timezone.now() > self.end_time
+
+    @property
+    def is_valid(self):
+        """判断优惠券是否可用（未使用+未过期）"""
+        return not self.is_used and not self.is_expired

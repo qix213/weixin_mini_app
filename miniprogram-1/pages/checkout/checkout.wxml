@@ -1,63 +1,107 @@
-<view class="checkout-container">
-  <!-- 收货地址区域 -->
-  <van-cell-group class="address-wrap">
-    <van-cell 
-      title="收货地址" 
-      is-link 
-      bindtap="toAddressPage"
-      value="{{defaultAddress.name}} {{defaultAddress.phone}}"
-      label="{{defaultAddress.address + defaultAddress.detail_address}}"
-      wx:if="{{defaultAddress}}"
-    >
-      <van-icon slot="left-icon" name="location-o" color="#ff6700" />
-    </van-cell>
-    <van-cell 
-      title="收货地址" 
-      is-link 
-      bindtap="toAddressPage"
-      value="暂无收货地址，点击添加"
-      wx:else
-    >
-      <van-icon slot="left-icon" name="location-o" color="#999" />
-    </van-cell>
-  </van-cell-group>
+<view style="background:#f5f5f5;min-height:100vh;padding-bottom:120rpx;">
 
-  <!-- 分割线 -->
-  <view class="line"></view>
+<!-- 顶部标题 -->
+<view style="background:#fff;height:88rpx;line-height:88rpx;text-align:center;font-size:32rpx;font-weight:600;">
+  结算页面
+</view>
 
-  <!-- 结算商品列表 -->
-  <view class="goods-title">结算商品</view>
-  <view class="goods-list">
-    <van-card 
-      wx:for="{{cartList}}" 
-      wx:key="id" 
-      title="{{item.goods.name}}" 
-      thumb="{{item.goods.image_url}}"
-      price="{{item.goods.member_price}}"
-      class="goods-item"
-      border="{{true}}"
-    >
-      <view slot="desc">数量：{{item.num}}件</view>
-      <view slot="footer">小计：{{item.total_price}}</view>
-    </van-card>
+<!-- 配送方式：按钮选中直接蓝色，100%生效 -->
+<view style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;">
+  <view style="font-size:30rpx;font-weight:600;margin-bottom:20rpx;">配送方式</view>
+  <view style="display:flex;gap:20rpx;">
+    <view 
+      data-type="1"
+      bindtap="switchDeliveryType"
+      style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;
+      {{deliveryType==1?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
+      快递上门
+    </view>
+    <view 
+      data-type="2"
+      bindtap="switchDeliveryType"
+      style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;
+      {{deliveryType==2?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
+      到店自取
+    </view>
   </view>
+</view>
 
-  <!-- 无商品提示 -->
-  <view class="empty-wrap" wx:if="{{cartList.length == 0}}">
-    <view class="empty-text">暂无结算商品</view>
-    <van-button size="mini" type="primary" bindtap="toCart">返回购物车</van-button>
+<!-- 快递上门：地址 100% 显示 -->
+<view wx:if="{{deliveryType==1}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;" bindtap="toAddressPage">
+  <view style="display:flex;align-items:center;">
+    <view style="font-size:32rpx;margin-right:20rpx;color:#0066cc;">📍</view>
+    <view style="flex:1;">
+      <view style="font-size:28rpx;font-weight:500;">收货地址</view>
+      <view wx:if="{{defaultAddress}}" style="font-size:26rpx;color:#666;margin-top:8rpx;">
+        <view>{{defaultAddress.name}}  {{defaultAddress.phone}}</view>
+        <view>{{defaultAddress.address}} {{defaultAddress.detail}}</view>
+      </view>
+      <view wx:else style="font-size:26rpx;color:#0066cc;margin-top:8rpx;">
+        暂无收货地址，点击添加
+      </view>
+    </view>
+    <!-- 增加箭头，提示可点击 -->
+    <view style="font-size:24rpx;color:#999;">></view>
   </view>
+</view>
 
-  <!-- 底部提交栏 -->
-  <view class="submit-bar" wx:if="{{cartList.length > 0}}">
-    <view class="total-price">总计：¥<span>{{totalAll}}</span></view>
-    <van-button 
-      type="primary" 
-      bindtap="submitOrder"
-      disabled="{{!defaultAddress}}"
-      class="submit-btn"
-    >
-      {{!defaultAddress ? '请选择收货地址' : '提交订单'}}
-    </van-button>
+<!-- 到店自取：门店选择 -->
+<view wx:if="{{deliveryType==2}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;" bindtap="openStore">
+  <view style="display:flex;align-items:center;">
+    <view style="font-size:32rpx;margin-right:20rpx;color:#0066cc;">🏪</view>
+    <view style="flex:1;">
+      <view style="font-size:28rpx;font-weight:500;">取货门店</view>
+      <view wx:if="{{selectedStore}}" style="font-size:26rpx;color:#666;margin-top:8rpx;">
+        {{selectedStore.name}}
+      </view>
+      <view wx:else style="font-size:26rpx;color:#666;margin-top:8rpx;">
+        请选择取货门店
+      </view>
+    </view>
+    <view style="font-size:24rpx;color:#999;">></view>
   </view>
+</view>
+
+<!-- 门店弹窗：选中变蓝色 -->
+<van-action-sheet
+  show="{{storeShow}}"
+  bindcancel="closeStore"
+>
+  <view wx:for="{{areaList}}" wx:key="id" 
+    style="padding:24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;
+    {{selectedStore && selectedStore.id==item.id ? 'background:#e6f0ff;color:#0066cc' : ''}}"
+    data-store="{{item}}"
+    bindtap="selectStore">
+    {{item.name}}
+  </view>
+</van-action-sheet>
+
+<!-- 商品列表 -->
+<view style="padding:0 20rpx;font-size:30rpx;font-weight:600;margin:16rpx 0;">
+  结算商品 {{cartList.length}}件
+</view>
+<view style="padding:0 16rpx;">
+  <view wx:for="{{cartList}}" wx:key="id" style="background:#fff;border-radius:12rpx;display:flex;padding:20rpx;margin-bottom:12rpx;">
+    <image src="{{item.goods_image}}" style="width:120rpx;height:120rpx;border-radius:8rpx;margin-right:20rpx;" mode="aspectFill"></image>
+    <view style="flex:1;">
+      <view style="font-size:28rpx;">{{item.goods_name}}</view>
+      <view style="font-size:24rpx;color:#999;margin-top:8rpx;">x{{item.num}}</view>
+      <view style="color:#e64340;font-size:30rpx;text-align:right;margin-top:12rpx;">
+        ¥{{item.formatPrice}}
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 底部 -->
+<view wx:if="{{cartList.length>0}}" style="position:fixed;bottom:0;left:0;right:0;height:100rpx;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24rpx;border-top:1rpx solid #eee;">
+  <view>
+    <view style="font-size:24rpx;color:#666;">总计</view>
+    <view style="font-size:32rpx;color:#e64340;font-weight:600;">¥{{totalAll}}</view>
+  </view>
+  <van-button type="primary" bindtap="submitOrder" style="width:240rpx;">
+    提交订单
+  </van-button>
+</view>
+
 </view>

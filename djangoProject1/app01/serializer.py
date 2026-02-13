@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import Banner, Notice, Collection, Category, Goods, GoodsImage, Index_Annonce
+from .models import (Banner, Notice, Category, Goods, GoodsImage,
+                     Index_Annonce, PointsRecord, Order, OrderItem)
+from decimal import Decimal  # 导入Decimal
+
 class BannerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Banner
@@ -14,12 +17,6 @@ class IndexSerializer(serializers.ModelSerializer):
     class Meta:
         model = Index_Annonce
         fields = '__all__'
-
-class CollectionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Collection
-        fields = '__all__'
-        depth = 1
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -62,7 +59,7 @@ class CartSerializer(serializers.ModelSerializer):
 
 class CartAddSerializer(serializers.Serializer):
     goods_id = serializers.IntegerField(required=True)
-    num = serializers.IntegerField(required=True, min_value=1)
+    num = serializers.IntegerField(required=True, min_value=Decimal('1'), )
 
     def validate_goods_id(self, value):
         try:
@@ -271,7 +268,7 @@ class ExamRecordSerializer(serializers.ModelSerializer):
 
 class CertificationSerializer(serializers.ModelSerializer):
     cert_type_name = serializers.CharField(source='get_cert_type_display', read_only=True)
-    status_name = serializers.CharField(source='get_status_display', read_only=True)
+    status_name = serializers.CharField(source='status_display', read_only=True)
     user_nickname = serializers.CharField(source='user.nickname', read_only=True)
 
     class Meta:
@@ -302,10 +299,118 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address
         fields = ['id', 'name', 'phone', 'province', 'city', 'district', 'address', 'detail', 'is_default', 'user']
         read_only_fields = ['user']  # 仅限制user字段只读，无其他验证
+
+class OrderGoodsItemSerializer(serializers.Serializer):
+    cart_id = serializers.IntegerField(required=True, error_messages={"required": "购物车ID不能为空"})
+    num = serializers.IntegerField(required=True, min_value=Decimal('1'), error_messages={
+        "required": "商品数量不能为空",
+        "min_value": "商品数量不能小于1"
+    })
+
 class OrderAddSerializer(serializers.Serializer):
-    address_id = serializers.IntegerField(required=True)
-    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
-    goods_list = serializers.ListField(required=True)
+    # 配送类型：1=快递配送 2=到店自取（必填）
+    delivery_type = serializers.IntegerField(
+        required=True,
+        min_value=Decimal('1'),
+        max_value=2,
+        error_messages={
+            "required": "配送类型不能为空",
+            "min_value": "配送类型只能是1（快递）或2（到店）",
+            "max_value": "配送类型只能是1（快递）或2（到店）"
+        }
+    )
+    # 收货地址ID：快递时必填，自提时允许为null（非必填+允许null）
+    address_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={"invalid": "地址ID必须是数字"}
+    )
+    # 取货门店ID：自提时必填，快递时允许为null（非必填+允许null）
+    pick_up_store_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        error_messages={"invalid": "门店ID必须是数字"}
+    )
+    # 订单总价：DecimalField兼容前端float输入（DRF自动转换）
+    total_price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=True,
+        min_value=Decimal('0.01'),
+        error_messages={
+            "required": "订单总价不能为空",
+            "min_value": "订单总价必须大于0"
+        }
+    )
+    # 商品列表：嵌套子序列化器，校验每个商品的cart_id和num
+    goods_list = OrderGoodsItemSerializer(
+        many=True,
+        required=True,
+        error_messages={"required": "请选择要购买的商品"}
+    )
+
+    # 自定义校验：不同配送类型下的字段规则
+    def validate(self, attrs):
+        delivery_type = attrs.get("delivery_type")
+        address_id = attrs.get("address_id")
+        pick_up_store_id = attrs.get("pick_up_store_id")
+
+        # 规则1：快递配送（delivery_type=1）
+        if delivery_type == 1:
+            # 必须传address_id且不为null/0
+            if not address_id:
+                raise serializers.ValidationError({"address_id": "快递配送需选择收货地址"})
+            # 禁止传pick_up_store_id
+            if pick_up_store_id is not None:
+                raise serializers.ValidationError({"pick_up_store_id": "快递配送无需选择取货门店"})
+            # 额外校验：地址是否存在且属于当前用户（增加空值判断！）
+            request = self.context.get("request")
+            if request and request.user.is_authenticated:  # 先判断request是否存在+用户是否登录
+                try:
+                    Address.objects.get(id=address_id, user=request.user)
+                except Address.DoesNotExist:
+                    raise serializers.ValidationError({"address_id": "收货地址不存在或不属于当前用户"})
+            # 若request不存在，不校验地址归属（交给视图层处理）
+
+        # 规则2：到店自取（delivery_type=2）
+        elif delivery_type == 2:
+            # 必须传pick_up_store_id且不为null/0
+            if not pick_up_store_id:
+                raise serializers.ValidationError({"pick_up_store_id": "到店自取需选择取货门店"})
+            # 禁止传address_id
+            if address_id is not None:
+                raise serializers.ValidationError({"address_id": "到店自取无需选择收货地址"})
+            # 额外校验：门店是否存在（假设门店模型是Area，需根据你实际模型调整）
+            try:
+                from .models import Area  # 按需导入门店模型
+                Area.objects.get(id=pick_up_store_id)
+            except ImportError:
+                pass  # 若没有Area模型，注释此行
+            except Area.DoesNotExist:
+                raise serializers.ValidationError({"pick_up_store_id": "取货门店不存在"})
+
+        # 规则3：校验goods_list非空
+        goods_list = attrs.get("goods_list")
+        if len(goods_list) == 0:
+            raise serializers.ValidationError({"goods_list": "商品列表不能为空"})
+
+        return attrs
+
+# ========== 其他原有序列化器（OrderItem/Order/SubMember等）保持不变 ==========
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['goods_name', 'num', 'price', 'total_price']
+
+class OrderSerializer(serializers.ModelSerializer):
+    goods_list = OrderItemSerializer(source='items', many=True, read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    # ✅ 关键：直接用模型里的 status_display（会自动判断是快递还是到店）
+    status_name = serializers.CharField(source='status_display', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['order_sn', 'total_price', 'status', 'status_name', 'create_time', 'goods_list']
 
 # app01/serializer.py
 
@@ -321,7 +426,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     goods_list = OrderItemSerializer(source='items', many=True, read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    status_name = serializers.CharField(source='get_status_display', read_only=True)
+    status_name = serializers.CharField(source='status_display', read_only=True)
 
     class Meta:
         model = Order
@@ -342,3 +447,54 @@ class SubConsumeRecordSerializer(serializers.Serializer):
     member_info = SubMemberInfoSerializer(read_only=True)
     # 该会员的订单列表：嵌套OrderSerializer
     orders = OrderSerializer(many=True, read_only=True)
+
+# 积分变动记录序列化器（前端积分明细页面用）
+class PointsRecordSerializer(serializers.ModelSerializer):
+    points_type_name = serializers.CharField(source='get_points_type_display', read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)  # 格式化时间
+
+    class Meta:
+        model = PointsRecord
+        fields = ['id', 'points', 'points_type', 'points_type_name', 'related_id', 'related_desc', 'create_time']
+
+from .models import UserCoupon, Coupon
+
+class CouponTemplateSerializer(serializers.ModelSerializer):
+    """优惠券模板序列化器（管理后台用）"""
+    coupon_type_name = serializers.CharField(source='get_coupon_type_display', read_only=True)
+
+    class Meta:
+        model = Coupon
+        fields = '__all__'
+
+class UserCouponSerializer(serializers.ModelSerializer):
+    """用户优惠券序列化器（前端展示用）"""
+    # 从优惠券模板获取字段
+    title = serializers.CharField(source='coupon.title', read_only=True)
+    coupon_type = serializers.IntegerField(source='coupon.coupon_type', read_only=True)
+    coupon_type_name = serializers.CharField(source='coupon.get_coupon_type_display', read_only=True)
+    money = serializers.DecimalField(source='coupon.money', max_digits=10, decimal_places=2, read_only=True)
+    discount_rate = serializers.DecimalField(source='coupon.discount_rate', max_digits=3, decimal_places=2,
+                                             read_only=True)
+    min_consume = serializers.DecimalField(source='coupon.min_consume', max_digits=10, decimal_places=2, read_only=True)
+
+    # 格式化时间和状态
+    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)
+    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)
+    is_expired = serializers.BooleanField(read_only=True)
+    is_valid = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = UserCoupon
+        fields = [
+            'id', 'title', 'coupon_type', 'coupon_type_name',
+            'money', 'discount_rate', 'min_consume',
+            'start_time', 'end_time', 'is_used', 'is_expired', 'is_valid', 'order_sn'
+        ]
+
+# 补充用户优惠券统计序列化器
+class UserCouponStatsSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    valid = serializers.IntegerField()
+    expired = serializers.IntegerField()
+    used = serializers.IntegerField()

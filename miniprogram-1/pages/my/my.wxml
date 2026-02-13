@@ -39,7 +39,9 @@
     <view class="asset-divider"></view>
     <view class="asset-item" bindtap="goToCoupon">
       <view class="asset-title">优惠券</view>
-      <view class="asset-value">{{memberInfo.coupon_count || 0}}张</view>
+      <view class="asset-value {{couponCount === 0 ? 'asset-value-gray' : ''}}">
+    {{couponCount || 0}}张
+  </view>
     </view>
   </view>
 

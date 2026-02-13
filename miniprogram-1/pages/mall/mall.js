@@ -1,4 +1,5 @@
-import Toast from '@vant/weapp/toast/toast';
+// 删掉Vant Toast的导入（无需再依赖）
+// import Toast from '@vant/weapp/toast/toast';
 import api from '../../config/settings'
 const app = getApp(); // 全局获取 app 实例
 
@@ -11,6 +12,7 @@ Page({
     goodsList: [], // 商品列表
     selectedCategoryId: '', // 选中的分类ID
     cartList: {}, // 购物车缓存：{goodsId: num}
+    noop() {},
   },
 
   // 商品图片预览
@@ -81,7 +83,7 @@ Page({
     this.setData({ goodsList: newGoodsList });
   },
 
-  // 加入购物车（核心修改：浏览无需登录，仅操作提示登录，不强制弹窗）
+  // 加入购物车（替换Vant Toast为原生showToast）
   addToCart(e) {
     const goodsId = e.currentTarget.dataset.id;
     const goodsName = e.currentTarget.dataset.name;
@@ -91,8 +93,12 @@ Page({
     // 1. 获取 Token
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     if (!token) {
-      // 核心修改：仅提示，不弹强制登录弹窗，保留本地缓存
-      Toast(`登录后可同步【${goodsName}】到购物车（已本地缓存）`);
+      // 改用原生showToast，无图标依赖
+      wx.showToast({
+        title: `登录后可同步【${goodsName}】到购物车（已本地缓存）`,
+        icon: 'none', // 无图标，避免加载失败
+        duration: 2000
+      });
       // 仅本地缓存，不同步后端
       cartList[goodsId] = num;
       this.setData({ cartList });
@@ -114,22 +120,38 @@ Page({
     }).then(res => {
       wx.hideLoading();
       if (res.data.code === 200) {
-        Toast.success(`【${goodsName}】已加入购物车 x${num}`);
+        // 成功提示：用success图标（小程序内置，无需外链）
+        wx.showToast({
+          title: `【${goodsName}】已加入购物车 x${num}`,
+          icon: 'success',
+          duration: 1500
+        });
       } else {
         // Token 过期/认证失败处理
         if (res.data?.detail === "身份认证信息未提供" || res.statusCode === 401) {
           wx.removeStorageSync('accessToken');
           app.globalData.accessToken = '';
-          Toast.fail('登录状态失效，请重新登录');
-          // 不强制跳转，仅提示
+          wx.showToast({
+            title: '登录状态失效，请重新登录',
+            icon: 'none',
+            duration: 2000
+          });
         } else {
-          Toast.fail(res.data.msg || '加入购物车失败（本地已缓存）');
+          wx.showToast({
+            title: res.data.msg || '加入购物车失败（本地已缓存）',
+            icon: 'none',
+            duration: 2000
+          });
         }
       }
     }).catch(err => {
       wx.hideLoading();
       console.error('加入购物车接口失败：', err);
-      Toast.success(`【${goodsName}】已本地缓存 x${num}（登录后同步）`);
+      wx.showToast({
+        title: `【${goodsName}】已本地缓存 x${num}（登录后同步）`,
+        icon: 'none',
+        duration: 2000
+      });
     });
   },
 
@@ -142,7 +164,7 @@ Page({
     });
   },
 
-  // 获取商品分类（核心修改：移除token相关，纯公开请求）
+  // 获取商品分类（替换Vant Toast为原生）
   getCategories() {
     return new Promise((resolve) => {
       // 直接请求，不携带token（浏览分类无需登录）
@@ -168,7 +190,12 @@ Page({
         },
         fail: (err) => {
           console.error('分类请求失败：', err);
-          Toast.fail('分类数据加载失败');
+          // 改用原生提示
+          wx.showToast({
+            title: '分类数据加载失败',
+            icon: 'none',
+            duration: 2000
+          });
           this.setData({ categories: [{ id: '', name: '全部' }] });
           resolve();
         }
@@ -176,7 +203,7 @@ Page({
     });
   },
 
-  // 获取商品列表（核心修改：移除token相关，纯公开请求）
+  // 获取商品列表（替换Vant Toast为原生）
   getGoodsList() {
     return new Promise((resolve) => {
       const { searchValue, selectedCategoryId, cartList } = this.data;
@@ -208,7 +235,12 @@ Page({
         fail: (err) => {
           console.error('商品请求失败：', err);
           this.setData({ goodsList: [], loading: false });
-          Toast.fail('商品数据加载失败');
+          // 改用原生提示
+          wx.showToast({
+            title: '商品数据加载失败',
+            icon: 'none',
+            duration: 2000
+          });
           resolve();
         }
       });
@@ -220,11 +252,15 @@ Page({
     this.setData({ searchValue: e.detail.value });
   },
 
-  // 搜索触发（浏览商品无需登录）
+  // 搜索触发（替换Vant Toast为原生）
   onSearch() {
     const keyword = this.data.searchValue.trim();
     if (!keyword) {
-      Toast.info('请输入搜索关键词');
+      wx.showToast({
+        title: '请输入搜索关键词',
+        icon: 'none',
+        duration: 1500
+      });
       return;
     }
     this.setData({ 
@@ -244,11 +280,15 @@ Page({
     this.getGoodsList();
   },
 
-  // 跳转商品详情页（浏览详情无需登录）
+  // 跳转商品详情页（替换Vant Toast为原生）
   toGoodsDetail(e) {
     const goodsId = e.currentTarget.dataset.id;
     if (!goodsId || isNaN(goodsId)) {
-      Toast.fail("无效的商品ID");
+      wx.showToast({
+        title: "无效的商品ID",
+        icon: 'none',
+        duration: 1500
+      });
       return;
     }
     const detailPath = `/pages/mall/detail?goods_id=${goodsId}`;
@@ -256,7 +296,11 @@ Page({
       url: detailPath,
       fail: (err) => {
         console.error("跳转商品详情失败：", err);
-        Toast.fail("页面不存在或路径错误");
+        wx.showToast({
+          title: "页面不存在或路径错误",
+          icon: 'none',
+          duration: 2000
+        });
       }
     });
   }

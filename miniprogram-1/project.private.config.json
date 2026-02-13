@@ -3,11 +3,32 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/cart/cart",
-          "pathName": "pages/cart/cart",
+          "name": "pages/mall/mall",
+          "pathName": "pages/mall/mall",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/school/school",
+          "pathName": "pages/school/school",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/cart/cart",
+          "pathName": "pages/cart/cart",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "pages/cart/cart",
+          "pathName": "pages/cart/cart",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "pages/index/index",

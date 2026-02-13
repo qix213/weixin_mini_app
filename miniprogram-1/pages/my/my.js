@@ -3,24 +3,21 @@ Page({
     isLogin: false,
     memberInfo: {}, // 完整会员信息（渲染到页面）
     showQrcode: false,
-    points: 0// 新增：积分单独字段（也可直接用memberInfo.points，二选一）
+    points: 0, // 新增：积分单独字段（也可直接用memberInfo.points，二选一）
+    couponCount: 0 // 仅统计「有效期内未使用」的优惠券数量
   },
 
   onShow() {
     // 同步全局登录状态
     this.syncGlobalState();
-    // 若已登录，请求会员详情
+    // 若已登录，先请求会员详情，再请求有效优惠券数量
     if (this.data.isLogin) {
       this.getMemberInfo();
+      this.getValidCouponCount(); // 新增：单独请求有效优惠券数量
     }
   },
 
   // ========== 核心优化：统一登录校验方法 ==========
-  /**
-   * 登录校验工具方法
-   * @param {String} redirectPage - 登录后需要回跳的页面路径（可选）
-   * @returns {Boolean} - 是否已登录
-   */
   checkLogin(redirectPage = '') {
     if (!this.data.isLogin) {
       wx.showModal({
@@ -30,7 +27,6 @@ Page({
         cancelText: '取消',
         success: (res) => {
           if (res.confirm) {
-            // 跳转登录页，并携带回跳参数（支持登录后返回原操作页面）
             let loginUrl = '/pages/login/login';
             if (redirectPage) {
               loginUrl += `?redirect=${encodeURIComponent(redirectPage)}`;
@@ -45,48 +41,38 @@ Page({
   },
 
   // ========== 业务跳转方法（复用登录校验） ==========
-  // 跳转推荐会员消费记录页面（带权限判断）
   goToSubMemberConsume() {
-    // 1. 登录校验（携带回跳参数）
-    if (!this.checkLogin('/pages/mine/mine?action=subMemberConsume')) {
+    if (!this.checkLogin('/pages/my/my?action=subMemberConsume')) {
       return;
     }
 
-    // 2. 会员等级校验
     const currentLevel = this.data.memberInfo.user_type;
     if (!currentLevel) {
       wx.showToast({ title: '会员等级未获取，请刷新页面', icon: 'none' });
       return;
     }
 
-    // 权限控制逻辑：
-    // 1级：无下级可查看；2级：仅看1级；3级：看1-2级；4级：看1-3级；5级：看1-4级
     if (currentLevel === 1) {
       wx.showToast({ title: '当前会员等级无查看下级消费记录权限', icon: 'none' });
       return;
     }
 
-    // 3. 跳转消费记录页面，并传递当前会员等级
     wx.navigateTo({
       url: `/pages/sub-member-consume/sub-member-consume?currentLevel=${currentLevel}`,
     });
   },
 
-  // 新增：跳转账单记录页面（核心需求）
   goToBillRecord() {
-    // 登录校验（携带回跳参数）
-    if (!this.checkLogin('/pages/mine/mine?action=billRecord')) {
+    if (!this.checkLogin('/pages/my/my?action=billRecord')) {
       return;
     }
-    // 跳账单记录页
     wx.navigateTo({
       url: '/pages/bill-record/bill-record',
     });
   },
 
-  // 跳转会员中心
   goToMemberCenter() {
-    if (!this.checkLogin('/pages/mine/mine?action=memberCenter')) {
+    if (!this.checkLogin('/pages/my/my?action=memberCenter')) {
       return;
     }
     wx.navigateTo({
@@ -94,9 +80,8 @@ Page({
     });
   },
 
-  // 跳转积分页面
   goToPoints() {
-    if (!this.checkLogin('/pages/mine/mine?action=points')) {
+    if (!this.checkLogin('/pages/my/my?action=points')) {
       return;
     }
     wx.navigateTo({
@@ -104,19 +89,27 @@ Page({
     });
   },
 
-  // 跳转礼券页面
   goToCoupon() {
-    if (!this.checkLogin('/pages/mine/mine?action=coupon')) {
+    if (!this.checkLogin('/pages/my/my?action=coupon')) {
       return;
     }
+    // 优化：使用过滤后的有效优惠券数量判断
+    if (this.data.couponCount === 0) {
+      console.log('有效优惠券数量为0');
+      wx.showToast({ title: '暂无可用优惠券', icon: 'none', duration: 1500 });
+      return; // 空页面无需跳转，提升体验
+    }
+    console.log('执行跳转，路径：/pages/coupun/coupun');
     wx.navigateTo({
-      url: '/pages/coupon/coupon',
+      url: '/pages/coupun/coupun',
+      fail: (err) => {
+        console.error('redirectTo 跳转失败：', err);
+      }
     });
   },
 
-  // 跳转地址管理
   goToAddressManage() {
-    if (!this.checkLogin('/pages/mine/mine?action=address')) {
+    if (!this.checkLogin('/pages/my/my?action=address')) {
       return;
     }
     wx.navigateTo({
@@ -124,9 +117,8 @@ Page({
     });
   },
 
-  // 跳转发票管理（账单相关）
   goToInvoiceManage() {
-    if (!this.checkLogin('/pages/mine/mine?action=invoice')) {
+    if (!this.checkLogin('/pages/my/my?action=invoice')) {
       return;
     }
     wx.navigateTo({
@@ -134,9 +126,8 @@ Page({
     });
   },
 
-  // 跳转设置页面
   goToSetting() {
-    if (!this.checkLogin('/pages/mine/mine?action=setting')) {
+    if (!this.checkLogin('/pages/my/my?action=setting')) {
       return;
     }
     wx.navigateTo({
@@ -173,17 +164,76 @@ Page({
         if (res.data.code === 200) {
           const memberInfo = res.data.data;
           app.globalData.memberInfo = memberInfo; // 全局存储（含积分）
-          // 页面存储：解构积分，设置默认值0
+          // 页面存储：解构积分，优惠券数量不再从这里取
           this.setData({
             memberInfo: memberInfo,
-            points: memberInfo.points || 0 // 关键：积分兜底0，防止undefined
+            points: memberInfo.points || 0,
+            isLogin: true
           });
           console.log('会员信息加载成功（含积分）：', memberInfo);
         } else {
           wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
         }
       },
-      fail: (err) => { /* 原有逻辑不变 */ }
+      fail: (err) => {
+        wx.hideLoading();
+        wx.showToast({ title: '加载会员信息失败', icon: 'none' });
+        this.setData({
+          points: 0
+        });
+        console.error('获取会员信息失败：', err);
+      }
+    });
+  },
+
+  // 新增核心方法：请求优惠券列表，过滤「有效期内未使用」的券并统计数量
+  getValidCouponCount() {
+    const app = getApp();
+    const header = app.getRequestHeader();
+    
+    wx.request({
+      url: app.globalData.baseUrl + '/app01/user/coupons/',
+      method: 'GET',
+      header: header,
+      data: {
+        only_valid: true // 优先用后端筛选（如果后端支持）
+      },
+      success: (res) => {
+        if (res.data.code === 200) {
+          let couponList = res.data.data?.coupons || [];
+          
+          // 前端二次过滤（双保险）：仅保留「未使用 + 有效期内」的优惠券
+          const now = new Date().getTime(); // 当前时间戳（毫秒）
+          const validCoupons = couponList.filter(coupon => {
+            // 1. 未使用
+            const isUnused = !coupon.is_used && coupon.is_used !== 1;
+            // 2. 有效期内（兼容end_time/expire_time字段，支持时间戳/字符串）
+            let expireTime = coupon.end_time || coupon.expire_time;
+            if (!expireTime) return true; // 无有效期视为永久有效
+            
+            // 转换为时间戳（处理字符串日期，如2026-12-31）
+            if (typeof expireTime === 'string') {
+              expireTime = new Date(expireTime).getTime();
+            }
+            const isInValidPeriod = expireTime > now;
+
+            return isUnused && isInValidPeriod;
+          });
+
+          // 更新有效优惠券数量
+          this.setData({
+            couponCount: validCoupons.length
+          });
+          console.log('有效优惠券数量：', validCoupons.length, '筛选后列表：', validCoupons);
+        } else {
+          console.error('获取优惠券列表失败：', res.data.msg);
+          this.setData({ couponCount: 0 });
+        }
+      },
+      fail: (err) => {
+        console.error('请求优惠券列表失败：', err);
+        this.setData({ couponCount: 0 });
+      }
     });
   },
 
@@ -227,7 +277,8 @@ Page({
     // 3. 刷新页面状态
     this.setData({
       isLogin: false,
-      memberInfo: {}
+      memberInfo: {},
+      couponCount: 0 // 退出后清空优惠券数量
     });
     // 4. 跳首页（关闭所有页面，避免回退）
     wx.reLaunch({

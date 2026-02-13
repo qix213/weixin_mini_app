@@ -132,13 +132,23 @@ Page({
     });
   },
 
-  selectAddress(e) {
-    const { address } = e.currentTarget.dataset;
-    const pages = getCurrentPages();
-    const prevPage = pages[pages.length - 2];
-    prevPage.setData({
-      selectedAddress: address
-    });
-    wx.navigateBack({ delta: 1 });
-  }
+// 地址页（address.js）中选择地址后的返回逻辑（已正确）
+selectAddress(e) {
+  const { address } = e.currentTarget.dataset;
+  const pages = getCurrentPages();
+  const prevPage = pages[pages.length - 2];
+  // 可选：直接给结算页赋值最新地址（双重保障）
+  prevPage.setData({
+    defaultAddress: address
+  });
+  wx.navigateBack({ delta: 1 }); // 此方式会触发结算页onShow
+},
+
+// 地址添加页（addressAdd.js）保存地址后的返回逻辑
+saveAddress() {
+  // 保存地址逻辑...
+  wx.showToast({ title: '地址保存成功', icon: 'success' });
+  // 使用navigateBack返回，触发结算页onShow
+  wx.navigateBack({ delta: 1 });
+}
 });

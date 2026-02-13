@@ -1,48 +1,206 @@
 const app = getApp();
 Page({
   data: {
-    typeName: '',        // 支付类型名称（会员缴费/商品订单）
-    amount: 0,           // 支付金额
-    scene: 'order',      // 场景标识：member=会员缴费，order=商品订单
-    orderId: '',         // 新增：接收订单ID（关键）
-    payMethods: [        // 支付方式列表
+    typeName: '',
+    originalAmount: 0, // 原价（两位小数）
+    actualAmount: 0,   // 实际支付金额（两位小数）
+    scene: 'order',
+    orderId: '',
+    payMethods: [        
       { 
         id: 1, 
         name: '微信支付', 
-        icon: 'https://mmbiz.qpic.cn/mmbiz_png/ajNVdqHZLLBuyXif9WGH0TsCqZLsNO1G1QN85V1U8ICH9nq4iciaibQDR8iaZs8YF0gE8Cn4u4Y1Q2iaYiciaY9d9iaicw/640?wx_fmt=png', 
+        icon: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wechat.svg', 
         selected: true 
       },
       { 
         id: 2, 
         name: '支付宝支付', 
-        icon: 'https://mmbiz.qpic.cn/mmbiz_png/ajNVdqHZLLAib60Jcz9oxrGibHibqV46STP8OSuibPqQ64D508nqVq1Q4y6q0cQic9nZg/640?wx_fmt=png', 
+        icon: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/alipay.svg', 
         selected: false 
       }
     ],
-    selectedPayMethod: 1, // 默认选中微信支付
-    payLoading: false     // 支付加载状态
+    selectedPayMethod: 1,
+    payLoading: false,
+    couponList: [],
+    couponDropdownOptions: [],
+    selectedCoupon: null,
+    noCouponTip: '暂无可用优惠券',
+    couponIndex: 0 // 默认选中第一个选项（不使用优惠券）
   },
 
-  // 页面加载：解析场景和参数（新增接收orderId）
   onLoad(options) {
-    // 1. 获取场景标识（默认商品订单）
     const scene = options.scene || 'order';
-    // 2. 解析参数（兼容会员/商品场景）
     const typeName = decodeURIComponent(options.typeName || (scene === 'member' ? '会员缴费' : '商品订单支付'));
-    const amount = Number(options.amount || options.totalAll || 0);
-    // 新增：接收订单ID（结算页跳转时传递的）
+    // 【修改1】onLoad中初始化金额时保留两位小数
+    const originalAmount = Number(options.amount || options.totalAll || 0).toFixed(2);
     const orderId = options.orderId || '';
 
     this.setData({
       scene,
       typeName,
-      amount,
-      orderId // 保存订单ID到data
+      originalAmount, // 已保留两位小数
+      actualAmount: originalAmount, // 同步保留两位
+      orderId
     });
-    console.log('支付页参数：', this.data); // 此时能看到orderId
+
+    this.getCouponList();
   },
 
-  // 切换支付方式
+  // 新增：日期格式化辅助函数（处理时间戳/字符串日期）
+  formatDate(dateStr) {
+    if (!dateStr) return '永久有效';
+    // 处理时间戳（数字）
+    if (typeof dateStr === 'number') {
+      dateStr = dateStr.toString().length === 13 ? dateStr : dateStr * 1000;
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+    }
+    // 处理字符串日期（如2026-12-31、2026/12/31等）
+    if (typeof dateStr === 'string') {
+      // 简单格式化，保留YYYY-MM-DD部分
+      const reg = /(\d{4})[-/](\d{1,2})[-/](\d{1,2})/;
+      const match = dateStr.match(reg);
+      if (match) {
+        return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+      }
+    }
+    return '永久有效';
+  },
+
+  getCouponList() {
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    if (!accessToken) {
+      this.setData({
+        couponDropdownOptions: [{value: '', label: '不使用优惠券'}],
+        noCouponTip: '请先登录'
+      });
+      wx.showToast({ title: '未检测到登录状态', icon: 'none' });
+      return;
+    }
+  
+    wx.showLoading({ title: '加载优惠券...', mask: false });
+    app.request({
+      url: 'http://localhost:8000/app01/user/coupons/', 
+      method: 'GET',
+      header: {
+        'Authorization': `Bearer ${accessToken}`,
+        'content-type': 'application/json'
+      },
+      data: { 
+        only_valid: true 
+      }
+    }).then(res => {
+      wx.hideLoading();
+      console.log('优惠券接口返回：', res);
+      const couponList = res.data?.data?.coupons || [];
+      
+      const formatCoupon = couponList.map(item => {
+        const coupon = item.coupon || {};
+        const couponType = coupon.coupon_type || item.coupon_type || 1;
+        let discountDesc = '';
+        if (couponType === 1) {
+          // 【修改2】优惠券抵扣金额保留两位小数
+          const money = Number(coupon.money || item.money || 0).toFixed(2);
+          discountDesc = `抵扣¥${money}元`;
+        } else if (couponType === 2) {
+          const discountRate = Number(coupon.discount_rate || item.discount_rate || 1);
+          discountDesc = `${(discountRate * 10).toFixed(1)}折`;
+        }
+
+        // 核心修改1：提取并格式化有效期
+        const expireTime = coupon.expire_time || item.expire_time || coupon.end_time || item.end_time || '';
+        const expireDesc = this.formatDate(expireTime); // 格式化有效期
+        
+        return {
+          ...item,
+          discountDesc,
+          expireDesc, // 新增：有效期描述
+          id: item.id || '',
+          title: coupon.title || item.title || '优惠券',
+          coupon_type: couponType,
+          // 【修改3】优惠券最大抵扣金额保留两位小数
+          maxDeduct: couponType === 1 
+            ? Math.min(Number(coupon.money || item.money || 0), Number(this.data.originalAmount)).toFixed(2)
+            : (Number(this.data.originalAmount) * (1 - Number(coupon.discount_rate || item.discount_rate || 1))).toFixed(2)
+        };
+      });
+
+      // 核心修改2：下拉选项label添加有效期
+      const couponDropdownOptions = [
+        {value: '', label: '不使用优惠券'}, 
+        ...formatCoupon.map(item => ({
+          value: item.id,
+          label: `${item.title}（${item.discountDesc} | 有效期至${item.expireDesc}）`
+        }))
+      ];
+
+      this.setData({
+        couponList: formatCoupon,
+        couponDropdownOptions: couponDropdownOptions,
+        noCouponTip: formatCoupon.length === 0 ? '暂无可用优惠券' : ''
+      });
+    }).catch(err => {
+      wx.hideLoading();
+      console.error('加载优惠券失败：', err);
+      this.setData({
+        couponDropdownOptions: [{value: '', label: '不使用优惠券'}],
+        noCouponTip: '加载优惠券失败'
+      });
+      if (err.errMsg.includes('404')) {
+        wx.showToast({ title: '优惠券接口不存在，请检查后端路径', icon: 'none', duration: 3000 });
+      }
+    });
+  },
+
+  onCouponChangeNative(e) {
+    const index = Number(e.detail.value);
+    if (index === 0) {
+      this.cancelCoupon();
+      return;
+    }
+    const selectedCoupon = this.data.couponList[index - 1] || null;
+    if (selectedCoupon) {
+      this.setData({
+        couponIndex: index,
+        selectedCoupon
+      });
+      this.calculateActualAmount(selectedCoupon);
+    } else {
+      this.cancelCoupon();
+    }
+  },
+
+  cancelCoupon() {
+    // 【修改4】取消优惠券时金额保留两位小数
+    this.setData({
+      couponIndex: 0,
+      selectedCoupon: null,
+      actualAmount: this.data.originalAmount // originalAmount已保留两位，直接赋值
+    });
+  },
+
+  calculateActualAmount(coupon) {
+    const originalAmount = Number(this.data.originalAmount);
+    let actualAmount = originalAmount;
+
+    if (!coupon) {
+      this.setData({ actualAmount: originalAmount.toFixed(2) });
+      return;
+    }
+
+    if (coupon.coupon_type === 1) {
+      const deductAmount = Number(coupon.coupon?.money || coupon.money || 0);
+      actualAmount = Math.max(originalAmount - deductAmount, 0);
+    } else if (coupon.coupon_type === 2) {
+      const discountRate = Number(coupon.coupon?.discount_rate || coupon.discount_rate || 1);
+      actualAmount = originalAmount * discountRate;
+    }
+
+    // 【修改5】计算后实际金额强制保留两位小数
+    this.setData({ actualAmount: actualAmount.toFixed(2) });
+  },
+
   switchPayMethod(e) {
     const payMethodId = e.currentTarget.dataset.methodid;
     const payMethods = this.data.payMethods.map(method => {
@@ -55,80 +213,144 @@ Page({
     });
   },
 
-  // 核心：模拟支付（修改：调用paySuccess）
   handlePay() {
-    if (this.data.payLoading || this.data.amount <= 0) return;
+    const { payLoading } = this.data;
+    if (payLoading) return;
 
     this.setData({ payLoading: true });
-    // 获取选中的支付方式名称
     const selectedMethod = this.data.payMethods.find(m => m.id === this.data.selectedPayMethod).name;
 
-    // 模拟支付接口请求（2秒延迟）
     setTimeout(() => {
       this.setData({ payLoading: false });
-      // 支付成功提示
+      // 【修改6】支付成功提示语中金额保留两位小数
       wx.showToast({
-        title: `${selectedMethod}¥${this.data.amount}元支付成功`,
+        title: `${selectedMethod}¥${this.data.actualAmount}元支付成功`,
         icon: 'success',
         duration: 2000
       });
 
-      // ========== 核心修改：调用paySuccess清空购物车+触发积分 ==========
-      this.paySuccess(this.data.orderId);
-      // ======================================================
+      this.paySuccess(this.data.orderId, this.data.selectedCoupon);
 
     }, 2000);
   },
 
-  // 取消支付：返回上一级页面
   handleCancel() {
     wx.navigateBack({ delta: 1 });
   },
 
-  // 支付成功后的逻辑（新增：调用支付回调接口触发积分）
-  paySuccess(orderId) {
-    console.log('开始清空购物车+触发积分：', { orderId }); // 先打印日志，确认进入函数
-    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    console.log('当前token：', accessToken); // 打印token，确认有值
-
-    if (!accessToken) {
-      console.log('无token，直接跳商城');
-      wx.switchTab({url: '/pages/mall/mall'}); // 无token时直接跳商城
+// 修复后的优惠券使用接口调用方法
+useCoupon(couponId, orderSn) {
+  return new Promise((resolve) => {
+    if (!couponId || !orderSn) {
+      console.warn('优惠券ID或订单编号不能为空');
+      resolve();
       return;
     }
 
-    // ========== 新增：调用支付回调接口（触发积分赠送） ==========
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    const requestFn = app.request || wx.request;
+
+    // 核心修复1：使用后端正确的接口路径
+    const couponUseUrl = `http://localhost:8000/app01/user/coupons/use/`;
+
+    requestFn({
+      url: couponUseUrl,
+      method: 'POST',
+      header: {
+        'content-type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      // 核心修复2：请求体传参（coupon_id + order_sn，匹配后端要求）
+      data: { 
+        coupon_id: couponId,
+        order_sn: orderSn // 注意：后端要的是order_sn（订单编号），不是order_id
+      }
+    }).then(res => {
+      // 核心修复3：适配后端返回格式（code + msg + data）
+      const resData = res.data || {};
+      if (resData.code === 200) {
+        console.log('优惠券标记为已使用成功：', couponId);
+      } else {
+        const errorMsg = resData.msg || '优惠券状态更新失败（接口返回异常）';
+        console.error('优惠券标记失败：', errorMsg);
+        wx.showToast({ title: errorMsg, icon: 'none', duration: 2000 });
+      }
+    }).catch(err => {
+      // 区分404/超时等错误，提示更精准
+      console.error('优惠券使用接口调用失败：', err);
+      let errorTip = '优惠券状态更新失败';
+      if (err.errMsg.includes('404')) {
+        errorTip = '优惠券使用接口路径错误，请核对后端配置';
+      } else if (err.errMsg.includes('timeout')) {
+        errorTip = '优惠券状态更新超时，请稍后重试';
+      }
+      wx.showToast({ title: errorTip, icon: 'none', duration: 3000 });
+    }).finally(() => {
+      resolve();
+    });
+  });
+},
+
+  paySuccess(orderId, selectedCoupon) {
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    if (!accessToken) {
+      wx.switchTab({url: '/pages/mall/mall'});
+      return;
+    }
+  // 新增：先获取订单详情，拿到order_sn（订单编号）
+  const getOrderSn = (orderId) => {
+    return new Promise((resolve) => {
+      wx.request({
+        url: 'http://localhost:8000/app01/order/detail/',
+        method: 'GET',
+        header: {
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        data: { order_id: orderId },
+        success: (res) => {
+          const orderSn = res.data?.data?.order_sn || '';
+          resolve(orderSn);
+        },
+        fail: () => {
+          resolve(''); // 失败时返回空，不阻塞流程
+        }
+      });
+    });
+  };
     const callPaySuccessApi = () => {
       return new Promise((resolve) => {
         wx.request({
-          url: 'http://localhost:8000/app01/order/pay_success/', // 支付回调接口地址
+          url: 'http://localhost:8000/app01/order/pay_success/',
           method: 'POST',
           header: {
             'content-type': 'application/json',
-            'Authorization': `Bearer ${accessToken}` // 必须带token（接口需要登录权限）
+            'Authorization': `Bearer ${accessToken}`
           },
           data: {
-            order_id: orderId, // 传递订单ID
-            pay_method: this.data.selectedPayMethod // 传递支付方式（1=微信，2=支付宝）
+            order_id: orderId,
+            pay_method: this.data.selectedPayMethod,
+            pay_no: 'test_pay_no_' + Date.now(),
+            // 【修改7】传递给后端的实际支付金额保留两位小数
+            actual_amount: Number(this.data.actualAmount).toFixed(2)
           },
           success: (res) => {
-            console.log('支付回调接口调用成功（积分已赠送）：', res.data);
+            wx.showToast({ title: res.data.msg || '支付成功', icon: 'success' });
           },
           fail: (err) => {
-            console.error('支付回调接口调用失败（积分未赠送）：', err);
+            console.error('支付回调接口失败：', err);
+            wx.showToast({ title: '支付成功但订单状态更新失败', icon: 'none' });
           },
           complete: () => resolve()
         });
       });
     };
 
-    // 定义清空购物车的通用方法
     const clearCart = (isPrecise = false) => {
       let url = 'http://localhost:8000/app01/cart/clear/';
       if (isPrecise && orderId) {
         url = `http://localhost:8000/app01/cart/clear/${orderId}/`;
       }
-      console.log('清空购物车请求URL：', url); // 打印请求URL
       return new Promise((resolve) => {
         wx.request({
           url,
@@ -138,7 +360,7 @@ Page({
             'Authorization': `Bearer ${accessToken}`
           },
           success: (res) => {
-            console.log(`清空购物车${isPrecise?'精准':'全'}成功：`, res.data);
+            console.log(`清空购物车${isPrecise?'精准':'全'}成功`);
           },
           fail: (err) => {
             console.error(`清空购物车${isPrecise?'精准':'全'}失败：`, err);
@@ -148,12 +370,17 @@ Page({
       });
     };
 
-    // 执行顺序：先调用支付回调（触发积分）→ 再清空购物车 → 最后跳商城
     callPaySuccessApi().then(() => {
-      clearCart(true).finally(() => {
-        clearCart(false).finally(() => {
-          wx.switchTab({
-            url: '/pages/mall/mall'
+      getOrderSn(orderId).then((orderSn) => {
+        const couponPromise = selectedCoupon && orderSn 
+          ? this.useCoupon(selectedCoupon.id, orderSn) 
+          : Promise.resolve();
+        
+        couponPromise.finally(() => {
+          clearCart(true).finally(() => {
+            clearCart(false).finally(() => {
+              wx.switchTab({ url: '/pages/mall/mall' });
+            });
           });
         });
       });

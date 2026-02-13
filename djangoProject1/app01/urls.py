@@ -17,12 +17,11 @@ from .views import (
     # 收件人/地址相关
     RecipientView, CheckoutView, AddressView, AddressManageView, AddressDetailView, SetDefaultAddressView,
     # 订单相关
-    OrderAddView, OrderListView)
+    OrderAddView, OrderListView,GiveRegisterPointsView, OrderPaySuccessView)
 
 # 初始化路由路由器
 router = SimpleRouter()
 router.register('banner', BannerView, basename='banner')
-router.register('collection', views.CollevtionView, basename='collection')
 router.register(r'categories', views.CategoryView, basename='category')
 router.register(r'goods', views.GoodsViewSet, basename='goods')
 router.register(r'video_courses', VideoCourseViewSet)
@@ -66,13 +65,26 @@ urlpatterns = [
     path('address/add/', AddressManageView.as_view(), name='address-add'),
     path('address/<int:pk>/', AddressDetailView.as_view(), name='address-detail'),
     path('address/<int:pk>/set_default/', SetDefaultAddressView.as_view(), name='address-set-default'),
+    # 关键修复：移除多余的app01/前缀，使路径匹配前端请求的/app01/area/list/
+    path('area/list/', views.AreaListView.as_view(), name='area_list'),
     # 订单接口
     path('order/add/', OrderAddView.as_view()),
     path('order/list/', OrderListView.as_view()),
     path('order/detail/', views.OrderDetailView.as_view()),
+    path('order/pay_success/', OrderPaySuccessView.as_view(), name='order_pay_success'),
     # 短信验证码
     path('send-sms/', views.send_sms_code),
     path('verify-sms/', views.verify_sms_code),
+    path('member/give-register-points/', GiveRegisterPointsView.as_view(), name='give_register_points'),
+    path('video_proxy/', views.video_proxy, name='video_proxy'),  # 新增极简代理接口
+    # 优惠券
+    path('member/coupons/', views.UserCouponView.as_view(), name='member_coupons'),
+    path('user/stats/', views.get_user_stats),
+    path('user/coupons/', views.UserCouponView.as_view(), name='user_coupons'),
+    path('user/coupons/use/', views.UserCouponUseView.as_view(), name='user_coupon_use'),
+    # 3. 领取优惠券
+    path('coupon/claim/', views.claim_coupon),
+    
 ]
 
 # 修复语法错误：单独拼接router.urls，避免和导入语句混写

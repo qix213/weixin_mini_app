@@ -1,258 +1,204 @@
 const app = getApp();
-
 Page({
   data: {
-    cartList: [],         // 结算商品列表
-    totalAll: '0.00',     // 总价（统一为字符串，避免类型不一致）
-    defaultAddress: null, // 默认收货地址
-    loading: true         // 加载状态
+    deliveryType: 1,
+    defaultAddress: null,
+    cartList: [],
+    totalAll: '0.00',
+    areaList: [],
+    selectedStore: null,
+    storeShow: false
   },
 
-  // 页面加载时获取购物车+收货地址
-  onLoad(options) {
-    // 接收支付页返回的状态（如支付失败）
-    this.setData({ fromPay: options.fromPay || false });
-    this.getCheckoutData();
+  onLoad() {
+    this.setData({ deliveryType: 1 });
+    this.getCart();
+    this.getAddress(); // 首次加载仍调用
   },
 
-  // 下拉刷新重新获取数据
-  onPullDownRefresh() {
-    this.getCheckoutData().then(() => {
-      wx.stopPullDownRefresh();
-    });
-  },
-
-  // 回到结算页刷新数据（优化：避免频繁请求）
+  // 核心修复：页面每次显示时重新获取地址（包括从地址页返回）
   onShow() {
-    // 仅当页面从后台返回/支付页返回时刷新
-    if (this.data.fromPay || !this.data.cartList.length) {
-      this.getCheckoutData();
-      this.setData({ fromPay: false }); // 重置状态
+    // 仅在快递配送模式下刷新地址（自取模式无需地址）
+    if (this.data.deliveryType === 1) {
+      this.getAddress();
+    }
+    // 可选：同时刷新购物车（防止购物车数据变动）
+    this.getCart();
+  },
+
+  switchDeliveryType(e) {
+    const t = Number(e.currentTarget.dataset.type);
+    if (t === 1) {
+      this.setData({
+        deliveryType: 1,
+        selectedStore: null,
+        storeShow: false
+      });
+      // 切换到快递模式时立即刷新地址
+      this.getAddress();
+    } else {
+      this.setData({
+        deliveryType: 2,
+        selectedStore: null
+      });
     }
   },
 
-  // 统一获取：购物车+收货地址（重构为Promise版，解决加载状态异常）
-  getCheckoutData() {
-    return new Promise((resolve) => {
-      this.setData({ loading: true });
-      
-      // 核心修复1：统一获取accessToken（替换token）
-      const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-      app.globalData.accessToken = accessToken; // 同步到全局
-
-      // 登录校验
-      if (!accessToken) {
-        wx.showModal({
-          title: '提示',
-          content: '请先登录再结算',
-          showCancel: false,
-          success: () => {
-            wx.navigateTo({ url: '/pages/login/login' });
-          }
-        });
-        this.setData({ loading: false });
-        resolve();
-        return;
-      }
-
-      // 并行请求：购物车 + 收货地址
-      Promise.all([
-        this.getCartList(), // 购物车数据
-        this.getAddressList() // 收货地址
-      ]).then(() => {
-        resolve();
-      }).catch((err) => {
-        console.error('结算数据加载失败：', err);
-        wx.showToast({ title: '数据加载失败', icon: 'none' });
-        resolve();
-      }).finally(() => {
-        this.setData({ loading: false });
-      });
+  openStore() {
+    if (this.data.deliveryType !== 2) return;
+    wx.showLoading({ title: '加载中' });
+    this.getStore().then(() => {
+      wx.hideLoading();
+      this.setData({ storeShow: true });
     });
   },
 
-  // 获取购物车结算商品（修复401+数据解析+格式统一）
-  getCartList() {
+  closeStore() {
+    this.setData({ storeShow: false });
+  },
+
+  selectStore(e) {
+    this.setData({
+      selectedStore: e.currentTarget.dataset.store,
+      storeShow: false
+    });
+  },
+
+  getCart() {
+    const token = wx.getStorageSync('accessToken');
+    app.request({
+      url: '/app01/cart/list/',
+      header: { Authorization: `Bearer ${token}` }
+    }).then(res => {
+      const list = res.data?.data || [];
+      let total = 0;
+      const formatCart = list.map(item => {
+        const p = Number(item.price || 0);
+        const num = Number(item.num || 1);
+        total += p * num;
+        return { ...item, formatPrice: p.toFixed(2) };
+      });
+      this.setData({ cartList: formatCart, totalAll: total.toFixed(2) });
+    }).catch(err => {
+      console.error('获取购物车失败：', err);
+      this.setData({ cartList: [], totalAll: '0.00' });
+    });
+  },
+
+  // 优化：给getAddress添加错误处理和加载提示
+  getAddress() {
+    const token = wx.getStorageSync('accessToken');
+    // 增加加载提示（避免用户感知不到加载）
+    wx.showLoading({ title: '加载地址...', mask: false });
+    app.request({
+      url: '/app01/address/list/',
+      header: { Authorization: `Bearer ${token}` }
+    }).then(res => {
+      wx.hideLoading();
+      const list = res.data?.data?.address_list || [];
+      this.setData({ defaultAddress: list[0] || null });
+      // 调试日志：确认返回的最新地址
+      // console.log('结算页最新地址：', list[0] || '暂无地址');
+    }).catch(err => {
+      wx.hideLoading();
+      console.error('获取地址失败：', err);
+      this.setData({ defaultAddress: null });
+      wx.showToast({ title: '加载地址失败', icon: 'none', duration: 1500 });
+    });
+  },
+
+  getStore() {
     return new Promise((resolve) => {
+      const token = wx.getStorageSync('accessToken');
       app.request({
-        url: '/app01/cart/',
-        method: 'GET'
+        url: '/app01/area/list/',
+        header: { Authorization: `Bearer ${token}` }
       }).then(res => {
-        console.log('结算页购物车数据：', res.data);
-        
-        // 核心修复2：处理401错误
-        if (res.statusCode === 401 || (res.data && res.data.detail === "身份认证信息未提供")) {
-          wx.removeStorageSync('accessToken');
-          app.globalData.accessToken = '';
-          wx.showModal({
-            title: '登录过期',
-            content: '您的登录已过期，请重新登录',
-            showCancel: false,
-            success: () => {
-              wx.navigateTo({ url: '/pages/login/login' });
-            }
-          });
-          this.setData({ cartList: [], totalAll: '0.00' });
-          resolve();
-          return;
-        }
-
-        // 严谨解析数据（多层空值保护）
-        let cartList = res.data?.data?.cart_list || [];
-        cartList = Array.isArray(cartList) ? cartList : [];
-        
-        // 格式化商品数据（价格统一为字符串）
-        cartList = cartList.map(item => {
-          item.total_price = Number(item.total_price || 0).toFixed(2);
-          item.goods = item.goods || {}; // 空值保护
-          return item;
-        });
-
-        // 计算总价（空购物车强制为0.00）
-        const totalAll = cartList.length > 0 
-          ? cartList.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2)
-          : '0.00';
-        
-        this.setData({ cartList, totalAll });
+        this.setData({ areaList: res.data?.data || [] });
         resolve();
       }).catch(err => {
-        console.error('结算页获取购物车失败：', err);
-        this.setData({ cartList: [], totalAll: '0.00' });
+        console.error('获取门店失败：', err);
+        this.setData({ areaList: [] });
         resolve();
       });
     });
   },
 
-  // 获取收货地址（修复401+空值保护+默认地址逻辑）
-  getAddressList() {
-    return new Promise((resolve) => {
-      app.request({
-        url: '/app01/address/',
-        method: 'GET'
-      }).then(res => {
-        console.log('结算页地址数据：', res.data);
-        
-        // 处理401错误
-        if (res.statusCode === 401) {
-          wx.removeStorageSync('accessToken');
-          app.globalData.accessToken = '';
-          resolve();
-          return;
-        }
-
-        // 严谨解析地址列表
-        let addressList = res.data?.data?.address_list || [];
-        addressList = Array.isArray(addressList) ? addressList : [];
-        
-        // 优先选择默认地址，无默认则选第一个
-        let defaultAddress = null;
-        if (addressList.length > 0) {
-          defaultAddress = addressList.find(item => item.is_default) || addressList[0];
-        }
-        
-        this.setData({ defaultAddress });
-        resolve();
-      }).catch(err => {
-        console.error('结算页获取地址失败：', err);
-        this.setData({ defaultAddress: null });
-        resolve();
-      });
-    });
-  },
-
-  // 跳转收货地址页面（新增：返回后刷新数据）
   toAddressPage() {
-    wx.navigateTo({ 
-      url: '/pages/address/address',
-      // 地址页返回后刷新结算页数据
-      events: {
-        addressUpdated: () => {
-          this.getAddressList(); // 仅刷新地址
-        }
-      }
-    });
+    wx.navigateTo({ url: '/pages/address/address' });
   },
 
-  // 返回购物车页面（优化：用redirectTo避免页面层级过深）
-  toCart() {
-    wx.redirectTo({ url: '/pages/cart/cart' });
-  },
-
-  // 核心：提交订单（修复401+参数校验+支付联动）
   submitOrder() {
-    const { defaultAddress, cartList, totalAll } = this.data;
-    
-    // 1. 基础校验（优化提示）
-    if (!defaultAddress) {
+    const { deliveryType, defaultAddress, selectedStore, cartList } = this.data;
+
+    // 前置校验
+    if (cartList.length === 0) {
+      wx.showToast({ title: '暂无结算商品', icon: 'none' });
+      return;
+    }
+    if (deliveryType === 1 && !defaultAddress) {
       wx.showModal({
         title: '提示',
-        content: '请先添加/选择收货地址',
+        content: '请先添加收货地址',
         confirmText: '去添加',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) this.toAddressPage();
-        }
+        success: (res) => res.confirm && this.toAddressPage()
       });
       return;
     }
-    if (cartList.length === 0) {
-      return wx.showToast({ title: '暂无可结算的商品', icon: 'none' });
-    }
-    if (Number(totalAll) <= 0) {
-      return wx.showToast({ title: '订单金额异常，请重新加载', icon: 'none' });
+    if (deliveryType === 2 && !selectedStore) {
+      wx.showToast({ title: '请选择取货门店', icon: 'none' });
+      return;
     }
 
-    // 2. 构建订单数据（适配后端格式）
+    wx.showLoading({ title: '创建订单中...', mask: true });
+    
+    // 总价从字符串转浮点数
+    const totalPrice = parseFloat(this.data.totalAll) || 0;
+    // 构造商品列表
+    const goodsList = cartList.map(item => ({
+      cart_id: Number(item.id) || 0,
+      num: parseInt(item.num, 10) || 1
+    }));
+    // 空值处理
+    const addressId = deliveryType === 1 ? (defaultAddress ? Number(defaultAddress.id) : null) : null;
+    const pickUpStoreId = deliveryType === 2 ? (selectedStore ? Number(selectedStore.id) : null) : null;
+
+    // 构造下单参数
     const orderData = {
-      address_id: defaultAddress.id,
-      total_price: Number(totalAll), // 后端可能需要数字类型
-      goods_list: cartList.map(item => ({
-        cart_id: item.id,
-        goods_id: item.goods?.id || '', // 补充商品ID，适配后端
-        num: Number(item.num) || 1
-      }))
+      delivery_type: Number(deliveryType),
+      address_id: addressId,
+      pick_up_store_id: pickUpStoreId,
+      total_price: totalPrice,
+      goods_list: goodsList
     };
 
-    wx.showLoading({ title: '正在下单...', mask: true });
+    // console.log('提交订单参数：', JSON.stringify(orderData, null, 2));
 
-    // 3. 提交订单接口
+    // 调用创建订单接口
+    const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     app.request({
       url: '/app01/order/add/',
       method: 'POST',
+      header: {
+        'Authorization': `Bearer ${token}`,
+        'content-type': 'application/json'
+      },
       data: orderData
     }).then(res => {
-      console.log('下单结果：', res.data);
-      const result = res.data || {};
-
-      // 处理401
-      if (res.statusCode === 401) {
-        wx.removeStorageSync('accessToken');
-        app.globalData.accessToken = '';
-        wx.showToast({ title: '登录过期，请重新登录', icon: 'none' });
-        setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1500);
-        return;
-      }
-
-      // 下单成功
-      if (result.code === 200 || result.code === '200') {
-        // 记录订单ID（用于支付页）
-        const orderId = result.data?.order_id || '';
-        wx.showToast({ title: '下单成功！即将跳转到支付页面', icon: 'success', duration: 2000 });
-        
-        // 跳转到支付页（携带订单ID+总价，便于支付后联动）
-        setTimeout(() => {
-          wx.navigateTo({
-            url: `/pages/pay/pay?scene=order&typeName=${encodeURIComponent('商品订单支付')}&totalAll=${totalAll}&orderId=${orderId}`
-          });
-        }, 2000);
+      wx.hideLoading();
+      // console.log('创建订单返回：', res);
+      if (res.data.code === 200) {
+        const { order_id, total_price } = res.data.data;
+        wx.navigateTo({
+          url: `/pages/pay/pay?orderId=${order_id}&amount=${total_price}&typeName=商品订单`
+        });
       } else {
-        wx.showToast({ title: result.msg || '下单失败，请重试', icon: 'none' });
+        wx.showToast({ title: res.data.msg || '创建订单失败', icon: 'none', duration: 3000 });
       }
     }).catch(err => {
-      console.error('下单失败：', err);
-      wx.showToast({ title: '网络异常，下单失败', icon: 'none' });
-    }).finally(() => {
       wx.hideLoading();
+      console.error('创建订单失败：', err);
+      wx.showToast({ title: '网络异常，创建订单失败', icon: 'none' });
     });
   }
 });

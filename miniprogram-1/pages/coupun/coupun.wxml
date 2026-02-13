@@ -1,0 +1,70 @@
+<view class="coupon-container">
+  <!-- 状态筛选栏（保留） -->
+  <view class="status-filter">
+    <view 
+      class="filter-item {{activeStatus === 'all' ? 'active' : ''}}"
+      data-status="all"
+      bindtap="switchStatus"
+    >
+      {{statusMap.all}}
+    </view>
+    <view 
+      class="filter-item {{activeStatus === 'unused' ? 'active' : ''}}"
+      data-status="unused"
+      bindtap="switchStatus"
+    >
+      {{statusMap.unused}}
+    </view>
+    <view 
+      class="filter-item {{activeStatus === 'used' ? 'active' : ''}}"
+      data-status="used"
+      bindtap="switchStatus"
+    >
+      {{statusMap.used}}
+    </view>
+    <view 
+      class="filter-item {{activeStatus === 'expired' ? 'active' : ''}}"
+      data-status="expired"
+      bindtap="switchStatus"
+    >
+      {{statusMap.expired}}
+    </view>
+  </view>
+
+  <!-- 加载中（保留） -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 优惠券列表（修正渲染字段） -->
+  <view class="coupon-list" wx:elif="{{couponList.length > 0}}">
+    <block wx:for="{{couponList}}" wx:key="id">
+      <view 
+        class="coupon-item {{item.status}}"
+        wx:if="{{activeStatus === 'all' || activeStatus === item.status}}"
+        bindtap="onCouponTap"
+        data-coupon="{{item}}"
+      >
+        <!-- 优惠券左侧：用后端原始字段money/title，或解析后的amount/name -->
+        <view class="coupon-left">
+          <view class="coupon-amount">¥{{item.money || 0}}</view>
+          <view class="coupon-name">{{item.title || '未命名优惠券'}}</view>
+        </view>
+        <!-- 优惠券右侧：有效期+状态（解析后的字段） -->
+        <view class="coupon-right">
+          <view class="coupon-period">{{item.validPeriod}}</view>
+          <view class="coupon-status {{item.status}}">{{item.statusText}}</view>
+        </view>
+        <view class="coupon-dash"></view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 空状态（保留） -->
+  <view class="empty-container" wx:else>
+    <text class="empty-text">{{emptyTip}}</text>
+    <button class="retry-btn" bindtap="retryLoad" wx:if="{{emptyTip !== '暂无优惠券'}}">
+      重试
+    </button>
+  </view>
+</view>

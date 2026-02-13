@@ -1,14 +1,32 @@
 <view class="pay-container">
-  <!-- 订单/会员信息卡片 -->
   <view class="order-card">
     <view class="order-title">{{typeName}}</view>
+    <view class="order-item">
+      <label class="label">订单金额：</label>
+      <text class="amount">¥{{originalAmount}}</text>
+    </view>
+    <view class="order-item coupon-dropdown">
+      <label class="label">使用优惠券：</label>
+      <picker 
+        mode="selector" 
+        range="{{couponDropdownOptions}}" 
+        range-key="label"
+        value="{{couponIndex}}"
+        bindchange="onCouponChangeNative"
+        class="native-picker"
+      >
+        <view class="picker-text">
+          {{selectedCoupon ? selectedCoupon.title + '（' + selectedCoupon.discountDesc + '）' : '请选择优惠券'}}
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
     <view class="order-item amount-item">
-      <label class="label">支付金额：</label>
-      <text class="amount">¥{{amount}}</text>
+      <label class="label">实付金额：</label>
+      <text class="amount">¥{{actualAmount}}</text>
     </view>
   </view>
 
-  <!-- 支付方式选择 -->
   <view class="pay-methods-title">选择支付方式</view>
   <view class="pay-methods-container">
     <block wx:for="{{payMethods}}" wx:key="id">
@@ -24,17 +42,15 @@
     </block>
   </view>
 
-  <!-- 支付按钮 -->
   <button 
     class="pay-btn" 
     bindtap="handlePay"
     loading="{{payLoading}}"
-    disabled="{{payLoading || amount <= 0}}"
+    disabled="{{payLoading}}" 
   >
-    {{payLoading ? '支付中...' : '确认支付'}}
+    {{payLoading ? '支付中...' : '确认支付 ¥' + actualAmount}}
   </button>
 
-  <!-- 取消按钮 -->
   <button 
     class="cancel-btn" 
     bindtap="handleCancel"

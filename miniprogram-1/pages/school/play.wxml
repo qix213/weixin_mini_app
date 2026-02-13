@@ -1,47 +1,59 @@
 <view class="video-play-page">
-  <!-- 仅当有权限时显示视频播放区域 -->
   <view wx:if="{{hasPermission}}">
-    <!-- 视频播放器 -->
-    <video 
-      id="myVideo"
-      src="{{videoUrl}}"
-      poster="{{coverUrl}}"
-      controls
-      enable-progress-gesture
-      bindtimeupdate="onTimeUpdate"
-      bindseeked="onSeeked"
-      bindfullscreenchange="onFullScreenChange"
-      binderror="onVideoError"
-      class="video-player"
-    ></video>
-
-    <!-- 视频信息区域 -->
-    <view class="video-info">
-      <view class="video-title">{{videoTitle}}</view>
-      <view class="video-meta">
-        <text class="meta-item">时长：{{duration}}</text>
-        <text class="meta-item">播放：{{playCount}} 次</text>
+    <view class="video-container" style="position: relative; width: 100%; height: 300px;">
+      <video 
+        id="myVideo"
+        src="{{videoUrl}}"
+        controls
+        playsinline
+        show-play-btn
+        show-center-play-btn
+        show-fullscreen-btn
+        enable-progress-gesture
+        bindplay="onPlay"
+        bindpause="onPause"
+        bindtimeupdate="onTimeUpdate"
+        bindended="onEnded"
+        bindseeked="onSeeked"
+        bindfullscreenchange="onFullScreenChange"
+        binderror="onVideoError"
+        bindloadeddata="onLoadedData"
+        class="video-player"
+        style="width: 100%; height: 100%; background-color: #000;"
+        autoplay="{{false}}"
+        initial-time="0"
+      ></video>
+      <view 
+        class="custom-play-btn" 
+        bindtap="togglePlay"
+        wx:if="{{!isPlaying && videoLoaded}}"
+      >
+        <image 
+          src="https://cdn.jsdelivr.net/gh/feathericons/feather/icons/play-circle.svg" 
+          style="width: 60px; height: 60px; tint-color: #ffffff;"
+        ></image>
       </view>
-      <!-- 会员等级信息（核心新增） -->
+    </view>
+    <view class="video-info">
+      <view class="video-title">{{videoTitle || '未知视频'}}</view>
+      <view class="video-meta">
+        <text class="meta-item">时长：{{duration || '00:00'}}</text>
+        <text class="meta-item">播放：{{playCount || 0}} 次</text>
+      </view>
       <view class="level-info">
         <text class="level-item">当前等级：<text class="user-level">{{userLevelName}}</text></text>
         <text class="level-item">要求等级：<text class="required-level">{{requiredLevelName}}</text></text>
       </view>
     </view>
-
-    <!-- 功能按钮 -->
     <view class="func-btns">
       <button bindtap="toCheckIn" class="func-btn">学习打卡</button>
       <button bindtap="toExam" class="func-btn">考核通关</button>
       <button bindtap="goBack" class="func-btn cancel-btn">返回列表</button>
     </view>
   </view>
-
-  <!-- 无权限时的占位提示 -->
   <view wx:else class="no-permission">
-    <image src="/images/permission-forbidden.png" class="forbidden-img" mode="widthFix"></image>
     <view class="forbidden-text">您暂无权限观看该视频</view>
-    <view class="forbidden-desc">需要升级到{{requiredLevelName}}及以上会员等级</view>
+    <view class="forbidden-desc">需要升级到{{requiredLevelName || '未知等级'}}及以上会员等级</view>
     <button bindtap="goBack" class="back-btn">返回课程列表</button>
   </view>
 </view>

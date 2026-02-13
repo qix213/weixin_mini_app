@@ -52,7 +52,7 @@ Page({
           'Authorization': `Bearer ${accessToken}`
         },
         success: (res) => {
-          console.log('清空购物车结果：', res.data);
+          // console.log('清空购物车结果：', res.data);
           if (res.data && res.data.code === 200) {
             Toast.success('购物车已清空');
           }
@@ -96,9 +96,9 @@ Page({
     };
 
     console.log("===== 购物车请求调试信息 =====");
-    console.log("当前accessToken：", accessToken ? "存在" : "为空");
-    console.log("购物车列表请求头：", header);
-    console.log("请求URL：", 'http://localhost:8000/app01/cart/');
+    // console.log("当前accessToken：", accessToken ? "存在" : "为空");
+    // console.log("购物车列表请求头：", header);
+    // console.log("请求URL：", 'http://localhost:8000/app01/cart/');
 
     this.setData({ loading: true });
 
@@ -107,7 +107,7 @@ Page({
       method: 'GET',
       header: header,
       success: (res) => {
-        console.log('购物车接口返回：', res);
+        // console.log('购物车接口返回：', res);
         if (res.statusCode === 401 || (res.data && res.data.detail === "身份认证信息未提供")) {
           wx.removeStorageSync('accessToken');
           app.globalData.accessToken = '';
@@ -130,7 +130,7 @@ Page({
         let totalAll = '0.00'; // 初始化为0.00，避免残留
         if (res.data && res.data.code === 200) {
           cartList = res.data.data.cart_list || [];
-          console.log('解析后的购物车商品数：', cartList.length);
+          // console.log('解析后的购物车商品数：', cartList.length);
           // 格式化数据
           const formatCartList = cartList.map(item => {
             if (item.goods?.image_url) {
@@ -155,7 +155,7 @@ Page({
         wx.showToast({ title: '网络错误，无法获取购物车', icon: 'none' });
       },
       complete: () => {
-        console.log('购物车请求完成');
+        // console.log('购物车请求完成');
         this.setData({ loading: false });
         callback && callback();
       }

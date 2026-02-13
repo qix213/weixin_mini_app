@@ -1,106 +1,160 @@
 Page({
   data: {
     videoId: '',
-    videoUrl: '',       // 视频播放地址（必须是完整HTTP地址）
-    coverUrl: '',       // 封面地址
+    videoUrl: '',
+    coverUrl: '',
     videoTitle: '',
-    requiredLevelName: '', // 视频所需最低会员等级名称
-    requiredLevel: 1,    // 视频所需最低会员等级（数字）
-    userLevel: 1,        // 当前用户会员等级
-    userLevelName: '',   // 当前用户会员等级名称（移除默认值，避免误导）
+    requiredLevelName: '',
+    requiredLevel: 1,
+    userLevel: 1,
+    userLevelName: '',
     duration: '',
     playCount: 0,
+    durationSeconds: 0,
     currentTime: 0,
-    hasPermission: false // 是否有权限观看该视频
+    lastReportedTime: -3,  // 【修改1】初始值改为-3，避免首次上报触发快进判断
+    isPlaying: false,
+    canGetPoint: false,
+    hasPermission: false,
+    videoLoaded: false,
+    isPlayIconHidden: false,
+    finishReported: false  // 【新增】标记是否已调用过finish，避免重复调用
   },
 
-  // 监听进度更新，记录当前时间
-  onTimeUpdate(e) {
-    this.setData({
-      currentTime: e.detail.currentTime  // 实时记录播放进度
-    });
+  formatVideoUrl(url) {
+    if (!url || !url.startsWith('http')) return '';
+    return url.split('#')[0].trim();
   },
 
-  // 监听拖拽完成，确认定位
-  onSeeked(e) {
-    console.log('拖拽完成，定位到：', e.detail.currentTime);
-    // 若拖拽后跳回0，手动定位到记录的进度（兜底）
-    if (e.detail.currentTime < 1 && this.data.currentTime > 1) {
-      this.videoContext.seek(this.data.currentTime);
-      wx.showToast({ title: '进度定位中...', icon: 'none' });
+  togglePlay() {
+    if (!this.data.videoLoaded) {
+      wx.showToast({ title: '视频还在加载中', icon: 'none' });
+      return;
+    }
+    if (this.data.isPlaying) {
+      this.videoContext.pause();
+      this.setData({ isPlayIconHidden: false });
+    } else {
+      this.videoContext.play();
+      this.setData({ isPlayIconHidden: true });
     }
   },
 
+  onTimeUpdate(e) {
+    const currentTime = Math.floor(e.detail.currentTime);
+    const durationSeconds = this.data.durationSeconds;
+    this.setData({ currentTime });
+
+    // 进度上报逻辑（每3秒一次）
+    if (this.data.isPlaying && Math.abs(currentTime - this.data.lastReportedTime) >= 3) {
+      this.watchProgress(currentTime);
+    }
+
+    // 【修改2：核心兜底】进度≥99%且未上报过finish时，自动调用
+    if (durationSeconds > 0 && !this.data.finishReported) {
+      const progress = currentTime / durationSeconds;
+      if (progress >= 0.99) {
+        console.log(`【兜底触发】进度${(progress*100).toFixed(2)}%，调用watchFinish`);
+        this.watchFinish();
+      }
+    }
+  },
+
+  onSeeked(e) {
+    const currentTime = Math.floor(e.detail.currentTime);
+    console.log('拖拽完成，定位到：', currentTime);
+    if (currentTime < 1 && this.data.currentTime > 1) {
+      this.videoContext.seek(this.data.currentTime);
+      wx.showToast({ title: '进度定位中...', icon: 'none' });
+    }
+    this.watchProgress(this.data.currentTime);
+  },
+
+  onLoadedData(e) {
+    console.log('视频加载完成（localhost）：', e.detail);
+    // 【新增】获取视频实际时长（兼容后端返回的durationSeconds不准确）
+    if (e.detail.duration) {
+      this.setData({ durationSeconds: Math.floor(e.detail.duration) });
+    }
+    this.setData({ 
+      videoLoaded: true,
+      isPlaying: false,
+      isPlayIconHidden: false
+    });
+    wx.showToast({ title: '视频加载完成，点击播放开始观看', icon: 'none', duration: 2000 });
+  },
+
+  onFullScreenChange(e) {
+    console.log('全屏状态变化：', e.detail.fullScreen);
+    const tip = e.detail.fullScreen ? '进入全屏' : '退出全屏';
+    wx.showToast({ title: tip, icon: 'none', duration: 1000 });
+  },
+
   onReady() {
-    // 获取视频上下文，用于手动定位
-    this.videoContext = wx.createVideoContext('myVideo');
+    this.videoContext = wx.createVideoContext('myVideo');  // 注意：id必须和WXML中的myVideo一致
+    this.videoContext.pause();
   },
 
   onLoad(options) {
     const videoId = options.id;
     const videoUrl = options.videoUrl ? decodeURIComponent(options.videoUrl) : '';
+    
     if (!videoId) {
       wx.showToast({ title: '视频ID缺失', icon: 'none' });
       wx.navigateBack();
       return;
     }
 
-    // 1. 获取当前用户会员等级（从缓存/全局变量）
+    this.setData({ videoId });
+
     const userInfo = wx.getStorageSync('userInfo') || {};
     const userType = userInfo.user_type || 1;
-    // 新增：根据user_type自动映射等级名称（兜底逻辑）
     const levelNameMap = {
-      1: "蓝朋友",
-      2: "蓝明星",
-      3: "护肤私教",
-      4: "MINI-studio 主理人",
-      5: "Ta创+"
+      1: "蓝朋友", 2: "蓝明星", 3: "护肤私教", 4: "MINI-studio 主理人", 5: "Ta创+"
     };
-    // 优先用缓存的user_type_name，没有则自动映射
-    const userLevelName = userInfo.user_type_name || levelNameMap[userType] || "未知等级";
     this.setData({
-      videoId,
       userLevel: userType,
-      userLevelName: userLevelName // 确保等级名称有值
+      userLevelName: userInfo.user_type_name || levelNameMap[userType] || "未知等级"
     });
 
     console.log('加载视频详情，ID：', videoId);
     
-    // 2. 先校验播放权限（防止直接通过URL访问播放页）
     this.checkPlayPermission(videoId, (hasPermission, videoUrlFromCheck, requiredLevelName) => {
       if (!hasPermission) {
-        // 无权限：直接使用接口返回的等级名称，不依赖本地字段
-        const levelName = requiredLevelName || '未知等级';
         wx.showModal({
           title: '权限不足',
-          content: `很抱歉，观看该视频需要升级到${levelName}及以上会员等级`,
+          content: `很抱歉，观看该视频需要升级到${requiredLevelName || '未知等级'}及以上会员等级`,
           showCancel: false,
           confirmText: '返回',
-          success: () => {
-            wx.navigateBack();
-          }
+          success: () => wx.navigateBack()
         });
         return;
       }
 
-      // 有权限：更新状态并加载视频
+      // 核心修改：将原始视频URL传给代理接口，避免锚点篡改
+      const rawUrl = this.formatVideoUrl(videoUrlFromCheck || videoUrl);
+      const proxyUrl = `http://localhost:8000/app01/video_proxy/?url=${encodeURIComponent(rawUrl)}`;
       this.setData({
         hasPermission: true,
-        videoUrl: videoUrlFromCheck || videoUrl,
-        requiredLevelName: requiredLevelName || '' // 提前赋值正确等级
+        videoUrl: proxyUrl,  // 用代理URL替代原始视频URL
+        requiredLevelName: requiredLevelName || ''
       });
 
-      // 3. 增加播放次数（确保次数更新）
       this.addPlayCount(videoId, () => {
-        // 4. 次数更新后，请求视频详情
         this.getVideoDetail(videoId);
+        this.watchStart();
       });
     });
   },
 
-  // 播放权限二次校验（核心优化：返回等级名称）
   checkPlayPermission(videoId, callback) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    if (!accessToken) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      callback(false, '', '未知等级');
+      return;
+    }
+
     wx.request({
       url: `http://localhost:8000/app01/video_courses/${videoId}/check_permission/`,
       method: 'GET',
@@ -108,28 +162,27 @@ Page({
         'content-type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
+      timeout: 5000,
       success: (res) => {
-        console.log('权限校验返回：', res.data); // 新增日志，方便排查
+        console.log('权限校验返回：', res.data);
         const requiredLevelName = res.data?.required_level_name || '';
-        if (res.data && res.data.has_permission) {
-          // 有权限：返回true + 视频地址 + 等级名称
-          callback(true, res.data.video_url, requiredLevelName);
-        } else {
-          // 无权限：返回false + 空地址 + 等级名称
-          callback(false, '', requiredLevelName);
-        }
+        callback(res.data?.has_permission || false, res.data?.video_url || '', requiredLevelName);
       },
       fail: (err) => {
         console.error('权限校验失败：', err);
         wx.showToast({ title: '权限校验失败，请重试', icon: 'none' });
-        callback(false, '', '未知等级'); // 兜底返回
+        callback(false, '', '未知等级');
       }
     });
   },
 
-  // 单独封装增加播放次数的方法
   addPlayCount(videoId, callback) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    if (!accessToken) {
+      callback && callback();
+      return;
+    }
+
     wx.request({
       url: `http://localhost:8000/app01/video_courses/${videoId}/add_play_count/`,
       method: 'POST',
@@ -137,44 +190,22 @@ Page({
         'content-type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
+      timeout: 5000,
       success: (res) => {
         console.log('播放次数更新结果：', res.data);
         if (res.data.code === 200) {
           this.setData({ playCount: res.data.play_count });
         }
       },
-      fail: (err) => {
-        console.error('播放次数更新失败：', err);
-      },
-      complete: () => {
-        callback && callback();
-      }
+      fail: (err) => console.error('播放次数更新失败：', err),
+      complete: () => callback && callback()
     });
   },
 
-  // 监听全屏状态变化
-  onFullScreenChange(e) {
-    console.log('全屏状态变化：', e.detail.fullScreen);
-    if (e.detail.fullScreen) {
-      wx.showToast({ title: '进入全屏', icon: 'none', duration: 1000 });
-    } else {
-      wx.showToast({ title: '退出全屏', icon: 'none', duration: 1000 });
-    }
-  },
-
-  // 视频播放错误处理
-  onVideoError(e) {
-    console.error('视频渲染错误：', e.detail);
-    wx.showToast({
-      title: `视频播放错误：${e.detail.errMsg}`,
-      icon: 'none',
-      duration: 3000
-    });
-  },
-
-  // 获取视频详情（优化等级默认值）
   getVideoDetail(videoId) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    if (!accessToken) return;
+
     wx.request({
       url: `http://localhost:8000/app01/video_courses/${videoId}/`,
       method: 'GET',
@@ -182,39 +213,31 @@ Page({
         'content-type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
+      timeout: 5000,
       success: (res) => {
         console.log('视频详情返回：', res.data);
-        if (res.data) {
-          // 校验视频地址是否有效
-          const videoUrl = res.data.video_url;
-          if (!videoUrl || !videoUrl.startsWith('http')) {
-            wx.showToast({ title: '视频地址无效', icon: 'none' });
-            return;
-          }
-
-          // 优化：优先使用已有的等级名称，无则用接口返回值，默认值改为未知等级
-          const requiredLevelName = this.data.requiredLevelName || res.data.required_level_name || '未知等级';
-          
-          this.setData({
-            videoUrl: this.data.videoUrl || videoUrl,
-            coverUrl: res.data.cover_url || '',
-            videoTitle: res.data.title || '未知课程',
-            requiredLevelName: requiredLevelName, // 确保等级名称准确
-            requiredLevel: res.data.required_level || 1,
-            duration: res.data.duration || '未知时长',
-            playCount: res.data.play_count || 0
-          });
-        } else {
+        if (!res.data) {
           wx.showToast({ title: '视频详情加载失败', icon: 'none' });
+          return;
         }
+
+        let coverUrl = res.data.cover_url || '';
+        coverUrl = coverUrl ? this.formatVideoUrl(coverUrl) : '/images/default-cover.png';
+
+        this.setData({
+          coverUrl: coverUrl,
+          videoTitle: res.data.title || '未知课程',
+          requiredLevelName: this.data.requiredLevelName || res.data.required_level_name || '未知等级',
+          requiredLevel: res.data.required_level || 1,
+          duration: res.data.duration || '未知时长',
+          playCount: res.data.play_count || 0,
+          durationSeconds: res.data.duration_seconds || 0
+        });
       },
-      fail: () => {
-        wx.showToast({ title: '网络错误，无法加载视频', icon: 'none' });
-      }
+      fail: () => wx.showToast({ title: '网络错误，无法加载视频', icon: 'none' })
     });
   },
 
-  // 跳转打卡页（可选）
   toCheckIn() {
     if (!this.data.hasPermission) return;
     wx.navigateTo({
@@ -222,23 +245,139 @@ Page({
     });
   },
 
-  // 跳转考核页（优化：适配会员等级逻辑）
   toExam() {
     if (!this.data.hasPermission) return;
-    
-    let courseType = 1;
-    if (this.data.requiredLevelName === '蓝明星') courseType = 2;
-    else if (this.data.requiredLevelName === '护肤私教') courseType = 3;
-    else if (this.data.requiredLevelName === 'MINI-studio 主理人') courseType = 4;
-    else if (this.data.requiredLevelName === 'Ta创+') courseType = 5;
-
+    const levelMap = {
+      '蓝明星': 2,
+      '护肤私教': 3,
+      'MINI-studio 主理人': 4,
+      'Ta创+': 5
+    };
+    const courseType = levelMap[this.data.requiredLevelName] || 1;
     wx.navigateTo({
       url: `/pages/school/exam?courseType=${courseType}&courseTitle=${encodeURIComponent(this.data.videoTitle)}`
     });
   },
 
-  // 返回上一页
   goBack() {
     wx.navigateBack();
+  },
+
+  getHeader() {
+    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    return {
+      'content-type': 'application/json',
+      'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+    };
+  },
+
+  watchStart() {
+    wx.request({
+      url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_start/`,
+      method: 'POST',
+      header: this.getHeader(),
+      success: res => console.log('开始播放记录成功'),
+      fail: err => console.error('开始播放记录失败：', err)
+    });
+  },
+
+  watchProgress(currentTime) {
+    if (!this.data.hasPermission || !currentTime) return;
+    wx.request({
+      url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_progress/`,
+      method: 'POST',
+      header: this.getHeader(),
+      data: { current_time: currentTime },
+      success: res => {
+        if (res.data?.invalid) {
+          wx.showToast({ title: res.data.msg, icon: 'none' });
+          this.videoContext.pause();
+        } else {
+          this.setData({ lastReportedTime: currentTime });
+        }
+      },
+      fail: err => console.error('进度上报失败：', err)
+    });
+  },
+
+// 前端watchFinish方法修改：增加传递视频时长
+watchFinish() {
+  if (this.data.finishReported) return;
+  
+  wx.request({
+    url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_finish/`,
+    method: 'POST',
+    header: this.getHeader(),
+    data: {
+      video_duration: this.data.durationSeconds  // 传递前端获取的视频实际时长
+    },
+    success: res => {
+      console.log('watchFinish接口返回：', res.data);
+      this.setData({ finishReported: true });
+      wx.showToast({ 
+        title: res.data.msg, 
+        icon: res.data.code === 200 ? 'success' : 'none' 
+      });
+      if (res.data.code === 200) {
+        this.setData({ canGetPoint: true });
+      }
+    },
+    fail: err => console.error('播放完成领奖失败：', err)
+  });
+},
+
+  onPlay() {
+    this.setData({ 
+      isPlaying: true,
+      isPlayIconHidden: true 
+    });
+    console.log('视频开始播放（localhost），声音已开启');
+  },
+
+  onPause() {
+    this.setData({ 
+      isPlaying: false,
+      isPlayIconHidden: false 
+    });
+    this.watchProgress(this.data.currentTime);
+    console.log('视频暂停播放（localhost）');
+  },
+
+  // 【修改4】优化onEnded逻辑，确保执行watchFinish
+  onEnded() {
+    console.log('【事件触发】视频播放完成，调用watchFinish');  // 【新增】调试日志
+    this.onPause();
+    this.watchFinish();
+  },
+
+  onVideoError(e) {
+    console.error('视频播放错误（localhost）：', e.detail);
+    const errMsg = e.detail.errMsg || '未知错误';
+    let tip = '视频加载失败，请检查：1. Django代理接口是否启动；2. 原始视频URL是否可访问';
+    if (errMsg.includes('url not in domain list')) {
+      tip = '请在微信开发者工具勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」';
+    } else if (errMsg.includes('invalid format')) {
+      tip = '视频格式错误，请确保为H.264+AAC编码的MP4格式';
+    }
+    wx.showModal({
+      title: '视频播放错误',
+      content: tip,
+      showCancel: false,
+      confirmText: '我知道了'
+    });
+  },
+
+  onUnload() {
+    this.setData({ isPlaying: false });
+    this.videoContext?.pause();
+  },
+
+  onHide() {
+    this.onPause();
+  },
+
+  onShow() {
+    this.setData({ isPlaying: false });
+    this.videoContext?.pause();
   }
 });

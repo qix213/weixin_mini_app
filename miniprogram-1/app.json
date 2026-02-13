@@ -1,10 +1,11 @@
 {
-  "entryPagePath":   "pages/welcome/welcome",
+  "entryPagePath": "pages/welcome/welcome",
   "pages": [
     "pages/welcome/welcome",
     "pages/index/index",
     "pages/order-list/order-list",
     "pages/my/my",
+    "pages/coupun/coupun",
     "pages/pay/pay",
     "pages/login/login",
     "pages/sub-member-consume/sub-member-consume",
@@ -12,14 +13,13 @@
     "pages/register/register",
     "pages/mall/mall",
     "pages/mall/detail",
-    "pages/school/school",   
-    "pages/school/play",       
-    "pages/cart/cart",       
-    "pages/checkout/checkout",  
-    "pages/address/address",  
-    "pages/addressAdd/addressAdd", 
+    "pages/school/school",
+    "pages/school/play",
+    "pages/cart/cart",
+    "pages/checkout/checkout",
+    "pages/address/address",
+    "pages/addressAdd/addressAdd",
     "config/settings.js"
-
   ],
   "window": {
     "navigationBarTitleText": "蓝色奇迹",
@@ -68,6 +68,9 @@
     "van-row": "@vant/weapp/row/index",
     "van-col": "@vant/weapp/col/index",
     "van-notice-bar": "@vant/weapp/notice-bar/index",
-    "van-button": "@vant/weapp/button/index"
-  }
+    "van-button": "@vant/weapp/button/index",
+    "van-dropdown-menu": "@vant/weapp/dropdown-menu/index",
+    "van-dropdown-item": "@vant/weapp/dropdown-item/index"
+  },
+  "sitemapLocation": "sitemap.json"
 }

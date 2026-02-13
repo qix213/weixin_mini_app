@@ -1,9 +1,9 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Collection,Category, Goods,
+from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Category, Goods,
  VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
-                     Address, Order,GoodsImage)
+                     Address, Order,GoodsImage,Coupon)
 
 admin.site.register(Welcome)
 admin.site.register(Banner)
@@ -11,7 +11,6 @@ admin.site.register(Notice)
 admin.site.register(Index_Annonce)
 admin.site.register(UserInfo)
 admin.site.register(Area)
-admin.site.register(Collection)
 admin.site.register(Category)
 admin.site.register(Goods)
 admin.site.register(GoodsImage)
@@ -24,7 +23,7 @@ admin.site.register(Cart)
 admin.site.register(Recipient)
 admin.site.register(Address)
 admin.site.register(Order)
-
+admin.site.register(Coupon)
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # 后台列表显示的字段
