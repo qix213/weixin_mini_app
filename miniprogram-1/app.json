@@ -8,6 +8,7 @@
     "pages/coupun/coupun",
     "pages/pay/pay",
     "pages/login/login",
+    "pages/order-workbench/order-workbench",    
     "pages/sub-member-consume/sub-member-consume",
     "pages/homess/homess",
     "pages/register/register",

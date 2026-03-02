@@ -402,15 +402,60 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['goods_name', 'num', 'price', 'total_price']
 
+
+# 2. 订单序列化器（新增收货信息+权限控制）
 class OrderSerializer(serializers.ModelSerializer):
     goods_list = OrderItemSerializer(source='items', many=True, read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    # ✅ 关键：直接用模型里的 status_display（会自动判断是快递还是到店）
     status_name = serializers.CharField(source='status_display', read_only=True)
+
+    # 🔥 新增：收货信息字段（仅4/5级用户可见）
+    receiver_name = serializers.SerializerMethodField()
+    receiver_phone = serializers.SerializerMethodField()
+    receiver_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['order_sn', 'total_price', 'status', 'status_name', 'create_time', 'goods_list']
+        fields = [
+            'order_sn', 'total_price', 'status', 'status_name',
+            'create_time', 'goods_list',
+            # 新增收货信息字段
+            'receiver_name', 'receiver_phone', 'receiver_address'
+        ]
+
+    # 🔥 实现收货信息的获取逻辑（带权限控制）
+    def get_receiver_name(self, obj):
+        """获取收货人姓名（仅4/5级用户可见）"""
+        # 从上下文获取当前登录的店主用户
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        # 仅user_type为4/5的用户返回真实姓名
+        user_type = request.user.user_type or 0
+        if user_type in [4, 5] and hasattr(obj, 'address') and obj.address:
+            return obj.address.name or ''
+        return ''
+
+    def get_receiver_phone(self, obj):
+        """获取收货人电话（仅4/5级用户可见）"""
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        user_type = request.user.user_type or 0
+        if user_type in [4, 5] and hasattr(obj, 'address') and obj.address:
+            return obj.address.phone or ''
+        return ''
+
+    def get_receiver_address(self, obj):
+        """获取收货人完整地址（仅4/5级用户可见）"""
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        user_type = request.user.user_type or 0
+        if user_type in [4, 5] and hasattr(obj, 'address') and obj.address:
+            # 拼接省市区+详细地址（和前端显示逻辑一致）
+            return f"{obj.address.address or ''} {obj.address.detail or ''}".strip() or ''
+        return ''
 
 # app01/serializer.py
 
@@ -423,14 +468,113 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['goods_name', 'num', 'price', 'total_price']
 
 # 2. 订单序列化器（保持不变）
+# app01/serializer.py
+from rest_framework import serializers
+from .models import Order, OrderItem, Address
+
+# 订单项序列化器（保持不变）
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['goods_name', 'num', 'price', 'total_price']
+
+# 订单序列化器（重点修改：补全收货信息+优化权限）
 class OrderSerializer(serializers.ModelSerializer):
     goods_list = OrderItemSerializer(source='items', many=True, read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status_name = serializers.CharField(source='status_display', read_only=True)
 
+    # 补全所有收货人信息字段
+    receiver_name = serializers.SerializerMethodField()    # 收货人姓名
+    receiver_phone = serializers.SerializerMethodField()   # 收货人电话
+    receiver_province = serializers.SerializerMethodField()# 省
+    receiver_city = serializers.SerializerMethodField()    # 市
+    receiver_district = serializers.SerializerMethodField()# 区/县
+    receiver_address = serializers.SerializerMethodField() # 详细地址
+    receiver_full_address = serializers.SerializerMethodField() # 完整地址（省+市+区+详细地址）
+
     class Meta:
         model = Order
-        fields = ['order_sn', 'total_price', 'status', 'status_name', 'create_time', 'goods_list']
+        fields = [
+            'order_sn', 'total_price', 'status', 'status_name',
+            'create_time', 'goods_list',
+            # 补全的收货人信息字段
+            'receiver_name', 'receiver_phone', 'receiver_province',
+            'receiver_city', 'receiver_district', 'receiver_address',
+            'receiver_full_address'
+        ]
+
+    # 优化权限逻辑：
+    # 规则1：订单所属用户（自己）能看到完整收货信息
+    # 规则2：4/5级用户能看到下级订单的收货信息
+    # 规则3：其他用户返回空
+    def _has_receiver_permission(self, obj, request_user):
+        # 订单所属用户（自己）
+        if obj.user == request_user:
+            return True
+        # 4/5级用户（可查看下级订单）
+        if request_user.user_type in [4, 5]:
+            return True
+        return False
+
+    # 实现各收货信息字段的获取逻辑
+    def get_receiver_name(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.name or ''
+        return ''
+
+    def get_receiver_phone(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.phone or ''
+        return ''
+
+    def get_receiver_province(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.province or ''
+        return ''
+
+    def get_receiver_city(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.city or ''
+        return ''
+
+    def get_receiver_district(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.district or ''
+        return ''
+
+    def get_receiver_address(self, obj):
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user'):
+            return ''
+        if self._has_receiver_permission(obj, request.user) and obj.address:
+            return obj.address.detail or ''  # 注意：对应Address模型的detail字段（详细地址）
+        return ''
+
+    def get_receiver_full_address(self, obj):
+        """拼接完整地址：省+市+区+详细地址"""
+        request = self.context.get('request')
+        if not request or not hasattr(request, 'user') or not obj.address:
+            return ''
+        if self._has_receiver_permission(obj, request.user):
+            full_addr = f"{obj.address.province or ''} {obj.address.city or ''} {obj.address.district or ''} {obj.address.detail or ''}".strip()
+            return full_addr
+        return ''
 
 # 3. 下级会员信息序列化器（新增：拆分独立序列化器）
 class SubMemberInfoSerializer(serializers.Serializer):

@@ -557,6 +557,7 @@ class MemberInfoView(APIView):
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# app01/views.py 中的 SubUserConsumeView
 class SubUserConsumeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -576,7 +577,12 @@ class SubUserConsumeView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         sub_consume_data = current_user.get_sub_consume_records(current_level)
-        serializer = SubConsumeRecordSerializer(sub_consume_data, many=True)
+        # 关键：传入context，让序列化器能获取当前用户（判断权限）
+        serializer = SubConsumeRecordSerializer(
+            sub_consume_data,
+            many=True,
+            context={'request': request}  # 必须传入！
+        )
 
         return Response({
             'code': 200,
@@ -1333,6 +1339,7 @@ class OrderAddView(APIView):
             logger.error(f"下单失败：{str(e)}", exc_info=True)
             return Response({"code": 500, "msg": f"下单失败: {str(e)}"})
 
+
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1349,6 +1356,20 @@ class OrderListView(APIView):
                     "name": order.pick_up_store.name if order.pick_up_store else ""
                 } if order.delivery_type == 2 else {}
             }
+
+            # ========== 新增：快递配送时返回收货人信息 ==========
+            receiver_info = {}
+            if order.delivery_type == 1 and order.address:
+                receiver_info = {
+                    "name": order.address.name,
+                    "phone": order.address.phone,
+                    "province": order.address.province or "",
+                    "city": order.address.city or "",
+                    "district": order.address.district or "",
+                    "address": order.address.address or "",
+                    "detail": order.address.detail or ""
+                }
+
             data_list.append({
                 "order_id": order.id,
                 "order_sn": order.order_sn,
@@ -1358,10 +1379,17 @@ class OrderListView(APIView):
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M'),
                 "goods_names": order.goods_names,
                 "goods_count": order.goods_count,
-                "delivery_info": delivery_info
+                "delivery_info": delivery_info,
+                # ========== 新增：收货人信息字段 ==========
+                "receiver_info": receiver_info
             })
-        return Response({"code": 200, "msg": "获取订单列表成功", "data": data_list})
+        return Response({
+            "code": 200,
+            "msg": "获取订单列表成功",
+            "data": data_list
+        })
 
+# app01/views.py 中的 OrderDetailView（示例）
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1381,7 +1409,7 @@ class OrderDetailView(APIView):
                 query_kwargs['order_sn'] = order_sn
             order = Order.objects.get(**query_kwargs)
 
-            # 订单商品明细
+            # 订单商品明细（保持不变）
             order_items = OrderItem.objects.filter(order=order).select_related('goods')
             goods_detail = [
                 {
@@ -1395,7 +1423,7 @@ class OrderDetailView(APIView):
                 for item in order_items
             ]
 
-            # 配送/地址信息
+            # 配送/地址信息（重点：补全收货人所有字段）
             delivery_info = {
                 "delivery_type": order.delivery_type,
                 "delivery_type_name": order.get_delivery_type_display(),
@@ -1404,12 +1432,19 @@ class OrderDetailView(APIView):
                     "name": order.pick_up_store.name if order.pick_up_store else ""
                 } if order.delivery_type == 2 else {}
             }
-            address_info = {
-                "name": order.address.name,
-                "phone": order.address.phone,
-                "address": order.address.address,
-                "detail": order.address.detail
-            } if order.delivery_type == 1 and order.address else {}
+
+            # 完整的收货人信息（确保字段和序列化器一致）
+            receiver_info = {}
+            if order.delivery_type == 1 and order.address:
+                receiver_info = {
+                    "name": order.address.name,
+                    "phone": order.address.phone,
+                    "province": order.address.province or "",
+                    "city": order.address.city or "",
+                    "district": order.address.district or "",
+                    "address": order.address.detail or "",  # 详细地址
+                    "full_address": f"{order.address.province or ''} {order.address.city or ''} {order.address.district or ''} {order.address.detail or ''}".strip()
+                }
 
             # 组装返回数据
             order_detail = {
@@ -1419,8 +1454,8 @@ class OrderDetailView(APIView):
                 "status": order.status_display,
                 "status_code": order.status,
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M:%S'),
-                "address": address_info,
                 "delivery_info": delivery_info,
+                "receiver_info": receiver_info,  # 完整的收货人信息
                 "goods_detail": goods_detail,
                 "goods_count": order.goods_count
             }

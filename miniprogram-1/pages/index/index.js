@@ -3,19 +3,105 @@ const app = getApp();
 
 Page({
   data: {
-    banner_list: [{ img: '' }], // 轮播图列表
-    notice: 'xxx产品正在7折促销~', // 公告
-    isLogin: false, // 登录状态标识
-    fixed_images: [], // 固定图片列表
-    star_goods: [], // 明星产品列表（新增）
-    content: '', // 公告内容
-    userInfo: {}, // 用户信息（需包含nickname字段）
-    loading: true // 加载状态
+    banner_list: [{ img: '' }], 
+    notice: 'xxx产品正在7折促销~', 
+    isLogin: false, 
+    fixed_images: [], 
+    star_goods: [], 
+    content: '', 
+    userInfo: {}, 
+    loading: true, 
+    memberInfo: {}, 
+    isAdminMember: false 
   },
 
   onLoad() {
-    this.loadHomeData().finally(() => {
-      this.setData({ loading: false });
+    // 强制先获取全局数据，再执行判断
+    this.syncGlobalUserState().then(() => {
+      // 打印关键数据，排查问题
+      // console.log('===== 首页初始化数据 =====');
+      // console.log('全局会员信息：', app.globalData.memberInfo || app.globalData.userInfo);
+      // console.log('页面memberInfo：', this.data.memberInfo);
+      // console.log('user_type：', this.data.memberInfo.user_type);
+      // console.log('是否为4/5级会员：', this.data.isAdminMember);
+
+      if (this.data.isAdminMember) {
+        // 4/5级会员：仅加载明星产品数据（用于表格展示）
+        this.fetchStarGoods().finally(() => {
+          this.setData({ loading: false });
+          // console.log('✅ 已识别为4/5级会员，加载明星产品表格');
+        });
+      } else {
+        // 普通会员：加载所有首页数据
+        this.loadHomeData().finally(() => {
+          this.setData({ loading: false });
+          // console.log('❌ 非4/5级会员，显示原有首页内容');
+        });
+      }
+    });
+  },
+
+  // 重构：强制同步并校验会员等级
+  syncGlobalUserState() {
+    return new Promise((resolve) => {
+      // 1. 优先从全局获取会员信息（兜底处理）
+      const globalUserInfo = app.globalData.userInfo || {};
+      const globalMemberInfo = app.globalData.memberInfo || globalUserInfo;
+      const globalIsLogin = app.globalData.isLogin || false;
+
+      // 2. 强制提取user_type（转数字，避免字符串类型导致判断失败）
+      const userType = Number(globalMemberInfo.user_type || globalUserInfo.user_type || 0);
+      // console.log('提取到的user_type（数字）：', userType);
+
+      // 3. 核心判断：严格检查4/5级
+      const isAdminMember = globalIsLogin && [4, 5].includes(userType);
+      // console.log('登录状态：', globalIsLogin, '是否4/5级：', isAdminMember);
+
+      // 4. 完善用户信息兜底
+      globalUserInfo.nickname = globalUserInfo.nickname || globalUserInfo.username || '用户';
+
+      // 5. 强制更新页面数据（用setData确保渲染）
+      this.setData({
+        isLogin: globalIsLogin,
+        userInfo: globalUserInfo,
+        memberInfo: globalMemberInfo,
+        isAdminMember: isAdminMember // 关键：确保赋值
+      }, () => {
+        // 回调中确认数据已更新
+        // console.log('页面数据更新完成：', this.data.isAdminMember);
+        resolve();
+      });
+    });
+  },
+
+  // 新增：页面显示时重新校验（防止登录后数据未刷新）
+  onShow() {
+    this.syncGlobalUserState().then(() => {
+      // console.log('onShow重新校验会员等级：', this.data.isAdminMember);
+      // 如果是4/5级会员，确保加载明星产品数据
+      if (this.data.isAdminMember && this.data.star_goods.length === 0) {
+        this.fetchStarGoods();
+      }
+    });
+  },
+
+  goToOrderList() {
+    if (!this.data.isAdminMember) {
+      wx.showToast({
+        title: '暂无订单管理权限',
+        icon: 'none'
+      });
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/order-workbench/order-workbench',
+      fail: (err) => {
+        console.error('跳转订单管理工作台失败：', err);
+        wx.showToast({
+          title: '页面路径错误',
+          icon: 'none'
+        });
+      }
     });
   },
 
@@ -23,61 +109,47 @@ Page({
     return Promise.all([
       this.fetchBannerData(), 
       this.fetchFixedImages(),
-      this.fetchStarGoods() // 新增：请求明星产品
+      this.fetchStarGoods()
     ]);
   },
 
- // 简化版：获取所有商品 → 前端筛选明星产品
-// 适配分页格式：获取所有商品 → 筛选明星产品
-fetchStarGoods() {
-  return new Promise((resolve) => {
-    wx.request({
-      url: api.base + '/app01/goods/', // 你的所有商品接口路径
-      method: 'GET',
-      header: {
-        'Content-Type': 'application/json'
-      },
-      success: (res) => {
-        let starGoods = [];
-        // 关键修改：适配分页格式的返回数据（data → results）
-        if (res.data && res.data.code === 200 && res.data.data && Array.isArray(res.data.data.results)) {
-          // 1. 从分页数据中取出真正的商品数组
-          const allGoods = res.data.data.results;
-          console.log('所有商品列表：', allGoods);
-          
-          // 2. 筛选出 is_star 为 true 的商品（匹配你数据库中的字段名）
-          const filteredStarGoods = allGoods.filter(item => item.is_star === true);
-          console.log('筛选出的明星产品：', filteredStarGoods);
-          
-          // 3. 保留原有数据映射逻辑
-          starGoods = filteredStarGoods.map(item => ({
-            id: item.id,
-            name: item.name,
-            image: item.image_url?.startsWith('http') ? item.image_url : `${api.base}${item.image_url || ''}`,
-            price: item.member_price || item.price,
-            original_price: item.original_price
-          }));
-        } else {
-          console.warn('所有商品接口返回数据格式异常：', res.data);
+  fetchStarGoods() {
+    return new Promise((resolve) => {
+      wx.request({
+        url: api.base + '/app01/goods/',
+        method: 'GET',
+        header: {
+          'Content-Type': 'application/json'
+        },
+        success: (res) => {
+          let starGoods = [];
+          if (res.data && res.data.code === 200 && res.data.data && Array.isArray(res.data.data.results)) {
+            const allGoods = res.data.data.results;
+            const filteredStarGoods = allGoods.filter(item => item.is_star === true);
+            starGoods = filteredStarGoods.map(item => ({
+              id: item.id,
+              name: item.name,
+              image: item.image_url?.startsWith('http') ? item.image_url : `${api.base}${item.image_url || ''}`,
+              price: item.member_price || item.price,
+              original_price: item.original_price
+            }));
+          } else {
+            console.warn('所有商品接口返回数据格式异常：', res.data);
+          }
+          this.setData({ star_goods: starGoods });
+          resolve();
+        },
+        fail: (error) => {
+          console.error('所有商品获取失败：', error);
+          this.setData({ star_goods: [] });
+          resolve();
         }
-        this.setData({ star_goods: starGoods });
-        resolve();
-      },
-      fail: (error) => {
-        console.error('所有商品获取失败（明星产品筛选依赖）：', error);
-        this.setData({ star_goods: [] });
-        resolve();
-      }
+      });
     });
-  });
-},
+  },
 
-  // 新增：跳转到商品详情页
   goToGoodsDetail(event) {
-    console.log('点击商品触发事件：', event); // 新增：打印完整事件
     const goodsId = event.currentTarget.dataset.goodsid;
-    console.log('获取到的商品ID：', goodsId); // 新增：打印商品ID
-    
     if (!goodsId) {
       wx.showToast({
         title: '商品ID不存在',
@@ -86,14 +158,10 @@ fetchStarGoods() {
       return;
     }
     
-    // 新增：先验证路径是否存在，再跳转
     wx.navigateTo({
       url: `/pages/mall/detail?goods_id=${goodsId}`,
-      success: () => {
-        // console.log('跳转详情页成功');
-      },
       fail: (err) => {
-        console.error('跳转详情页失败：', err); // 打印失败原因
+        console.error('跳转详情页失败：', err);
         wx.showToast({
           title: '跳转失败：页面路径错误',
           icon: 'none'
@@ -102,7 +170,6 @@ fetchStarGoods() {
     });
   },
 
-  // 原有方法保持不变 ↓
   fetchBannerData() {
     return new Promise((resolve) => {
       wx.request({
@@ -187,30 +254,6 @@ fetchStarGoods() {
     const imgId = event.currentTarget.dataset.id;
     if (imgId) {
       console.log('点击固定图片：', imgId);
-    }
-  },
-
-  onShow() {
-    this.syncGlobalUserState();
-    this.setData({
-      isLogin: app.globalData.isLogin || false,
-      userInfo: app.globalData.userInfo || {}
-    });
-  },
-
-  syncGlobalUserState() {
-    const globalIsLogin = app.globalData.isLogin || false;
-    const globalUserInfo = app.globalData.userInfo || {};
-    globalUserInfo.nickname = globalUserInfo.nickname || globalUserInfo.username || globalUserInfo.name || '';
-    
-    console.log('当前全局登录状态：', globalIsLogin, '用户信息：', globalUserInfo);
-    
-    if (this.data.isLogin !== globalIsLogin || JSON.stringify(this.data.userInfo) !== JSON.stringify(globalUserInfo)) {
-      this.setData({
-        isLogin: globalIsLogin,
-        userInfo: globalUserInfo
-      });
-      console.log('页面状态已更新：', this.data.isLogin, this.data.userInfo);
     }
   },
 

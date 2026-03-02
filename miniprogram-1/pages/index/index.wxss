@@ -344,3 +344,131 @@ page {
   margin: 20rpx 0;        
   padding: 10rpx 0;       
 }
+
+/* 4/5级会员 - 整体样式优化 */
+.admin-content {
+  padding: 20rpx 30rpx; /* 减少上下内边距，更紧凑 */
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 360rpx); /* 适配屏幕高度，避免底部空白 */
+  display: flex;
+  flex-direction: column; /* 改为纵向排列 */
+  align-items: center;
+  justify-content: flex-start; /* 顶部开始排列 */
+  gap: 30rpx; /* 元素之间增加间距 */
+}
+
+/* 订单管理工作台按钮优化 */
+.function-item {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx 40rpx;
+  width: 100%;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  margin-top: 20rpx; /* 增加顶部间距 */
+}
+
+.function-icon {
+  font-size: 60rpx;
+  margin-right: 30rpx;
+}
+
+.function-name {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.function-arrow {
+  font-size: 36rpx;
+  color: #666;
+}
+
+/* 4/5级会员 - 明星产品表格样式 */
+.admin-product-table-wrap {
+  width: 100%;
+  margin-top: 10rpx;
+}
+
+/* 表格整体样式 */
+.product-table {
+  width: 100%;
+  background-color: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 表格表头 */
+.table-header {
+  display: flex;
+  background: linear-gradient(to right, #1E88E5, #42a5f5);
+  color: #fff;
+  font-weight: 600;
+  font-size: 28rpx;
+}
+
+.table-col {
+  padding: 20rpx 10rpx;
+  text-align: center;
+  box-sizing: border-box;
+  border-bottom: 1rpx solid #eee;
+}
+
+/* 表格列宽度分配 */
+.table-col-img {
+  width: 20%;
+}
+.table-col-name {
+  width: 40%;
+  text-align: left;
+  padding-left: 20rpx;
+}
+.table-col-price {
+  width: 20%;
+}
+.table-col-original {
+  width: 20%;
+}
+
+/* 表格内容 */
+.table-body {
+  max-height: 600rpx; /* 限制表格高度，超出可滚动 */
+  overflow-y: auto;
+}
+
+/* 表格行 */
+.table-row {
+  display: flex;
+  align-items: center;
+  font-size: 26rpx;
+  background-color: #fff;
+  /* 隔行变色，提升可读性 */
+}
+.table-row:nth-child(even) {
+  background-color: #f8f9fa;
+}
+/* 行点击高亮 */
+.table-row:active {
+  background-color: #e3f2fd;
+}
+
+/* 表格行内图片 */
+.table-row .table-col-img image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  object-fit: contain;
+  background-color: #f5f5f5;
+}
+
+/* 无数据提示 */
+.empty-tip {
+  margin-top: 50rpx;
+  font-size: 28rpx;
+  color: #999;
+  text-align: center;
+  padding: 50rpx 0;
+}

@@ -1,0 +1,93 @@
+<view class="container">
+  <!-- 加载中 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载订单数据中...</text>
+  </view>
+
+  <!-- 主内容（非加载状态） -->
+  <view class="main" wx:else>
+    <!-- 顶部状态Tab栏（横向滚动） -->
+    <scroll-view class="tab-scroll" scroll-x="true" scroll-with-animation="true">
+      <view class="tab-list">
+        <view 
+          class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+          wx:for="{{orderStatusTabs}}"
+          wx:key="key"
+          bindtap="onTabChange"
+          data-key="{{item.key}}"
+        >
+          <text class="tab-text">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 无订单提示 -->
+    <view class="empty" wx:if="{{filteredOrders.length === 0}}">
+      <text>暂无{{activeTabName}}</text>
+    </view>
+
+    <!-- 订单列表（和无订单提示配对的 wx:else） -->
+    <view class="order-list" wx:else>
+      <view class="order-card" wx:for="{{filteredOrders}}" wx:key="id" wx:for-index="idx">
+        <!-- 订单头部（点击展开/收起） -->
+        <view class="order-header" bindtap="toggleOrderExpand" data-index="{{idx}}">
+          <view class="header-left">
+            <text class="order-sn">订单号：{{item.orderSn}}</text>
+            <text class="status {{item.statusKey}}">{{item.statusName}}</text>
+          </view>
+          <view class="header-right">
+            <text class="total-price">¥{{item.totalPrice}}</text>
+            <text class="toggle-icon">{{item.expanded ? '▼' : '▶'}}</text>
+          </view>
+        </view>
+
+        <!-- 订单详情（展开时显示） -->
+        <view class="order-detail" wx:if="{{item.expanded}}">
+          <!-- 订单日期 -->
+          <view class="detail-row">
+            <text class="label">下单时间：</text>
+            <text class="value">{{item.createTime}}</text>
+          </view>
+
+          <!-- 收货人信息 -->
+          <view class="detail-section">
+            <text class="section-title">收货人信息</text>
+            <view class="detail-row">
+              <text class="label">姓名：</text>
+              <text class="value">{{item.receiverName}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="label">电话：</text>
+              <text class="value">{{item.receiverPhone}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="label">地址：</text>
+              <text class="value">{{item.receiverAddress}}</text>
+            </view>
+          </view>
+
+          <!-- 商品明细 -->
+          <view class="detail-section">
+            <text class="section-title">商品明细</text>
+            <!-- 商品表头 -->
+            <view class="goods-header">
+              <text class="col-goods">商品名称</text>
+              <text class="col-num">数量</text>
+              <text class="col-price">单价</text>
+              <text class="col-total">小计</text>
+            </view>
+            <!-- 商品列表 -->
+            <view class="goods-list">
+              <view class="goods-item" wx:for="{{item.goodsList}}" wx:for-item="goods" wx:key="goodsName">
+                <text class="col-goods">{{goods.goodsName}}</text>
+                <text class="col-num">{{goods.num}}</text>
+                <text class="col-price">¥{{goods.price}}</text>
+                <text class="col-total">¥{{goods.totalPrice}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

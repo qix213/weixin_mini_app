@@ -1,4 +1,4 @@
-<!-- 顶部渐变横幅 -->
+<!-- 顶部渐变横幅（始终保留） -->
 <view class="banner1">
   <view class="banner-header">
     <!-- 左侧：欢迎标语 -->
@@ -10,7 +10,7 @@
       </text>
     </view>
 
-    <!-- 右侧：Logo + 登录/注册按钮/欢迎文本（核心：条件渲染） -->
+    <!-- 右侧：Logo + 登录/注册按钮/欢迎文本 -->
     <view class="header-right">
       <image class="banner-logo" src="/images/home/logo.png" mode="widthFix" />
       <!-- 登录状态：显示欢迎文本 -->
@@ -26,64 +26,118 @@
   </view>
 </view>
 
-<!-- 公告区域 -->
-<view class="notice">
-  <image src="/images/home/board.png" mode="aspectFit" style="width: 100rpx; height: 100rpx;" />
-  <text>最新优惠活动信息：{{notice}} {{content}}</text>
+<!-- 4/5级会员：显示订单管理工作台 + 明星产品表格 -->
+<view class="admin-content" wx:if="{{isAdminMember}}">
+  <!-- 订单管理工作台入口（核心功能） -->
+  <view class="function-item" bindtap="{{isLogin ? 'goToOrderList' : 'goToLogin'}}">
+    <view class="function-icon">📊</view>
+    <view class="function-name" style="{{!isLogin || !memberInfo.user_type ? 'color:#999' : ''}}">订单管理工作台</view>
+    <view class="function-arrow" style="{{!isLogin || !memberInfo.user_type ? 'color:#ccc' : ''}}">→</view>
+  </view>
+
+  <!-- 明星产品表格区域（补充内容，解决页面空的问题） -->
+  <view class="admin-product-table-wrap" wx:if="{{star_goods.length > 0}}">
+    <view class="section-title-wrap">
+      <text class="section-title">明星家居产品汇总</text>
+    </view>
+    <!-- 产品表格 -->
+    <view class="product-table">
+      <!-- 表格表头 -->
+      <view class="table-header">
+        <view class="table-col table-col-img">产品图片</view>
+        <view class="table-col table-col-name">产品名称</view>
+        <view class="table-col table-col-price">会员价</view>
+        <view class="table-col table-col-original">原价</view>
+      </view>
+      <!-- 表格内容 -->
+      <view class="table-body">
+        <block wx:for="{{star_goods}}" wx:key="id">
+          <view class="table-row" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+            <view class="table-col table-col-img">
+              <image 
+                src="{{item.image}}" 
+                mode="aspectFit"  
+                lazy-load="true"
+                default-src="/images/home/default-img.png"
+              />
+            </view>
+            <view class="table-col table-col-name">{{item.name}}</view>
+            <view class="table-col table-col-price">¥{{item.price}}</view>
+            <view class="table-col table-col-original" wx:if="{{item.original_price}}">¥{{item.original_price}}</view>
+            <view class="table-col table-col-original" wx:else>-</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </view>
+
+  <!-- 无产品时的提示 -->
+  <view class="empty-tip" wx:elif="{{star_goods.length === 0}}">
+    <text>暂无明星产品数据</text>
+  </view>
 </view>
 
-<!-- 轮播图 -->
-<view class="banner" wx:if="{{banner_list.length > 0}}">
-  <swiper autoplay indicator-dots circular indicator-color="#FFFFFF" interval="4000">
-    <swiper-item wx:for="{{banner_list}}" wx:key="index">
-      <image src="{{item.img}}" mode="widthFix" style="width: 100%;" />
-    </swiper-item>
-  </swiper>
-</view>
+<!-- 普通会员/未登录：显示原有首页内容 -->
+<view class="normal-content" wx:else>
+  <!-- 公告区域 -->
+  <view class="notice">
+    <image src="/images/home/board.png" mode="aspectFit" style="width: 100rpx; height: 100rpx;" />
+    <text>最新优惠活动信息：{{notice}} {{content}}</text>
+  </view>
 
-<!-- 明星产品区域（重构优化） -->
-<view class="section-title-wrap">
-  <text class="section-title">明星家居产品</text>
-</view>
-<view class="star-goods-section" wx:if="{{star_goods.length > 0}}">
-  <view class="star-goods-container">
-    <block wx:for="{{star_goods}}" wx:key="id">
-      <view class="star-goods-item" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
-        <image 
-          src="{{item.image}}" 
-          mode="aspectFit"  
-          class="star-goods-img"
-          lazy-load="true"
-          default-src="/images/home/default-img.png"
-        />
-        <view class="goods-info">
-          <text class="goods-name">{{item.name}}</text>
-          <view class="price-wrap">
-            <text class="current-price">¥{{item.price}}</text>
-            <text class="original-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
+  <!-- 轮播图 -->
+  <view class="banner" wx:if="{{banner_list.length > 0}}">
+    <swiper autoplay indicator-dots circular indicator-color="#FFFFFF" interval="4000">
+      <swiper-item wx:for="{{banner_list}}" wx:key="index">
+        <image src="{{item.img}}" mode="widthFix" style="width: 100%;" />
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <!-- 明星产品区域 -->
+  <view class="section-title-wrap">
+    <text class="section-title">明星家居产品</text>
+  </view>
+  <view class="star-goods-section" wx:if="{{star_goods.length > 0}}">
+    <view class="star-goods-container">
+      <block wx:for="{{star_goods}}" wx:key="id">
+        <view class="star-goods-item" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+          <image 
+            src="{{item.image}}" 
+            mode="aspectFit"  
+            class="star-goods-img"
+            lazy-load="true"
+            default-src="/images/home/default-img.png"
+          />
+          <view class="goods-info">
+            <text class="goods-name">{{item.name}}</text>
+            <view class="price-wrap">
+              <text class="current-price">¥{{item.price}}</text>
+              <text class="original-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
+            </view>
           </view>
         </view>
-      </view>
-    </block>
+      </block>
+    </view>
+  </view>
+
+  <!-- 原有固定图片区域（保留） -->
+  <view class="fixed-images-section" wx:if="{{fixed_images.length > 0}}">
+    <view class="fixed-images-container">
+      <block wx:for="{{fixed_images}}" wx:key="id">
+        <view class="fixed-image-item">
+          <image 
+            src="{{item.img}}" 
+            mode="aspectFit"  
+            class="fixed-image"
+            bindtap="handleClick01"
+            data-id="{{item.id}}"
+            lazy-load="true"
+            default-src="/images/home/default-img.png"
+          />
+          <text class="fixed-image-title"> 产品 {{item.id || '未命名产品'}}</text>
+        </view>
+      </block>
+    </view>
   </view>
 </view>
-
-<!-- 原有固定图片区域（保留）
-<view class="fixed-images-section" wx:if="{{fixed_images.length > 0}}">
-  <view class="fixed-images-container">
-    <block wx:for="{{fixed_images}}" wx:key="id">
-      <view class="fixed-image-item">
-        <image 
-          src="{{item.img}}" 
-          mode="aspectFit"  
-          class="fixed-image"
-          bindtap="handleClick01"
-          data-id="{{item.id}}"
-          lazy-load="true"
-          default-src="/images/home/default-img.png"
-        />
-        <text class="fixed-image-title"> 产品 {{item.id || '未命名产品'}}</text>
-      </view>
-    </block>
-  </view>
-</view> -->

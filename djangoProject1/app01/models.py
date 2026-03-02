@@ -439,6 +439,7 @@ class User(AbstractUser):
         return direct_subs
 
     # 获取下级消费记录
+    # User模型中的get_sub_consume_records方法（仅修改订单查询行）
     def get_sub_consume_records(self, current_level=0):
         """
         返回按下级会员分组的消费记录（包含会员信息+订单列表）
@@ -463,10 +464,11 @@ class User(AbstractUser):
         sub_consume_data = []
         for sub_user in sub_users:
             # 查询该下级会员的所有订单
+            # 🔥 关键修改：新增 select_related('address') 关联地址字段
             orders = Order.objects.filter(
                 user=sub_user,
                 status__in=[1, 2, 3]  # 仅查询有效订单（待付款/待发货/已发货）
-            ).order_by('-create_time').prefetch_related('items')  # 预加载订单项，提升性能
+            ).select_related('address').order_by('-create_time').prefetch_related('items')  # 保留原有预加载
 
             if orders:
                 # 组装会员信息+订单列表
