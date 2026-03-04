@@ -84,7 +84,10 @@ urlpatterns = [
     path('user/coupons/use/', views.UserCouponUseView.as_view(), name='user_coupon_use'),
     # 3. 领取优惠券
     path('coupon/claim/', views.claim_coupon),
-    
+    # 新建运单
+    path("express/create/", views.express_create, name="express_create"),
+    # 运单列表
+    path("express/list/", views.express_list, name="express_list"),
 ]
 
 # 修复语法错误：单独拼接router.urls，避免和导入语句混写

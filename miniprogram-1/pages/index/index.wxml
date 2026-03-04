@@ -122,7 +122,7 @@
   </view>
 
   <!-- 原有固定图片区域（保留） -->
-  <view class="fixed-images-section" wx:if="{{fixed_images.length > 0}}">
+  <!-- <view class="fixed-images-section" wx:if="{{fixed_images.length > 0}}">
     <view class="fixed-images-container">
       <block wx:for="{{fixed_images}}" wx:key="id">
         <view class="fixed-image-item">
@@ -139,5 +139,5 @@
         </view>
       </block>
     </view>
-  </view>
+  </view> -->
 </view>

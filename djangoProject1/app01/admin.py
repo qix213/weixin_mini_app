@@ -3,7 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Category, Goods,
  VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
-                     Address, Order,GoodsImage,Coupon)
+                     Address, Order,GoodsImage,Coupon,ExpressLogistics)
 
 admin.site.register(Welcome)
 admin.site.register(Banner)
@@ -24,6 +24,7 @@ admin.site.register(Recipient)
 admin.site.register(Address)
 admin.site.register(Order)
 admin.site.register(Coupon)
+admin.site.register(ExpressLogistics)
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # 后台列表显示的字段

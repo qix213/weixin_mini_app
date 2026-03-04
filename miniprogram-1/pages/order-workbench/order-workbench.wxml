@@ -26,7 +26,7 @@
       <text>暂无{{activeTabName}}</text>
     </view>
 
-    <!-- 订单列表（和无订单提示配对的 wx:else） -->
+    <!-- 订单列表 -->
     <view class="order-list" wx:else>
       <view class="order-card" wx:for="{{filteredOrders}}" wx:key="id" wx:for-index="idx">
         <!-- 订单头部（点击展开/收起） -->
@@ -49,20 +49,54 @@
             <text class="value">{{item.createTime}}</text>
           </view>
 
-          <!-- 收货人信息 -->
+          <!-- 物流信息 -->
           <view class="detail-section">
-            <text class="section-title">收货人信息</text>
-            <view class="detail-row">
-              <text class="label">姓名：</text>
-              <text class="value">{{item.receiverName}}</text>
+            <text class="section-title">物流信息</text>
+            <!-- 无物流信息提示 -->
+            <view class="no-express" wx:if="{{item.expressList.length === 0}}">
+              <text class="empty-text">暂无物流轨迹</text>
             </view>
-            <view class="detail-row">
-              <text class="label">电话：</text>
-              <text class="value">{{item.receiverPhone}}</text>
-            </view>
-            <view class="detail-row">
-              <text class="label">地址：</text>
-              <text class="value">{{item.receiverAddress}}</text>
+            <!-- 有物流信息时展示 -->
+            <view wx:else>
+              <!-- 最新物流概览 -->
+              <view class="detail-row">
+                <text class="label">运单号：</text>
+                <text class="value">{{item.latestExpress.logisticsNo}}</text>
+              </view>
+              <view class="detail-row">
+                <text class="label">物流公司：</text>
+                <text class="value">{{item.latestExpress.logisticsCompany}}</text>
+              </view>
+              <view class="detail-row">
+                <text class="label">当前状态：</text>
+                <text class="value">{{item.latestExpress.logisticsStatusName}}</text>
+              </view>
+              <view class="detail-row">
+                <text class="label">最新位置：</text>
+                <text class="value">{{item.latestExpress.acceptAddress}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.latestExpress.courierName}}">
+                <text class="label">派件人：</text>
+                <text class="value">{{item.latestExpress.courierName}}</text>
+              </view>
+              <view class="detail-row" wx:if="{{item.latestExpress.courierPhone}}">
+                <text class="label">派件电话：</text>
+                <text class="value">{{item.latestExpress.courierPhone}}</text>
+              </view>
+
+              <!-- 完整物流轨迹（可点击展开） -->
+              <view class="express-tracks" wx:if="{{item.expressList.length > 1}}">
+                <!-- 修复：添加data-index="{{idx}}"，绑定toggleTrackExpand方法 -->
+                <text class="track-title" bindtap="toggleTrackExpand" data-index="{{idx}}">
+                  查看完整物流轨迹（共{{item.expressList.length}}条）{{item.trackExpanded ? '▲' : '▼'}}
+                </text>
+                <view class="track-list" wx:if="{{item.trackExpanded}}">
+                  <view class="track-item" wx:for="{{item.expressList}}" wx:for-item="track" wx:key="logisticsTime">
+                    <text class="track-time">{{track.logisticsTime}}</text>
+                    <text class="track-content">{{track.acceptAddress}} - {{track.logisticsStatusName}}</text>
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
 

@@ -1,3 +1,6 @@
 {
-  "usingComponents": {}
+  "usingComponents": {},
+  "navigationBarTitleText": "订单管理工作台",
+  "navigationBarBackgroundColor": "#1E88E5",
+  "navigationBarTextStyle": "black"
 }

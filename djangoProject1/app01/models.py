@@ -942,3 +942,103 @@ class UserCoupon(models.Model):
     def is_valid(self):
         """判断优惠券是否可用（未使用+未过期）"""
         return not self.is_used and not self.is_expired
+
+
+# 快递物流轨迹模型（关联Order，记录每一条物流节点）
+class ExpressLogistics(models.Model):
+    """
+    快递物流轨迹模型
+    关联订单号，记录运单号、物流时间、地点、状态、派件人信息等
+    一个订单可对应多条物流轨迹（如揽收、中转、派送、签收）
+    """
+    # 关联订单（核心外键，确保和订单主表关联）
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="express_logistics",
+        verbose_name="关联订单"
+    )
+    # 冗余存储订单号（方便快速查询，无需关联Order表）
+    order_sn = models.CharField(max_length=64, verbose_name="订单编号")
+
+    # 物流核心字段
+    logistics_no = models.CharField(max_length=64, verbose_name="运单号")  # 顺丰/圆通等运单号
+    logistics_company = models.CharField(max_length=32, null=True, blank=True, verbose_name="物流公司")  # 如：顺丰速运
+
+    # 物流轨迹节点信息
+    logistics_time = models.DateTimeField(verbose_name="物流节点时间")  # 该节点的发生时间（如2025-10-02 19:10:44）
+    accept_address = models.CharField(max_length=100, verbose_name="货物地点")  # 如：苏州市/杭州市
+    # 物流状态（和顺丰接口状态对齐，覆盖核心场景）
+    LOGISTICS_STATUS_CHOICES = (
+        (101, "已揽收"),
+        (201, "运送中"),
+        (301, "派送中"),
+        (401, "已签收"),
+        (501, "已取消"),
+        (601, "异常件"),
+    )
+    logistics_status = models.IntegerField(
+        choices=LOGISTICS_STATUS_CHOICES,
+        verbose_name="物流状态"
+    )
+    logistics_status_name = models.CharField(max_length=32, verbose_name="物流状态名称",
+                                             help_text="冗余存储状态名称，如：已揽收/派送中")
+
+    # 派件人信息（仅派送/签收节点有值）
+    courier_name = models.CharField(max_length=50, null=True, blank=True, verbose_name="派件人姓名")  # 如：杜保奎
+    courier_phone = models.CharField(max_length=11, null=True, blank=True,
+                                     verbose_name="派件人联系电话")  # 如：18358192592
+
+    # 扩展字段
+    remark = models.CharField(max_length=500, null=True, blank=True, verbose_name="物流备注")  # 如：快件已放在家门口
+    sort = models.IntegerField(default=0, verbose_name="轨迹排序")  # 按时间正序排列轨迹
+    is_delete = models.BooleanField(default=False, verbose_name="是否删除")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        verbose_name = "快递物流轨迹"
+        verbose_name_plural = "快递物流轨迹"
+        # 核心修改：先按物流时间正序（asc），再按sort正序
+        ordering = ["-logistics_time", "-sort"]
+        indexes = [
+            models.Index(fields=["order_sn"]),
+            models.Index(fields=["logistics_no"]),
+            # 新增：按物流时间索引，提升排序查询效率
+            models.Index(fields=["logistics_time"]),
+        ]
+
+    def __str__(self):
+        return f"{self.order_sn} - {self.logistics_no} - {self.logistics_status_name} - {self.accept_address}"
+
+    # 重写save方法：自动同步订单号、状态名称
+    def save(self, *args, **kwargs):
+        # 1. 自动从关联订单同步order_sn
+        if self.order and not self.order_sn:
+            self.order_sn = self.order.order_sn
+        # 2. 自动同步物流状态名称（从choices中获取）
+        if self.logistics_status and not self.logistics_status_name:
+            status_map = dict(self.LOGISTICS_STATUS_CHOICES)
+            self.logistics_status_name = status_map.get(self.logistics_status, "未知状态")
+        # 3. 同步到Order主表的物流单号（保持数据一致）
+        if self.logistics_no and self.order and not self.order.logistics_no:
+            self.order.logistics_no = self.logistics_no
+            self.order.logistics_company = self.logistics_company
+            self.order.save(update_fields=["logistics_no", "logistics_company"])
+        super().save(*args, **kwargs)
+
+    # 快捷属性：获取易读的物流状态
+    @property
+    def status_text(self):
+        """返回友好的物流状态文本"""
+        return self.get_logistics_status_display()
+
+SF_STATUS_MAP = {
+    "已揽收": 101,
+    "运送中": 201,
+    "派送中": 301,
+    "已签收": 401,
+    "已取消": 501,
+    "异常件": 601,
+}
+# 反向映射（用于快速获取状态名称）
+STATUS_NAME_MAP = {v: k for k, v in SF_STATUS_MAP.items()}

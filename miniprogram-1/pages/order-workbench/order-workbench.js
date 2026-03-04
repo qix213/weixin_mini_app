@@ -21,89 +21,167 @@ Page({
       activeTabName: this.data.orderStatusTabs[0].name,
       currentLevel: options.currentLevel || 0
     });
-    this.fetchOrderList();
+    this.fetchOrderList().then(() => {
+    }).catch(err => {
+    });
   },
 
-fetchOrderList() {
-  return new Promise((resolve, reject) => {
-    const app = getApp();
-    const header = app.getRequestHeader ? app.getRequestHeader() : {
-      'Content-Type': 'application/json'
-    };
+  fetchOrderList() {
+    return new Promise((resolve, reject) => {
+      const app = getApp();
+      const header = app.getRequestHeader ? app.getRequestHeader() : {
+        'Content-Type': 'application/json'
+      };
 
-    wx.request({
-      url: app.globalData.baseUrl + '/app01/member/sub-consume/',
-      method: 'GET',
-      header: header,
-      data: { current_level: this.data.currentLevel },
-      success: (res) => {
-        this.setData({ loading: false });
-        if (res.data.code === 200) {
-          let allOrders = [];
-          (res.data.data || []).forEach(memberItem => {
-            const memberInfo = memberItem.member_info || {};
-            const memberNickname = memberInfo.nickname || '未知会员';
-            (memberItem.orders || []).forEach(order => {
-              // 🔥 关键：打印单个订单的原始数据，看收货人字段名
-              console.log('订单原始数据：', order);
-              // 重点看 order 里的收货人相关字段，比如 consignee、receiver、name、phone 等
-              
-              let formatted = this.formatOrderData(order, memberNickname);
-              formatted.expanded = false;
-              allOrders.push(formatted);
+      wx.request({
+        url: `${app.globalData.baseUrl}/app01/member/sub-consume/`,
+        method: 'GET',
+        header: header,
+        data: { current_level: this.data.currentLevel },
+        success: (res) => {
+          this.setData({ loading: false });
+
+          if (res.data?.code === 200) {
+            let allOrders = [];
+            const rawOrderData = res.data.data || [];
+
+            rawOrderData.forEach((memberItem) => {
+              const memberInfo = memberItem.member_info || {};
+              const memberNickname = memberInfo.nickname || '未知会员';
+              const memberOrders = memberItem.orders || [];
+
+              memberOrders.forEach((order) => {
+                let formatted = this.formatOrderData(order, memberNickname);
+                formatted.expanded = false;
+                formatted.trackExpanded = false; // 新增：物流轨迹展开状态
+                allOrders.push(formatted);
+              });
             });
-          });
-          const filteredOrders = allOrders.filter(o => o.status !== 0);
-          this.setData({
-            allOrders: filteredOrders,
-            filteredOrders: filteredOrders
+
+            const filteredOrders = allOrders.filter(o => o.status !== 0);
+
+            this.fetchExpressList(filteredOrders).then(() => {
+              this.setData({
+                allOrders: filteredOrders,
+                filteredOrders: filteredOrders
+              });
+              resolve();
+            }).catch(err => {
+              reject(err);
+            });
+          } else {
+            wx.showToast({ title: '获取订单失败', icon: 'none' });
+            reject(new Error(`订单接口错误：${res.data?.msg || '未知错误'}`));
+          }
+        },
+        fail: (err) => {
+          this.setData({ loading: false });
+          wx.showToast({ title: '网络错误', icon: 'none' });
+          reject(err);
+        }
+      });
+    });
+  },
+
+  fetchExpressList(orders) {
+    return new Promise((resolve) => {
+      const app = getApp();
+      const header = app.getRequestHeader ? app.getRequestHeader() : {
+        'Content-Type': 'application/json'
+      };
+
+      const orderSns = [...new Set(orders.map(o => o.orderSn).filter(Boolean))];
+
+      if (orderSns.length === 0) {
+        orders.forEach(order => {
+          order.expressList = [];
+          order.latestExpress = {};
+        });
+        resolve();
+        return;
+      }
+
+      wx.request({
+        url: `${app.globalData.baseUrl}/app01/express/list/`,
+        method: 'GET',
+        header: header,
+        data: { order_sns: orderSns.join(','), format: 'json' },
+        success: (res) => {
+          if (res.data && res.data.code === 200) {
+            const expressList = res.data.data || [];
+            const expressMap = {};
+
+            expressList.forEach((express) => {
+              const orderSn = express.order_sn || '';
+              if (!orderSn) {
+                return;
+              }
+
+              if (!expressMap[orderSn]) {
+                expressMap[orderSn] = [];
+              }
+
+              const formattedExpress = {
+                logisticsNo: express.logistics_no || '未知运单号',
+                logisticsCompany: express.logistics_company || '未知物流公司',
+                logisticsTime: express.logistics_time || '未知时间',
+                acceptAddress: express.accept_address || '未知地点',
+                logisticsStatusName: express.logistics_status_name || '未知状态',
+                courierName: express.courier_name || '未知派件人',
+                courierPhone: express.courier_phone || '未知电话'
+              };
+              expressMap[orderSn].push(formattedExpress);
+            });
+
+            orders.forEach((order) => {
+              const orderSn = order.orderSn;
+              order.expressList = expressMap[orderSn] || [];
+              order.latestExpress = order.expressList[0] || {};
+            });
+          } else {
+            orders.forEach(order => {
+              order.expressList = [];
+              order.latestExpress = {};
+            });
+          }
+          resolve();
+        },
+        fail: (err) => {
+          orders.forEach(order => {
+            order.expressList = [];
+            order.latestExpress = {};
           });
           resolve();
-        } else {
-          wx.showToast({ title: '获取订单失败', icon: 'none' });
-          reject();
         }
-      },
-      fail: (err) => {
-        this.setData({ loading: false });
-        wx.showToast({ title: '网络错误', icon: 'none' });
-        reject(err);
-      }
+      });
     });
-  });
-},
+  },
 
-formatOrderData(order, memberNickname) {
-  const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
-  const status = this.safeToNumber(order.status || 0);
-  
-  // 🔥 解析后端返回的收货信息（4/5级用户能拿到真实值）
-  const receiverName = order.receiver_name || '未知收货人';
-  const receiverPhone = order.receiver_phone || '未知电话';
-  const receiverAddress = order.receiver_address || '未知地址';
-
-  return {
-    id: orderSn,
-    orderSn: orderSn,
-    status: status,
-    statusName: order.status_name || this.data.statusMap[status],
-    statusKey: this.getStatusKeyByCode(status),
-    totalPrice: this.safeToNumber(order.total_price || 0),
-    createTime: this.formatDate(order.create_time || ''),
-    // 修复后的收货人信息
-    receiverName: receiverName,
-    receiverPhone: receiverPhone,
-    receiverAddress: receiverAddress,
-    // 商品信息
-    goodsList: (order.goods_list||[]).map(g=>({
-      goodsName: g.goods_name||g.name||'未知商品',
-      num: this.safeToNumber(g.num||g.quantity||1),
-      price: this.safeToNumber(g.price||0),
-      totalPrice: this.safeToNumber(g.total_price||g.amount||0)
-    })),
-    memberNickname: memberNickname
-  };
-},
+  formatOrderData(order, memberNickname) {
+    const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
+    const status = this.safeToNumber(order.status || 0);
+    
+    const formattedOrder = {
+      id: orderSn,
+      orderSn: orderSn,
+      status: status,
+      statusName: order.status_name || this.data.statusMap[status],
+      statusKey: this.getStatusKeyByCode(status),
+      totalPrice: this.safeToNumber(order.total_price || 0),
+      createTime: this.formatDate(order.create_time || ''),
+      expressList: [],
+      latestExpress: {},
+      trackExpanded: false, // 物流轨迹展开状态
+      goodsList: (order.goods_list||[]).map(g=>({
+        goodsName: g.goods_name||g.name||'未知商品',
+        num: this.safeToNumber(g.num||g.quantity||1),
+        price: this.safeToNumber(g.price||0),
+        totalPrice: this.safeToNumber(g.total_price||g.amount||0)
+      })),
+      memberNickname: memberNickname
+    };
+    return formattedOrder;
+  },
 
   getStatusKeyByCode(s) {
     const map = {1:'pending',2:'shipped',3:'completed',4:'cancelled'};
@@ -120,26 +198,35 @@ formatOrderData(order, memberNickname) {
     });
   },
 
-  // 🔥 终极修复：点击展开/收起（绝对生效）
   toggleOrderExpand(e) {
     const index = e.currentTarget.dataset.index;
-    let list = this.data.filteredOrders;
-    // 取当前订单，翻转展开状态
+    let list = [...this.data.filteredOrders];
     list[index].expanded = !list[index].expanded;
-    this.setData({
-      filteredOrders: list
-    });
+    this.setData({ filteredOrders: list });
+  },
+
+  // 新增：物流轨迹展开/收起方法（修复点击无反应）
+  toggleTrackExpand(e) {
+    const index = e.currentTarget.dataset.index;
+    let list = [...this.data.filteredOrders];
+    list[index].trackExpanded = !list[index].trackExpanded;
+    this.setData({ filteredOrders: list });
   },
 
   safeToNumber(v) {
-    const n = parseFloat(v); return isNaN(n)?0:n;
+    const n = parseFloat(v); 
+    const result = isNaN(n)?0:n;
+    return result;
   },
 
   formatDate(str) {
     if(!str) return '未知时间';
     try {
-      return str.replace(' ','T');
-    }catch(e){return str;}
+      const formatted = str.replace(' ','T');
+      return formatted;
+    }catch(e){
+      return str;
+    }
   },
 
   onPullDownRefresh() {

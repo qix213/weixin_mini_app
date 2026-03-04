@@ -5,10 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
-import time
 import datetime
 import random
-import json
 import logging
 from django.utils import timezone
 
@@ -1929,3 +1927,266 @@ class UserCouponUseView(APIView):
                 'msg': f'使用优惠券失败：{str(e)}',
                 'data': None
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+import hashlib
+import base64
+import uuid
+import time
+import json
+import requests
+import re
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from datetime import datetime
+from django.utils import timezone
+from collections import defaultdict
+from .forms import ExpressCreateForm
+from .models import Order, ExpressLogistics, SF_STATUS_MAP, STATUS_NAME_MAP
+
+# --- 顺丰接口配置 ---
+PARTNER_ID = "LSQJS1HHHWZW"
+CHECK_WORD = "zfIRMBfdRKaZiJfOea1vm40V7utd9x2z"
+URL = "https://sfapi-sbox.sf-express.com/std/service"
+
+
+def query_sf_routes(logistics_no_list):
+    """调用顺丰接口查询物流轨迹"""
+    biz_content = {
+        "language": "zh-CN",
+        "trackingType": "1",
+        "trackingNumber": logistics_no_list,
+        "methodType": "1"
+    }
+    msg_data = json.dumps(biz_content, separators=(',', ':'))
+
+    request_id = str(uuid.uuid4()).replace("-", "")
+    timestamp = str(int(time.time() * 1000))
+    service_code = 'EXP_RECE_SEARCH_ROUTES'
+
+    # 生成签名
+    origin_str = f"{msg_data}{timestamp}{CHECK_WORD}"
+    md5_hash = hashlib.md5(origin_str.encode('utf-8')).digest()
+    msg_digest = base64.b64encode(md5_hash).decode('utf-8')
+
+    payload = {
+        'partnerID': PARTNER_ID,
+        'requestID': request_id,
+        'serviceCode': service_code,
+        'timestamp': timestamp,
+        'msgDigest': msg_digest,
+        'msgData': msg_data,
+        'format': 'json'
+    }
+
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    }
+    try:
+        response = requests.post(URL, data=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"顺丰接口调用失败：{str(e)}")
+
+
+def extract_sf_logistics_info(raw_json_str):
+    """解析顺丰接口数据 + 去重"""
+    try:
+        outer_data = json.loads(raw_json_str)
+        if outer_data.get("apiResultCode") != "A1000":
+            raise Exception(f"接口返回错误：{outer_data.get('apiErrorMsg', '未知错误')}")
+
+        inner_data = json.loads(outer_data["apiResultData"])
+        if not inner_data.get("success"):
+            raise Exception(f"物流查询失败：{inner_data.get('errorMsg', '未知错误')}")
+
+        phone_pattern = re.compile(r'1[3-9]\d{9}')
+        name_pattern = re.compile(r'【([^，\s]+)，(联系电话|电话)：')
+
+        temp_result = []  # 原始轨迹列表
+        route_resps = inner_data["msgData"]["routeResps"]
+
+        for resp in route_resps:
+            mail_no = resp["mailNo"]
+            for route in resp["routes"]:
+                accept_time = route["acceptTime"]
+                accept_address = route["acceptAddress"]
+                status_name = route['firstStatusName']
+                remark = route["remark"]
+
+                # 转换时间格式
+                try:
+                    logistics_time = datetime.strptime(accept_time, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    logistics_time = timezone.now()
+
+                # 状态编码映射
+                status_code = SF_STATUS_MAP.get(status_name, 601)
+
+                # 提取派件人/电话
+                phone = phone_pattern.search(remark).group() if phone_pattern.search(remark) else None
+                contact = name_pattern.search(remark).group(1) if name_pattern.search(remark) else None
+
+                # 暂存所有原始轨迹
+                temp_result.append({
+                    "运单号": mail_no,
+                    "时间": logistics_time,
+                    "地点": accept_address,
+                    "物流状态编码": status_code,
+                    "物流状态名称": status_name,
+                    "派件联系人": contact,
+                    "联系电话": phone,
+                    "备注": remark
+                })
+
+        # 去重逻辑：按运单号+状态编码分组，保留最新时间条目
+        unique_groups = defaultdict(dict)
+        for item in temp_result:
+            group_key = (item["运单号"], item["物流状态编码"])
+            if not unique_groups[group_key] or item["时间"] > unique_groups[group_key]["时间"]:
+                unique_groups[group_key] = item
+
+        # 去重后按时间正序排序
+        final_result = sorted(unique_groups.values(), key=lambda x: x["时间"])
+
+        # 给去重后的轨迹添加排序值
+        for idx, item in enumerate(final_result):
+            item["排序"] = idx
+
+        # 返回去重后的轨迹列表 + 原始轨迹数量（仅内部使用，不展示）
+        return final_result, len(temp_result)
+
+    except Exception as e:
+        raise Exception(f"数据解析/去重失败：{str(e)}")
+
+
+def express_create(request):
+    """新建运单（移除轨迹数量提示）"""
+    if request.method == "POST":
+        form = ExpressCreateForm(request.POST)
+        if form.is_valid():
+            order = form.cleaned_data["order"]
+            logistics_no_list = form.cleaned_data["logistics_no"]
+            logistics_company = form.cleaned_data["logistics_company"]
+
+            try:
+                # 1. 调用顺丰接口
+                raw_data = query_sf_routes(logistics_no_list)
+                # 2. 解析+去重物流轨迹
+                logistics_info_list, raw_count = extract_sf_logistics_info(raw_data)
+
+                # 批量删除旧轨迹
+                if logistics_info_list:
+                    current_logistics_nos = [info["运单号"] for info in logistics_info_list]
+                    ExpressLogistics.objects.filter(
+                        order=order,
+                        logistics_no__in=current_logistics_nos
+                    ).delete()
+
+                # 3. 保存去重后的轨迹
+                created_count = 0
+                for info in logistics_info_list:
+                    ExpressLogistics.objects.create(
+                        order=order,
+                        order_sn=order.order_sn,
+                        logistics_no=info["运单号"],
+                        logistics_company=logistics_company,
+                        logistics_time=info["时间"],
+                        accept_address=info["地点"],
+                        logistics_status=info["物流状态编码"],
+                        logistics_status_name=info["物流状态名称"],
+                        courier_name=info["派件联系人"],
+                        courier_phone=info["联系电话"],
+                        remark=info["备注"],
+                        sort=info["排序"]
+                    )
+                    created_count += 1
+
+                # 4. 更新订单物流信息
+                if logistics_no_list:
+                    order.logistics_no = logistics_no_list[0]
+                    order.logistics_company = logistics_company
+                    order.save(update_fields=["logistics_no", "logistics_company"])
+
+                # ========== 核心修改：仅保留简洁的成功提示 ==========
+                messages.success(request, "运单创建成功！")
+                return redirect("express_list")
+
+            except Exception as e:
+                messages.error(request, f"操作失败：{str(e)}")
+    else:
+        form = ExpressCreateForm()
+
+    return render(request, "app01/express_create.html", {"form": form})
+
+
+from .models import ExpressLogistics
+
+def express_list(request):
+    """
+    物流列表接口：
+    - 网页端访问 → 返回 HTML 页面
+    - 小程序请求（带format=json）→ 返回 JSON 数据
+    """
+    # 1. 接收参数（支持通过URL参数强制指定返回格式）
+    return_format = request.GET.get('format', '')  # json/html，为空则自动判断
+    order_sns_str = request.GET.get('order_sns', '')
+    order_sns = order_sns_str.split(',') if order_sns_str else []
+
+    # 2. 查询物流数据（共用查询逻辑）
+    logistics_list = ExpressLogistics.objects.filter(
+        order_sn__in=order_sns,
+        is_delete=False
+    ).order_by("-logistics_time")
+
+    # 3. 判断返回格式（优先级：URL参数 > 请求头）
+    # 3.1 强制指定JSON格式（小程序用）
+    if return_format == 'json':
+        data = []
+        for item in logistics_list:
+            data.append({
+                "order_sn": item.order_sn,
+                "logistics_no": item.logistics_no,
+                "logistics_company": item.logistics_company,
+                "logistics_time": item.logistics_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "accept_address": item.accept_address,
+                "logistics_status_name": item.logistics_status_name,
+                "courier_name": item.courier_name or "",
+                "courier_phone": item.courier_phone or ""
+            })
+        return JsonResponse({
+            "code": 200,
+            "msg": "success",
+            "data": data
+        })
+
+    # 3.2 自动判断（浏览器请求→HTML，JSON请求头→JSON）
+    accept_header = request.META.get('HTTP_ACCEPT', '')
+    if 'application/json' in accept_header:
+        # 适配小程序默认的JSON请求头
+        data = []
+        for item in logistics_list:
+            data.append({
+                "order_sn": item.order_sn,
+                "logistics_no": item.logistics_no,
+                "logistics_company": item.logistics_company,
+                "logistics_time": item.logistics_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "accept_address": item.accept_address,
+                "logistics_status_name": item.logistics_status_name,
+                "courier_name": item.courier_name or "",
+                "courier_phone": item.courier_phone or ""
+            })
+        return JsonResponse({
+            "code": 200,
+            "msg": "success",
+            "data": data
+        })
+
+    # 3.3 默认返回HTML页面（保留原有逻辑）
+    context = {
+        'logistics_list': logistics_list,
+        'order_sns': order_sns_str
+    }
+    # 渲染你原来的HTML模板（替换为你的模板路径）
+    return render(request, 'app01/express_list.html', context)

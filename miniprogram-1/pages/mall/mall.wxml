@@ -50,9 +50,9 @@
     <input type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" min="1" />
     <button size="mini" bindtap="plusNum" data-id="{{item.id}}">+</button>
   </view>
-  <van-button size="mini" type="primary" catch:click="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
-    加入购物车
-  </van-button>
+  <van-button size="mini" type="primary" catchtap="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
+  加入购物车
+</van-button>
 </view>
     </van-card>
   </view>
