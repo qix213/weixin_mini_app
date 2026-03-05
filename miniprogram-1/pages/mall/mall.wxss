@@ -8,9 +8,10 @@
 .mall-container {
   background-color: #f5f5f5;
   min-height: 100vh;
+  padding-bottom: 20rpx;
 }
 
-/* 分类样式（不变） */
+/* 分类样式 */
 .category-grid {
   background: #fff;
   padding: 10rpx 0;
@@ -23,43 +24,110 @@
   font-size: 40rpx !important;
 }
 
-/* 商品列表（不变，保持 flex 换行布局） */
+/* 商品列表布局：微调卡片宽度，减少间距 */
 .goods-list {
   padding: 10rpx;
   display: flex;
-  flex-wrap: wrap; /* 关键：自动换行，实现多列布局 */
-  justify-content: space-between; /* 关键：左右间距均匀，两列对齐 */
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8rpx;
 }
-
-/* 核心新增：外层 view 样式，与原 goods-card 一致，确保两列排列 */
 .goods-card-wrap {
-  width: 48%; /* 关键：保持 48% 宽度，实现两列布局 */
-  margin-bottom: 20rpx; /* 与原布局一致的下边距 */
-  flex-shrink: 0; /* 关键：防止被挤压，保持宽度不变 */
+  width: 49%;
+  margin-bottom: 20rpx;
+  flex-shrink: 0;
 }
-
-/* 商品卡片：宽度 100% 填满外层 view，高度自适应，文字不窜行 */
-.goods-card {
-  width: 100%; /* 关键：占满外层 view，不额外宽出 */
-  background: #fff;
-  /* 移除原有宽度，由外层 view 控制，避免冲突 */
-  min-height: 800rpx;
-}
-
-/* 骨架屏：同步外层 view 样式，确保占位一致，不打乱布局 */
 .skeleton-item {
-  width: 48%;
+  width: 49%;
   margin-bottom: 20rpx;
   flex-shrink: 0;
 }
 
-/* 卡片底部（不变） */
-.card-footer {
-  display: flex;
-  justify-content: center;
+/* 商品卡片：核心调整内部布局 */
+.goods-card {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  min-height: 800rpx;
+}
+.goods-card .van-card__thumb {
+  width: 120rpx !important;
+  height: 120rpx !important;
+  flex-shrink: 0;
+}
+.goods-card .van-card__content {
+  flex: 1;
+  padding-left: 12rpx !important;
+  min-width: 0;
+}
+/* 标题：禁止换行 */
+.goods-card .van-card__title {
+  font-size: 28rpx !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+/* 描述：优化换行规则 */
+.goods-card .van-card__desc {
+  font-size: 24rpx !important;
+  color: var(--text-gray) !important;
+  word-break: keep-all !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
 }
 
-/* 搜索框样式（不变） */
+/* 核心：强制隐藏积分商品的默认价格 */
+.point-goods-card .van-card__price,
+.point-goods-card .van-card__origin-price {
+  display: none !important;
+}
+
+/* 🔥 新增：积分价格禁止换行（核心修复） */
+.goods-card [slot="tags"] {
+  white-space: nowrap !important; /* 容器禁止换行 */
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 120rpx !important; /* 保证最小宽度，避免挤压 */
+}
+.goods-card [slot="tags"] text {
+  white-space: nowrap !important; /* 文字禁止换行 */
+}
+
+/* 数量控制 */
+.num-control {
+  display: flex;
+  align-items: center;
+  margin-right: 10rpx;
+}
+.num-control button {
+  width: 60rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0;
+  font-size: 28rpx;
+  border: 1rpx solid #eee;
+  background: #fff;
+}
+.num-control input {
+  width: 80rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  text-align: center;
+  border: 1rpx solid #eee;
+  margin: 0 5rpx;
+}
+
+/* 卡片底部 */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 搜索框 */
 .search-btn {
   width: 60rpx;
   height: 60rpx;
@@ -69,35 +137,4 @@
   margin-left: 10rpx;
   border-radius: 50%;
   background: rgba(255,255,255,0.1);
-}
-
-/* 数量控制样式 */
-.num-control {
-  display: flex;
-  align-items: center;
-  margin-right: 10rpx;
-}
-.num-control button {
-  width: 40rpx;
-  height: 40rpx;
-  padding: 0;
-  line-height: 40rpx;
-  text-align: center;
-  border: 1rpx solid #ccc;
-  background: #fff;
-  color: #333;
-}
-.num-control input {
-  width: 60rpx;
-  height: 40rpx;
-  text-align: center;
-  border: 1rpx solid #ccc;
-  border-left: none;
-  border-right: none;
-  padding: 0;
-}
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }

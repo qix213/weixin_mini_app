@@ -40,7 +40,6 @@
         暂无收货地址，点击添加
       </view>
     </view>
-    <!-- 增加箭头，提示可点击 -->
     <view style="font-size:24rpx;color:#999;">></view>
   </view>
 </view>
@@ -85,19 +84,89 @@
     <image src="{{item.goods_image}}" style="width:120rpx;height:120rpx;border-radius:8rpx;margin-right:20rpx;" mode="aspectFill"></image>
     <view style="flex:1;">
       <view style="font-size:28rpx;">{{item.goods_name}}</view>
+      <!-- 【修复5：确保积分标识显示】 -->
+      <view wx:if="{{item.isPointGoods}}" style="font-size:22rpx;color:#0066cc;background:#e6f0ff;padding:4rpx 8rpx;border-radius:4rpx;display:inline-block;margin-top:8rpx;">
+        积分兑换商品
+      </view>
       <view style="font-size:24rpx;color:#999;margin-top:8rpx;">x{{item.num}}</view>
+      <!-- 【修复6：直接显示pointPrice，不依赖formatPrice】 -->
       <view style="color:#e64340;font-size:30rpx;text-align:right;margin-top:12rpx;">
-        ¥{{item.formatPrice}}
+        <block wx:if="{{item.isPointGoods}}">
+          {{item.pointPrice}} 积分
+        </block>
+        <block wx:else>
+          ¥{{item.formatPrice}}
+        </block>
       </view>
     </view>
   </view>
 </view>
 
-<!-- 底部 -->
+<!-- 【修复7：放宽显示条件】积分抵扣模块（适配积分/金额商品） -->
+<!-- 积分抵扣模块（原有代码基础上修改） -->
+<view wx:if="{{(hasExchangeGoods || isAllPointGoods) && cartList.length>0}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;">
+  <view style="font-size:30rpx;font-weight:600;margin-bottom:16rpx;">积分抵扣</view>
+  <view style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12rpx;">
+    <view style="font-size:28rpx;">
+      当前积分：<text style="color:#0066cc;font-weight:500;">{{userPoints}}</text> 分
+      <text style="font-size:24rpx;color:#999;margin-left:12rpx;">
+        {{isAllPointGoods ? '（积分直接抵扣）' : '（1分=0.01元）'}}
+      </text>
+    </view>
+    <view style="font-size:24rpx;color:#999;">
+      最多可抵扣：{{maxDeductPoint}} 分
+    </view>
+  </view>
+  
+  <!-- 新增：积分输入区 + 用全部积分按钮 -->
+  <view style="display:flex;align-items:center;gap:12rpx;margin-bottom:12rpx;">
+    <button bindtap="minusPoint" style="width:80rpx;height:60rpx;line-height:60rpx;padding:0;font-size:28rpx;">-</button>
+    <input 
+      type="number" 
+      style="flex:1;height:60rpx;line-height:60rpx;text-align:center;border:1rpx solid #ddd;border-radius:4rpx;font-size:28rpx;" 
+      value="{{deductPoint}}" 
+      bindinput="inputPoint"
+      placeholder="请输入抵扣积分"
+    ></input>
+    <button bindtap="plusPoint" style="width:80rpx;height:60rpx;line-height:60rpx;padding:0;font-size:28rpx;">+</button>
+    
+    <!-- 新增：用全部积分按钮 -->
+    <button 
+      bindtap="useAllPoints"
+      disabled="{{maxDeductPoint <= 0}}"
+      style="width:180rpx;height:60rpx;line-height:60rpx;padding:0;font-size:24rpx;background:#0066cc;color:#fff;border-radius:4rpx;{{maxDeductPoint <=0 ? 'background:#ccc;' : ''}}"
+    >
+      用全部积分
+    </button>
+  </view>
+  
+  <view style="margin-top:16rpx;font-size:28rpx;">
+  <block wx:if="{{isAllPointGoods}}">
+    积分抵扣：{{deductPoint}} 分
+    <text style="margin-left:20rpx;">
+      需现金支付：<text style="color:#e64340;font-weight:600;">¥{{actualPayMoney}}</text>
+    </text>
+  </block>
+  <block wx:else>
+    积分抵扣金额：¥{{deductMoney}} 
+    <text style="margin-left:20rpx;">
+      需现金支付：<text style="color:#e64340;font-weight:600;">¥{{actualPayMoney}}</text>
+    </text>
+  </block>
+</view>
+</view>
+
+<!-- 底部总计：适配积分/金额 -->
 <view wx:if="{{cartList.length>0}}" style="position:fixed;bottom:0;left:0;right:0;height:100rpx;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24rpx;border-top:1rpx solid #eee;">
   <view>
-    <view style="font-size:24rpx;color:#666;">总计</view>
-    <view style="font-size:32rpx;color:#e64340;font-weight:600;">¥{{totalAll}}</view>
+    <view style="font-size:24rpx;color:#666;">
+      {{hasExchangeGoods && deductPoint>0 
+        ? (isAllPointGoods ? '积分抵扣'+deductPoint+'分' : '积分抵扣¥'+deductMoney) 
+        : '总计'}}
+    </view>
+    <view style="font-size:32rpx;color:#e64340;font-weight:600;">
+      需支付：¥{{actualPayMoney}}
+    </view>
   </view>
   <van-button type="primary" bindtap="submitOrder" style="width:240rpx;">
     提交订单

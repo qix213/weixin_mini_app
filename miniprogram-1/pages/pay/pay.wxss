@@ -39,6 +39,8 @@
   justify-content: center;
   margin-top: 20rpx;
   margin-bottom: 0;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed #eee;
 }
 .amount {
   color: #f53f3f;

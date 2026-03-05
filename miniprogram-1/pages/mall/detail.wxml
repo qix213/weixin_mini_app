@@ -36,15 +36,23 @@
       暂无商品图片
     </view>
 
-    <!-- 商品基础信息/数量选择器/详情/底部操作栏 保持不变 -->
+    <!-- 商品基础信息：适配积分商品/普通商品 -->
     <van-card
       title="{{goodsDetail.name}}"
-      price="{{goodsDetail.member_price}}"
-      origin-price="¥{{goodsDetail.original_price}}"
       desc="{{goodsDetail.brief_intro || '暂无商品简介'}}"
       class="goods-base-card"
       border="{{false}}"
     >
+      <!-- 积分商品：显示积分价格 -->
+      <view slot="price" wx:if="{{isPointGoods}}" style="color:#e64340; font-size:30rpx; font-weight:bold;">
+        {{pointPrice}} 积分
+      </view>
+      <!-- 普通商品：显示会员价/原价 -->
+      <view slot="price" wx:else>
+        <span style="color:#e64340; font-size:30rpx; font-weight:bold;">¥{{goodsDetail.member_price}}</span>
+        <span style="color:#999; font-size:24rpx; text-decoration: line-through; margin-left: 8rpx;">¥{{goodsDetail.original_price}}</span>
+      </view>
+
       <view slot="footer" class="base-info-footer">
         <text class="stock-text">库存：{{goodsDetail.stock}} 件</text>
         <text class="sales-text" wx:if="{{goodsDetail.sales}}">销量：{{goodsDetail.sales}} 件</text>

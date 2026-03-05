@@ -39,10 +39,13 @@ class GoodsSerializer(serializers.ModelSerializer):
     member_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     # 嵌套序列化商品的所有图片（related_name='images'）
     images = GoodsImageSerializer(many=True, read_only=True)
+    can_point_exchange = serializers.BooleanField(read_only=True)
+    exchange_points = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Goods
         fields = '__all__'  # 包含images字段
+        read_only_fields = ['point_price']
 
 from .models import Cart, Recipient
 class CartSerializer(serializers.ModelSerializer):
@@ -348,12 +351,22 @@ class OrderAddSerializer(serializers.Serializer):
         required=True,
         error_messages={"required": "请选择要购买的商品"}
     )
+    deduct_point = serializers.IntegerField(
+        required=False,
+        default=0,
+        min_value=0,
+        error_messages={
+            "min_value": "抵扣积分不能为负数"
+        }
+    )
 
-    # 自定义校验：不同配送类型下的字段规则
+    # 自定义校验：补充积分抵扣的校验
     def validate(self, attrs):
         delivery_type = attrs.get("delivery_type")
         address_id = attrs.get("address_id")
         pick_up_store_id = attrs.get("pick_up_store_id")
+        deduct_point = attrs.get("deduct_point", 0)  # 新增积分抵扣参数
+        request = self.context.get("request")
 
         # 规则1：快递配送（delivery_type=1）
         if delivery_type == 1:
@@ -394,6 +407,19 @@ class OrderAddSerializer(serializers.Serializer):
         if len(goods_list) == 0:
             raise serializers.ValidationError({"goods_list": "商品列表不能为空"})
 
+        if deduct_point > 0:
+            # 1. 校验用户是否登录
+            if not request or not request.user.is_authenticated:
+                raise serializers.ValidationError({"deduct_point": "登录后才能使用积分抵扣"})
+            # 2. 校验用户积分是否充足
+            user_points = getattr(request.user, 'points', 0)
+            if deduct_point > user_points:
+                raise serializers.ValidationError({"deduct_point": f"积分不足：当前{user_points}分，需抵扣{deduct_point}分"})
+            # 3. 校验积分抵扣金额不超过订单总价（1积分=0.01元）
+            total_price = attrs.get("total_price")
+            deduct_money = deduct_point * Decimal('0.01')
+            if deduct_money > total_price:
+                raise serializers.ValidationError({"deduct_point": f"抵扣积分过多：最多可抵扣{int(total_price / Decimal('0.01'))}积分"})
         return attrs
 
 # ========== 其他原有序列化器（OrderItem/Order/SubMember等）保持不变 ==========
@@ -413,14 +439,19 @@ class OrderSerializer(serializers.ModelSerializer):
     receiver_name = serializers.SerializerMethodField()
     receiver_phone = serializers.SerializerMethodField()
     receiver_address = serializers.SerializerMethodField()
+    point_deduct = serializers.IntegerField(read_only=True)  # 抵扣积分
+    point_deduct_money = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # 积分抵扣金额
+    actual_pay_money = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # 实际支付金额
 
     class Meta:
         model = Order
         fields = [
             'order_sn', 'total_price', 'status', 'status_name',
             'create_time', 'goods_list',
-            # 新增收货信息字段
-            'receiver_name', 'receiver_phone', 'receiver_address'
+            'receiver_name', 'receiver_phone', 'receiver_province',
+            'receiver_city', 'receiver_district', 'receiver_address',
+            'receiver_full_address',
+            'point_deduct', 'point_deduct_money', 'actual_pay_money'
         ]
 
     # 🔥 实现收货信息的获取逻辑（带权限控制）

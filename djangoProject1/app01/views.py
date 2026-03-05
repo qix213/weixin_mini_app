@@ -1212,131 +1212,219 @@ class SetDefaultAddressView(APIView):
                 "data": {}
             })
 
-# ===================== 订单视图 =====================
-# ===================== 订单视图（修复重复代码版） =====================
+
+# ===================== 订单视图（新增积分支付逻辑） =====================
+# 补充必要的导入（务必确保导入完整）
+import random
+from decimal import Decimal  # 金额精度处理
+from .serializer import OrderAddSerializer
+
 class OrderAddView(APIView):
+    """创建订单视图（含积分抵扣）"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # 1. 序列化器参数校验
         ser = OrderAddSerializer(data=request.data, context={'request': request})
         if not ser.is_valid():
             logger.error(f"下单参数错误：{ser.errors}")
             return Response({"code": 400, "msg": "参数错误", "data": ser.errors})
 
         try:
+            # 开启数据库事务：要么全部成功，要么全部回滚
             with transaction.atomic():
-                # ========== 配送相关参数处理 ==========
-                delivery_type = request.data.get("delivery_type", 1)  # 1=快递上门，2=到店自取
+                # ========== 2. 基础参数提取（配送+积分） ==========
+                # 配送类型（默认1=快递上门）
+                delivery_type = int(request.data.get("delivery_type", 1))
+                # 自提门店ID/快递地址ID
                 pick_up_store_id = request.data.get("pick_up_store_id")
                 address_id = request.data.get("address_id")
+                # 积分抵扣参数（默认0=不抵扣）
+                deduct_point = int(request.data.get("deduct_point", 0))
 
-                # 校验配送逻辑
+                # ========== 3. 配送逻辑校验 ==========
                 address = None
                 pick_up_store = None
-                if delivery_type == 1:  # 快递上门：必须传地址ID
+                if delivery_type == 1:  # 快递上门
                     if not address_id:
                         return Response({"code": 400, "msg": "快递上门需选择收货地址"})
-                    try:
-                        address = Address.objects.get(id=address_id, user=request.user)
-                    except Address.DoesNotExist:
-                        return Response({"code": 404, "msg": "收货地址不存在"}, status=404)
-                else:  # 到店自取：必须传门店ID
+                    # 校验地址归属当前用户
+                    address = get_object_or_404(Address, id=address_id, user=request.user)
+                else:  # 到店自取
                     if not pick_up_store_id:
                         return Response({"code": 400, "msg": "到店自取需选择取货门店"})
-                    try:
-                        pick_up_store = Area.objects.get(id=pick_up_store_id)
-                    except Area.DoesNotExist:
-                        return Response({"code": 404, "msg": "取货门店不存在"}, status=404)
+                    pick_up_store = get_object_or_404(Area, id=pick_up_store_id)
 
-                # 商品列表校验
+                # ========== 4. 商品列表校验（核心） ==========
                 goods_list = request.data.get("goods_list", [])
+                # 校验商品列表格式
                 if not isinstance(goods_list, list) or len(goods_list) == 0:
                     return Response({"code": 400, "msg": "请选择要购买的商品"})
 
-                # 总价校验
-                total_price = request.data.get("total_price", 0)
-                try:
-                    total_price = float(total_price)
-                    if total_price <= 0:
-                        return Response({"code": 400, "msg": "订单总价必须大于0"})
-                except (ValueError, TypeError):
-                    return Response({"code": 400, "msg": "订单总价格式错误"})
+                # 初始化变量
+                total_money = Decimal('0.00')  # 订单总价（改用Decimal保证精度）
+                invalid_goods = []  # 不支持积分抵扣的商品
+                cart_ids = []       # 购物车ID列表
+                goods_items = []    # 商品信息列表（用于后续创建订单项）
 
-                # 创建主订单
-                order_sn = f"{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+                for item in goods_list:
+                    cart_id = item.get("cart_id")
+                    num = int(item.get("num", 1))  # 确保数量是整数
+
+                    # 基础参数校验
+                    if not cart_id or num < 1:
+                        raise Exception(f"购物车参数错误：cart_id={cart_id}, num={num}")
+
+                    # 校验购物车归属当前用户
+                    cart = get_object_or_404(Cart, id=cart_id, user=request.user)
+                    goods = cart.goods
+                    cart_ids.append(cart_id)
+
+                    # 库存校验（核心：防止超卖）
+                    if goods.stock < num:
+                        raise Exception(f"商品库存不足：{goods.name}（库存{goods.stock}，需{num}）")
+
+                    # 积分抵扣时，校验商品是否支持积分兑换
+                    if deduct_point > 0 and not goods.can_point_exchange:
+                        invalid_goods.append(goods.name)
+
+                    # 累加订单总价（Decimal乘法，避免浮点精度问题）
+                    goods_price = Decimal(str(goods.member_price))  # 转为Decimal
+                    total_money += goods_price * num
+
+                    # 暂存商品信息（避免重复查询）
+                    goods_items.append({
+                        "cart": cart,
+                        "goods": goods,
+                        "num": num,
+                        "price": goods_price
+                    })
+
+                # 有不支持积分抵扣的商品 → 终止下单
+                if invalid_goods:
+                    raise Exception(f"以下商品不支持积分抵扣：{','.join(invalid_goods)}")
+
+                # ========== 5. 积分抵扣计算与校验 ==========
+                actual_deduct_point = 0  # 实际抵扣积分
+                deduct_money = Decimal('0.00')  # 积分抵扣金额（Decimal）
+                actual_pay_money = total_money  # 实际支付金额
+
+                if deduct_point > 0:
+                    user = request.user
+                    # 最大可抵扣积分 = 订单总价(元) * 100（1分=0.01元）
+                    max_deduct_point = int(total_money * 100)
+                    # 实际抵扣积分 = 取最小值（用户要抵扣的、用户拥有的、最大可抵扣的）
+                    actual_deduct_point = min(deduct_point, max_deduct_point, user.points or 0)
+
+                    # 积分不足校验
+                    if actual_deduct_point < deduct_point:
+                        raise Exception(f"积分不足：当前{user.points}分，需{deduct_point}分（最多可抵扣{max_deduct_point}分）")
+
+                    # 计算抵扣金额（1分=0.01元）
+                    deduct_money = Decimal(str(actual_deduct_point * 0.01))
+                    # 实际支付金额（确保≥0）
+                    actual_pay_money = max(total_money - deduct_money, Decimal('0.00'))
+
+                # ========== 6. 创建订单主表（对齐Order模型字段） ==========
+                # 生成唯一订单编号（时间戳+随机数）
+                order_sn = f"ORD{datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+                # 创建订单（字段名对齐Order模型：actual_pay_money而非actual_pay_price）
                 order = Order.objects.create(
                     user=request.user,
                     order_sn=order_sn,
                     address=address,
-                    total_price=total_price,
-                    status=0,  # 0=待支付
+                    total_price=total_money,
+                    actual_pay_money=actual_pay_money,  # 对齐模型字段
+                    point_deduct=actual_deduct_point,
+                    point_deduct_money=deduct_money,    # 对齐模型字段
+                    status=0,  # 0=待付款
                     delivery_type=delivery_type,
                     pick_up_store=pick_up_store
                 )
-                logger.info(f"创建新订单：order_id={order.id}, order_sn={order_sn}, 配送方式={order.get_delivery_type_display()}")
+                logger.info(f"创建新订单：order_id={order.id}, 订单号={order_sn}, 积分抵扣{actual_deduct_point}分（{deduct_money}元）")
 
-                # 创建订单明细 + 关联购物车
-                goods_names = []
-                total_count = 0
-                for item in goods_list:
-                    cart_id = item.get("cart_id")
-                    num = item.get("num", 1)
+                # ========== 7. 创建订单项 + 关联购物车 + 扣减库存 ==========
+                goods_names = []  # 订单商品名称拼接
+                total_count = 0   # 订单商品总数
 
-                    if not cart_id or not isinstance(num, int) or num < 1:
-                        raise Exception(f"购物车参数错误：cart_id={cart_id}, num={num}")
+                for item in goods_items:
+                    cart = item["cart"]
+                    goods = item["goods"]
+                    num = item["num"]
+                    price = item["price"]
 
-                    try:
-                        cart = Cart.objects.get(id=cart_id, user=request.user)
-                    except Cart.DoesNotExist:
-                        raise Exception(f"购物车商品不存在：cart_id={cart_id}")
-
-                    goods = cart.goods
-                    if goods.stock < num:
-                        raise Exception(f"商品库存不足：{goods.name}（库存{goods.stock}，需{num}）")
-
-                    # 创建订单明细
+                    # 创建订单项
                     OrderItem.objects.create(
                         order=order,
                         goods=goods,
                         num=num,
-                        price=cart.goods.member_price,
+                        price=price,
                         goods_name=goods.name,
                         goods_image=goods.image_url,
-                        goods_specs=goods.specs,
-                        total_price=num * cart.goods.member_price
+                        goods_specs=goods.specs if hasattr(goods, 'specs') else "",  # 兼容无specs字段
+                        total_price=price * num
                     )
-                    # 关联购物车到订单（方便后续清空）
+
+                    # 购物车关联订单（标记为已下单）
                     cart.order = order
-                    cart.save()
+                    cart.save(update_fields=["order"])
+
+                    # 扣减商品库存（核心：防止重复下单超卖）
+                    goods.stock -= num
+                    goods.save(update_fields=["stock"])
+
+                    # 累加商品名称和数量
                     goods_names.append(goods.name)
                     total_count += num
 
-                # 更新订单商品信息
+                # 更新订单的商品名称和总数
                 order.goods_names = "、".join(goods_names)
                 order.goods_count = total_count
-                order.save()
+                order.save(update_fields=["goods_names", "goods_count"])
+                # ========== 8. 扣减用户积分（仅当有抵扣时） ==========
+                # if actual_deduct_point > 0:
+                #     # 调用用户模型的add_points方法（现在支持负数扣减）
+                #     success, msg = request.user.add_points(
+                #         points=-actual_deduct_point,  # 负数=扣减，现在方法已支持
+                #         points_type=4,  # 4=订单积分抵扣
+                #         related_id=order.order_sn,
+                #         related_desc=f"订单{order_sn}抵扣{actual_deduct_point}积分（抵扣{deduct_money}元）"
+                #     )
+                #     if not success:
+                #         # 抛出异常，事务回滚，确保订单不会创建成功
+                #         raise Exception(f"积分扣减失败：{msg}")
+                #     logger.info(f"订单{order_sn}扣减积分{actual_deduct_point}分成功，用户剩余积分：{request.user.points}")
 
-            # 返回订单信息（供前端跳转支付页）
-            return Response({
+            # ========== 9. 返回订单信息（字段名对齐） ==========
+            response_data = {
                 "code": 200,
                 "msg": "下单成功，请支付",
                 "data": {
                     "order_id": order.id,
                     "order_sn": order.order_sn,
-                    "total_price": total_price,
+                    "total_price": float(total_money),  # 转float供前端处理
+                    "actual_pay_money": float(actual_pay_money),  # 对齐模型字段
+                    "point_deduct": actual_deduct_point,
+                    "point_deduct_money": float(deduct_money),
                     "delivery_type": delivery_type,
                     "delivery_type_name": order.get_delivery_type_display(),
-                    "pick_up_store": {
-                        "id": pick_up_store.id if pick_up_store else "",
-                        "name": pick_up_store.name if pick_up_store else ""
-                    } if delivery_type == 2 else {}
                 }
-            })
+            }
 
+            # 自提订单补充门店信息
+            if delivery_type == 2 and pick_up_store:
+                response_data["data"]["pick_up_store"] = {
+                    "id": pick_up_store.id,
+                    "name": pick_up_store.name
+                }
+
+            return Response(response_data)
+
+        # ========== 10. 异常处理 ==========
         except Exception as e:
-            logger.error(f"下单失败：{str(e)}", exc_info=True)
-            return Response({"code": 500, "msg": f"下单失败: {str(e)}"})
-
+            error_msg = str(e)[:100]  # 截断过长的错误信息
+            logger.error(f"下单失败：{error_msg}", exc_info=True)
+            return Response({"code": 500, "msg": f"下单失败: {error_msg}"})
 
 class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1345,7 +1433,7 @@ class OrderListView(APIView):
         orders = Order.objects.filter(user=request.user).order_by('-create_time')
         data_list = []
         for order in orders:
-            # 构造配送信息
+            # 配送信息（保留）
             delivery_info = {
                 "delivery_type": order.delivery_type,
                 "delivery_type_name": order.get_delivery_type_display(),
@@ -1355,7 +1443,7 @@ class OrderListView(APIView):
                 } if order.delivery_type == 2 else {}
             }
 
-            # ========== 新增：快递配送时返回收货人信息 ==========
+            # 收货人信息（保留）
             receiver_info = {}
             if order.delivery_type == 1 and order.address:
                 receiver_info = {
@@ -1364,22 +1452,32 @@ class OrderListView(APIView):
                     "province": order.address.province or "",
                     "city": order.address.city or "",
                     "district": order.address.district or "",
-                    "address": order.address.address or "",
-                    "detail": order.address.detail or ""
+                    "address": order.address.detail or "",
+                    "full_address": f"{order.address.province or ''} {order.address.city or ''} {order.address.district or ''} {order.address.detail or ''}".strip()
                 }
+
+            # ========== 修复：字段名从actual_pay_price改为actual_pay_money ==========
+            point_summary = {
+                "point_deduct": order.point_deduct or 0,
+                "point_deduct_money": round(float(order.point_deduct_money or 0.0), 2),
+                # 修复核心错误：使用正确的字段名actual_pay_money
+                "actual_pay_price": round(float(order.actual_pay_money or order.total_price), 2)
+            }
 
             data_list.append({
                 "order_id": order.id,
                 "order_sn": order.order_sn,
                 "total_price": str(order.total_price),
+                # 同步修复这里的字段名
+                "actual_pay_price": str(order.actual_pay_money or order.total_price),
                 "status": order.status_display,
                 "status_code": order.status,
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M'),
                 "goods_names": order.goods_names,
                 "goods_count": order.goods_count,
                 "delivery_info": delivery_info,
-                # ========== 新增：收货人信息字段 ==========
-                "receiver_info": receiver_info
+                "receiver_info": receiver_info,
+                "point_summary": point_summary
             })
         return Response({
             "code": 200,
@@ -1387,7 +1485,6 @@ class OrderListView(APIView):
             "data": data_list
         })
 
-# app01/views.py 中的 OrderDetailView（示例）
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1399,7 +1496,7 @@ class OrderDetailView(APIView):
             return Response({"code": 400, "msg": "请传入订单ID或订单编号"}, status=400)
 
         try:
-            # 查询订单
+            # 查询订单（保留）
             query_kwargs = {'user': request.user}
             if order_id:
                 query_kwargs['id'] = order_id
@@ -1407,7 +1504,7 @@ class OrderDetailView(APIView):
                 query_kwargs['order_sn'] = order_sn
             order = Order.objects.get(**query_kwargs)
 
-            # 订单商品明细（保持不变）
+            # 订单商品明细（保留）
             order_items = OrderItem.objects.filter(order=order).select_related('goods')
             goods_detail = [
                 {
@@ -1421,7 +1518,7 @@ class OrderDetailView(APIView):
                 for item in order_items
             ]
 
-            # 配送/地址信息（重点：补全收货人所有字段）
+            # 配送/地址信息（保留）
             delivery_info = {
                 "delivery_type": order.delivery_type,
                 "delivery_type_name": order.get_delivery_type_display(),
@@ -1431,7 +1528,7 @@ class OrderDetailView(APIView):
                 } if order.delivery_type == 2 else {}
             }
 
-            # 完整的收货人信息（确保字段和序列化器一致）
+            # 收货人信息（保留）
             receiver_info = {}
             if order.delivery_type == 1 and order.address:
                 receiver_info = {
@@ -1440,22 +1537,34 @@ class OrderDetailView(APIView):
                     "province": order.address.province or "",
                     "city": order.address.city or "",
                     "district": order.address.district or "",
-                    "address": order.address.detail or "",  # 详细地址
+                    "address": order.address.detail or "",
                     "full_address": f"{order.address.province or ''} {order.address.city or ''} {order.address.district or ''} {order.address.detail or ''}".strip()
                 }
 
-            # 组装返回数据
+            # ========== 修复：字段名从actual_pay_price改为actual_pay_money ==========
+            point_info = {
+                "point_deduct": order.point_deduct or 0,
+                "point_deduct_money": float(order.point_deduct_money or 0.0),
+                "total_price": float(order.total_price),
+                # 修复核心错误：使用正确的字段名actual_pay_money
+                "actual_pay_price": float(order.actual_pay_money or order.total_price)
+            }
+
+            # 组装返回数据（同步修复actual_pay_price字段）
             order_detail = {
                 "order_id": order.id,
                 "order_sn": order.order_sn,
                 "total_price": str(order.total_price),
+                "actual_pay_price": str(order.actual_pay_money or order.total_price),
                 "status": order.status_display,
                 "status_code": order.status,
                 "create_time": order.create_time.strftime('%Y-%m-%d %H:%M:%S'),
+                "goods_names": order.goods_names,
+                "goods_count": order.goods_count,
                 "delivery_info": delivery_info,
-                "receiver_info": receiver_info,  # 完整的收货人信息
-                "goods_detail": goods_detail,
-                "goods_count": order.goods_count
+                "receiver_info": receiver_info,
+                "point_info": point_info,
+                "goods_detail": goods_detail
             }
 
             return Response({
@@ -1504,7 +1613,28 @@ class OrderPaySuccessView(APIView):
             order = Order.objects.get(**query_kwargs)
             print(f"查询到订单：ID={order.id}，金额={order.total_price}，当前状态={order.status}")
 
-            # ===== 核心修改：已支付订单也检查并补送积分 =====
+            # ===== 新增：支付成功后扣减积分抵扣的积分 =====
+            deduct_point = order.point_deduct or 0  # 获取订单记录的抵扣积分数量
+            if deduct_point > 0 and not PointsRecord.objects.filter(
+                user=request.user,
+                points_type=4,  # 4=订单积分抵扣
+                related_id=order.order_sn
+            ).exists():
+                # 扣减积分
+                success, msg = request.user.add_points(
+                    points=-deduct_point,
+                    points_type=4,
+                    related_id=order.order_sn,
+                    related_desc=f"订单{order.order_sn}支付成功，抵扣{deduct_point}积分"
+                )
+                if success:
+                    print(f"订单{order.order_sn}扣减抵扣积分{deduct_point}分成功")
+                    request.user.refresh_from_db()
+                else:
+                    print(f"订单{order.order_sn}扣减抵扣积分失败：{msg}")
+                    raise Exception(f"积分抵扣扣减失败：{msg}")
+
+            # ===== 原有逻辑：消费赠送积分 =====
             give_points = 0
             msg = ""
             pay_amount = float(order.total_price)
@@ -1550,7 +1680,7 @@ class OrderPaySuccessView(APIView):
                 order.status = 1
                 order.pay_method = pay_method
                 order.pay_no = pay_no
-                order.pay_time = datetime.datetime.now()
+                order.pay_time = timezone.now()  # ✅ 修复datetime语法错误
                 order.save(update_fields=['status', 'pay_method', 'pay_no', 'pay_time'])
                 print(f"订单状态已更新为待发货（1）")
 
@@ -2190,3 +2320,182 @@ def express_list(request):
     }
     # 渲染你原来的HTML模板（替换为你的模板路径）
     return render(request, 'app01/express_list.html', context)
+
+
+# ===================== 积分抵扣计算接口 =====================
+class PointExchangeCalculateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        积分抵扣计算接口（下单前调用）
+        请求参数：
+        {
+            "goods_list": [
+                {"cart_id": 1, "num": 2},  # 购物车ID + 购买数量
+                {"cart_id": 3, "num": 1}
+            ],
+            "deduct_point": 2000  # 前端期望抵扣的积分数量
+        }
+        """
+        try:
+            # 1. 解析参数
+            goods_list = request.data.get("goods_list", [])
+            deduct_point = int(request.data.get("deduct_point", 0))
+            user = request.user
+
+            # 2. 校验参数
+            if not goods_list:
+                return Response({"code": 400, "msg": "请选择商品"}, status=400)
+            if deduct_point < 0:
+                return Response({"code": 400, "msg": "抵扣积分不能为负数"}, status=400)
+
+            # 3. 校验商品是否支持积分兑换 + 计算订单总价
+            total_money = 0.0  # 订单总金额（会员价）
+            invalid_goods = []  # 不支持积分兑换的商品
+            cart_items = []  # 合法的购物车商品
+
+            for item in goods_list:
+                cart_id = item.get("cart_id")
+                num = int(item.get("num", 1))
+
+                if not cart_id or num < 1:
+                    return Response({"code": 400, "msg": f"购物车参数错误：cart_id={cart_id}"}, status=400)
+
+                # 获取购物车商品
+                cart = get_object_or_404(Cart, id=cart_id, user=user)
+                goods = cart.goods
+
+                # 核心校验：商品是否属于积分兑换分类
+                if not goods.can_point_exchange:
+                    invalid_goods.append(goods.name)
+                    continue
+
+                # 累加订单总价
+                total_money += float(goods.member_price * num)
+                cart_items.append({
+                    "cart": cart,
+                    "num": num,
+                    "goods": goods
+                })
+
+            # 4. 校验是否有不支持积分兑换的商品
+            if invalid_goods:
+                return Response({
+                    "code": 403,
+                    "msg": f"以下商品不支持积分兑换：{','.join(invalid_goods)}",
+                    "data": {"invalid_goods": invalid_goods}
+                }, status=403)
+
+            # 5. 积分抵扣计算（1积分=0.01元）
+            max_deduct_point = int(total_money * 100)  # 最多可抵扣积分（订单总价×100）
+            actual_deduct_point = min(deduct_point, max_deduct_point, user.points)
+            deduct_money = actual_deduct_point * 0.01  # 抵扣的金额
+            actual_pay_money = max(total_money - deduct_money, 0)  # 实际需支付金额
+
+            # 6. 返回计算结果
+            return Response({
+                "code": 200,
+                "msg": "积分抵扣计算成功",
+                "data": {
+                    "total_money": round(total_money, 2),  # 订单总价
+                    "request_deduct_point": deduct_point,  # 前端请求抵扣积分
+                    "max_deduct_point": max_deduct_point,  # 最大可抵扣积分
+                    "actual_deduct_point": actual_deduct_point,  # 实际抵扣积分
+                    "deduct_money": round(deduct_money, 2),  # 抵扣金额
+                    "actual_pay_money": round(actual_pay_money, 2),  # 实际支付金额
+                    "user_current_points": user.points,  # 用户当前积分
+                    "points_shortage": max(deduct_point - user.points, 0)  # 积分缺口
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"积分抵扣计算失败：{str(e)}", exc_info=True)
+            return Response({"code": 500, "msg": f"计算失败：{str(e)}"}, status=500)
+
+class UserPointsView(APIView):
+    """用户积分查询接口"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "code": 200,
+            "msg": "success",
+            "data": {
+                "points": request.user.points or 0  # 返回当前用户积分
+            }
+        })
+
+# app01/views.py
+class DeductPointsView(APIView):
+    """积分扣减接口（支付成功后调用）"""
+    def post(self, request):
+        try:
+            # 1. 获取参数
+            order_id = request.data.get('order_id')
+            deduct_point = int(request.data.get('deduct_point', 0))
+            user = request.user
+
+            # 2. 校验参数
+            if not order_id:
+                return Response({"code": 400, "msg": "订单ID不能为空"})
+            if deduct_point < 0:
+                return Response({"code": 400, "msg": "抵扣积分不能为负数"})
+
+            # 3. 获取订单并校验
+            try:
+                order = Order.objects.get(id=order_id, user=user, is_delete=False)
+            except Order.DoesNotExist:
+                return Response({"code": 404, "msg": "订单不存在"})
+
+            # 4. 校验订单状态（必须是已支付：待发货/待收货/已完成）
+            if order.status not in [1, 2, 3]:
+                return Response({"code": 400, "msg": f"订单状态异常（当前：{order.get_status_display()}），仅已支付订单可扣减积分"})
+
+            # 5. 获取订单商品列表（用于校验积分商品）
+            order_items = order.items.all()
+            goods_list = [item.goods for item in order_items if item.goods]
+
+            # 6. 执行积分扣减
+            success, msg = order.deduct_user_points(user, deduct_point, goods_list)
+
+            if success:
+                return Response({"code": 200, "msg": msg})
+            else:
+                return Response({"code": 400, "msg": msg})
+
+        except Exception as e:
+            logger.error(f"扣减积分失败：{str(e)}", exc_info=True)
+            return Response({"code": 500, "msg": f"扣减积分失败：{str(e)}"})
+
+
+# 支付页后端视图（如 PayView）的 get 方法
+class PayView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        order_id = request.query_params.get("order_id")
+        total_all = float(request.query_params.get("totalAll", 0))  # 订单总额
+        actual_amount = float(request.query_params.get("actualAmount", 0))  # 实付金额
+        deduct_point = int(request.query_params.get("deduct_point", 0))  # 积分抵扣数
+
+        # 校验订单信息
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+        # 同步订单的抵扣积分（防止前端传递异常）
+        if deduct_point > 0 and order.point_deduct == 0:
+            order.point_deduct = deduct_point
+            order.point_deduct_money = deduct_point * 0.01
+            order.actual_pay_money = total_all - order.point_deduct_money
+            order.save()
+
+        return Response({
+            "code": 200,
+            "msg": "success",
+            "data": {
+                "order_id": order.id,
+                "total_all": total_all,  # 订单总额（显示用）
+                "actual_amount": actual_amount,  # 实付金额（支付用）
+                "deduct_point": deduct_point,  # 积分抵扣数
+                "deduct_money": deduct_point * 0.01  # 积分抵扣金额
+            }
+        })

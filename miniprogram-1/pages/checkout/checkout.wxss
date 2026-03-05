@@ -36,34 +36,40 @@ page{background-color: #f5f5f5;}
   margin: 10rpx;background: #fff;border-radius: 10rpx;
 }
 .delivery-title {
+  padding: 20rpx 20rpx 10rpx;
+  font-size:30rpx;
   font-weight: bold;
 }
 .delivery-type {
   display: flex;
-  padding: 20rpx;
+  padding: 0 20rpx 20rpx;
   gap: 20rpx;
 }
 .delivery-btn {
   flex: 1;
+  height:80rpx;
+  line-height:80rpx;
+  text-align:center;
+  font-size:28rpx;
+  border:1rpx solid #ddd;
+  border-radius:8rpx;
 }
 
-/* 门店选择样式（核心：下拉框样式） */
+/* 门店选择样式 */
 .store-wrap {
   margin: 10rpx;background: #fff;border-radius: 10rpx;
 }
-/* 选中的门店信息样式 */
 .selected-store {
   text-align: right;
 }
 .store-name {
-  font-size: 26rpx;color: #333;
+  font-size: 26rpx;color: #333;margin-top:8rpx;
 }
 .store-desc {
-  font-size: 22rpx;color: #999;margin-top: 4rpx;
+  font-size: 26rpx;color: #666;margin-top:8rpx;
 }
-/* 弹窗内门店选项样式 */
 .store-option {
-  padding: 15rpx 0;
+  padding: 24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;
 }
 .option-name {
   font-size: 26rpx;color: #333;
@@ -72,55 +78,17 @@ page{background-color: #f5f5f5;}
   font-size: 22rpx;color: #999;margin-top: 4rpx;
 }
 
-/* 原有样式覆盖（确保样式统一） */
-.checkout-container {
-  padding-bottom: 120rpx;
+/* 积分抵扣模块补充样式 */
+.delivery-wrap .delivery-title {
+  font-size:30rpx;
+  font-weight:600;
 }
-.line {
-  height: 10rpx;
-  background-color: #f5f5f5;
+input[type="number"] {
+  font-size:28rpx;
+  color:#333;
 }
-.goods-title {
-  padding: 20rpx;
-  font-weight: bold;
-}
-.goods-list {
-  padding: 0 20rpx;
-}
-.goods-item {
-  margin-bottom: 10rpx;
-}
-.empty-wrap {
-  text-align: center;
-  padding: 100rpx 0;
-}
-.empty-text {
-  font-size: 28rpx;
-  color: #999;
-  margin-bottom: 20rpx;
-}
-.submit-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100rpx;
-  background-color: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 20rpx;
-  border-top: 1rpx solid #eee;
-}
-.total-price {
-  flex: 1;
-  font-size: 32rpx;
-  font-weight: bold;
-}
-.total-price span {
-  color: #ff6700;
-}
-.submit-btn {
-  width: 200rpx;
-  height: 70rpx;
-  line-height: 70rpx;
+button {
+  border:none;
+  background:#f5f5f5;
+  border-radius:4rpx;
 }

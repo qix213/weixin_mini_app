@@ -1,10 +1,12 @@
 <view class="pay-container">
   <view class="order-card">
     <view class="order-title">{{typeName}}</view>
+    
     <view class="order-item">
       <label class="label">订单金额：</label>
       <text class="amount">¥{{originalAmount}}</text>
     </view>
+
     <view class="order-item coupon-dropdown">
       <label class="label">使用优惠券：</label>
       <picker 
@@ -21,6 +23,13 @@
         </view>
       </picker>
     </view>
+
+    <!-- 积分抵扣（只显示积分数量） -->
+    <view class="order-item">
+      <label class="label">积分抵扣：</label>
+      <text class="amount">{{pointDeductPoints}} 积分</text>
+    </view>
+
     <view class="order-item amount-item">
       <label class="label">实付金额：</label>
       <text class="amount">¥{{actualAmount}}</text>

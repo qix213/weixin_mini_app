@@ -60,7 +60,7 @@
     </view>
     <view class="function-item" bindtap="goToInvoiceManage">
       <view class="function-icon">📄</view>
-      <view class="function-name">账单记录</view>
+      <view class="function-name">订单状态</view>
       <view class="function-arrow">→</view>
     </view>
     
@@ -89,11 +89,14 @@
   </view>
 
   <!-- 公众号二维码弹窗 -->
-  <view class="qrcode-modal" wx:if="{{showQrcode}}">
-    <view class="qrcode-content">
-      <image class="qrcode-img" src="/images/wechat-qrcode.png" mode="widthFix"></image>
-      <view class="qrcode-tip">扫码关注公众号</view>
-      <button class="close-btn" bindtap="hideQrcode">关闭</button>
-    </view>
-  </view>
+  <modal wx:if="{{showQrcode}}" title="关注公众号" confirm-text="知道了" bindconfirm="hideQrcode">
+  <!-- 给图片添加show-menu-by-longpress属性，支持长按识别 -->
+  <image 
+    src="/images/公众号二维码.png" 
+    mode="widthFix" 
+    style="width: 200px; margin: 0 auto;"
+    show-menu-by-longpress="true"  
+  ></image>
+  <text style="font-size: 14px; color: #666; margin-top: 10px; display: block; text-align: center;">长按图片识别二维码关注</text>
+</modal>
 </view>

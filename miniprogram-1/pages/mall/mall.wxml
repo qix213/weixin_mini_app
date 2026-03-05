@@ -1,5 +1,5 @@
 <view class="mall-container">
-  <!-- 搜索框（不变） -->
+  <!-- 搜索框 -->
   <view class="native-search-bar" style="background: {{primaryColor}}; padding: 10rpx 20rpx; display: flex; align-items: center; height: 80rpx; box-sizing: border-box;">
     <input 
       value="{{searchValue}}"
@@ -14,7 +14,7 @@
     </view>
   </view>
 
-  <!-- 商品分类（不变，后续配合分类功能） -->
+  <!-- 商品分类 -->
   <van-grid column-num="4" border="{{false}}" class="category-grid" wx:if="{{categories.length > 0}}">
     <van-grid-item 
       wx:for="{{categories}}" 
@@ -27,41 +27,72 @@
     />
   </van-grid>
 
-<!-- 商品列表（外层 view 添加 class="goods-card-wrap"，保留原有布局） -->
-<view class="goods-list">
-  <!-- 骨架屏（不变） -->
-  <van-skeleton title row="3" wx:if="{{loading}}" class="skeleton-item" wx:key="index" />
-  
-  <!-- 核心修改：给外层 view 添加 class="goods-card-wrap"，用于设置宽度，恢复两列 -->
-  <view class="goods-card-wrap" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
-    <van-card
-      num="{{item.stock}}"
-      price="{{item.member_price}}"
-      origin-price="{{item.original_price}}"
-      title="{{item.name}}"
-      desc="{{item.brief_intro || '暂无介绍'}}"
-      thumb="{{item.image_url}}"
-      class="goods-card"
-      border="{{true}}"
-    >
-    <view slot="footer" class="card-footer">
-  <view class="num-control">
-    <button size="mini" bindtap="minusNum" data-id="{{item.id}}" disabled="{{item.cartNum <= 1}}">-</button>
-    <input type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" min="1" />
-    <button size="mini" bindtap="plusNum" data-id="{{item.id}}">+</button>
-  </view>
-  <van-button size="mini" type="primary" catchtap="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
-  加入购物车
-</van-button>
-</view>
-    </van-card>
-  </view>
-  <!-- 全局提示 -->
-  <van-toast id="van-toast" />
-  <!-- 空数据提示（不变） -->
-  <van-empty image="search" description="暂无商品" wx:if="{{!loading && goodsList.length === 0}}" />
-</view>
+  <!-- 商品列表 -->
+  <view class="goods-list">
+    <van-skeleton title row="3" wx:if="{{loading}}" class="skeleton-item" />
+    
+    <view class="goods-card-wrap" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
+      <!-- 积分商品（核心修复积分文字换行） -->
+      <van-card
+        wx:if="{{item.isPointGoods}}"
+        title="{{item.name}}"
+        desc="{{item.brief_intro || '暂无介绍'}}"
+        thumb="{{item.image_url}}"
+        class="goods-card"
+        border="{{true}}"
+        style="overflow: visible !important; position: relative !important;"
+      >
+        <!-- 自定义库存显示 -->
+        <view slot="num" style="font-size: 24rpx; color: #666;">
+          库存{{item.stock}}
+        </view>
+        <!-- 🔥 修复积分换行：增加最小宽度+禁止换行 -->
+        <view slot="tags" style="display: inline-block; padding: 4rpx 12rpx; background: #fff; min-width: 120rpx; white-space: nowrap;">
+          <text style="color:#e64340; font-size:30rpx; font-weight:bold; white-space: nowrap;">
+            {{item.pointPrice}} 积分
+          </text>
+        </view>
 
-  <!-- 全局提示 -->
+        <!-- 购物车操作栏 -->
+        <view slot="footer" style="display: flex; align-items: center; justify-content: space-between; padding: 10rpx 16rpx; border-top: 1rpx solid #eee; margin-top: 5rpx;">
+          <view class="num-control">
+            <button size="mini" bindtap="minusNum" data-id="{{item.id}}" disabled="{{item.cartNum <= 1}}">-</button>
+            <input type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" min="1" />
+            <button size="mini" bindtap="plusNum" data-id="{{item.id}}">+</button>
+          </view>
+          <van-button size="mini" type="primary" catchtap="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
+            加入购物车
+          </van-button>
+        </view>
+      </van-card>
+
+      <!-- 普通商品 -->
+      <van-card
+        wx:else
+        title="{{item.name}}"
+        desc="{{item.brief_intro || '暂无介绍'}}"
+        thumb="{{item.image_url}}"
+        price="{{item.member_price}}"
+        origin-price="{{item.original_price}}"
+        class="goods-card"
+        border="{{true}}"
+      >
+        <!-- 自定义库存显示 -->
+        <view slot="num" style="font-size: 24rpx; color: #666;">
+          库存{{item.stock}}
+        </view>
+        <view slot="footer" class="card-footer">
+          <view class="num-control">
+            <button size="mini" bindtap="minusNum" data-id="{{item.id}}" disabled="{{item.cartNum <= 1}}">-</button>
+            <input type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" min="1" />
+            <button size="mini" bindtap="plusNum" data-id="{{item.id}}">+</button>
+          </view>
+          <van-button size="mini" type="primary" catchtap="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">加入购物车</van-button>
+        </view>
+      </van-card>
+    </view>
+
+    <van-empty image="search" description="暂无商品" wx:if="{{!loading && goodsList.length === 0}}" />
+  </view>
   <van-toast id="van-toast" />
 </view>

@@ -9,7 +9,10 @@ Page({
     baseUrl: 'http://localhost:8000',
     cartNum: 1,
     currentSwipeIndex: 0,
-    imageList: []
+    imageList: [],
+    // 新增：积分商品相关字段
+    isPointGoods: false,
+    pointPrice: 0
   },
 
   onLoad(options) {
@@ -25,7 +28,23 @@ Page({
     this.getGoodsDetail();
   },
 
-  // 修复：处理URL双斜杠 + 强化空值判断
+  // 统一判断是否为积分商品（和列表页逻辑一致）
+  isPointGoods(item) {
+    const pointField = item.isPointGoods || item.can_point_exchange || item.canPointExchange || false;
+    const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
+    
+    let isPoint = false;
+    if (typeof pointField === 'string') {
+      isPoint = pointField.toLowerCase() === 'true';
+    } else if (typeof pointField === 'number') {
+      isPoint = pointField === 1;
+    } else {
+      isPoint = !!pointField;
+    }
+    return isPoint || hasPointPrice;
+  },
+
+  // 修复：处理URL双斜杠 + 强化空值判断 + 新增积分价格计算
   getGoodsDetail() {
     const { goodsId, baseUrl } = this.data;
 
@@ -48,7 +67,6 @@ Page({
 
           // 修复2：处理组图URL双斜杠 + 按order排序
           if (goodsData.images && goodsData.images.length > 0) {
-            // 先按order排序（避免图片顺序混乱）
             const sortedImages = goodsData.images.sort((a, b) => a.order - b.order);
             sortedImages.forEach(img => {
               if (img.image_url) {
@@ -58,11 +76,24 @@ Page({
             });
           }
 
-          // 验证：打印最终的图片列表
-          console.log('整理后的轮播图列表：', imageList);
+          // 新增：判断是否为积分商品 + 计算积分价格（和列表页逻辑一致）
+          const isPointGoods = this.isPointGoods(goodsData);
+          let pointPrice = 0;
+          if (isPointGoods) {
+            // 严格处理member_price，避免转数字失败
+            const memberPriceStr = (goodsData.member_price || '0').toString().replace(/[^0-9.]/g, '');
+            const memberPrice = parseFloat(memberPriceStr) || 0;
+            pointPrice = Math.floor(memberPrice * 100); // 会员价转积分（和列表页一致）
+            pointPrice = Number(pointPrice);
+          }
+
+          // 验证：打印积分相关数据
+          console.log('积分商品判断：', isPointGoods, '积分价格：', pointPrice);
           this.setData({ 
             goodsDetail: goodsData,
-            imageList: imageList 
+            imageList: imageList,
+            isPointGoods: isPointGoods,
+            pointPrice: pointPrice
           });
         } else {
           Toast.fail('获取商品详情失败：' + (res.data?.msg || '数据格式异常'));
@@ -77,14 +108,16 @@ Page({
       }
     });
   },
+
   imageLoadError(e) {
     console.error('图片加载失败：', e.detail.errMsg, 'URL：', e.currentTarget.src);
     Toast.fail('图片加载失败，请检查URL');
   },
-  // 图片加载成功监听
+
   imageLoadSuccess(e) {
     console.log('图片加载成功：', e.currentTarget.src);
   },
+
   onSwipeChange(e) {
     this.setData({ currentSwipeIndex: e.detail.current });
   },
@@ -146,7 +179,11 @@ Page({
       data: { goods_id: goodsDetail.id, num: cartNum },
       success: (res) => {
         if (res.data && res.data.code === 200) {
-          Toast.success(`【${goodsDetail.name}】已加入购物车 x${cartNum}`);
+          // 适配：积分商品/普通商品提示文案
+          const tipText = this.data.isPointGoods 
+            ? `【${goodsDetail.name}】已加入购物车 x${cartNum}（需${this.data.pointPrice * cartNum}积分）`
+            : `【${goodsDetail.name}】已加入购物车 x${cartNum}`;
+          Toast.success(tipText);
         } else {
           const isTokenInvalid = 
             res.statusCode === 401 || 
@@ -170,7 +207,7 @@ Page({
   },
 
   buyNow() {
-    const { goodsDetail, cartNum } = this.data;
+    const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
     if (!goodsDetail.id) {
       Toast.fail('商品信息异常');
       return;
@@ -192,7 +229,12 @@ Page({
       data: { goods_id: goodsDetail.id, num: cartNum },
       success: (res) => {
         if (res.data && res.data.code === 200) {
-          Toast.success(`即将结算【${goodsDetail.name}】x${cartNum}`);
+          // 适配：积分商品/普通商品提示文案
+          const tipText = isPointGoods
+            ? `即将结算【${goodsDetail.name}】x${cartNum}（需${pointPrice * cartNum}积分）`
+            : `即将结算【${goodsDetail.name}】x${cartNum}`;
+          Toast.success(tipText);
+          
           setTimeout(() => {
             wx.navigateTo({
               url: `/pages/checkout/checkout?goodsId=${goodsDetail.id}&num=${cartNum}`,

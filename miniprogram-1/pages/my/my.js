@@ -247,6 +247,12 @@ Page({
   // 预览公众号二维码
   previewQrcode() {
     this.setData({ showQrcode: true });
+    // 可选：主动提示用户长按识别
+    wx.showToast({
+      title: '长按二维码关注公众号',
+      icon: 'none',
+      duration: 2000
+    });
   },
 
   // 隐藏二维码弹窗

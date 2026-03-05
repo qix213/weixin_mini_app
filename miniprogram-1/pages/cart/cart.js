@@ -4,8 +4,33 @@ const app = getApp();
 Page({
   data: {
     cartList: [],    // 购物车商品列表
-    totalAll: 0,     // 购物车总价
-    loading: true    // 加载状态
+    totalAll: 0,     // 购物车总价/总积分
+    loading: true,   // 加载状态
+    isAllPointGoods: false // 是否全为积分商品（用于底部总计显示）
+  },
+
+  // 统一判断是否为积分商品（和列表页/详情页逻辑一致）
+  isPointGoods(item) {
+    const pointField = item.isPointGoods || item.can_point_exchange || item.canPointExchange || false;
+    const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
+    
+    let isPoint = false;
+    if (typeof pointField === 'string') {
+      isPoint = pointField.toLowerCase() === 'true';
+    } else if (typeof pointField === 'number') {
+      isPoint = pointField === 1;
+    } else {
+      isPoint = !!pointField;
+    }
+    return isPoint || hasPointPrice;
+  },
+
+  // 计算积分价格（和列表页/详情页逻辑一致）
+  calcPointPrice(memberPrice) {
+    const memberPriceStr = (memberPrice || '0').toString().replace(/[^0-9.]/g, '');
+    const memberPriceNum = parseFloat(memberPriceStr) || 0;
+    const pointPrice = Math.floor(memberPriceNum * 100);
+    return Number(pointPrice);
   },
 
   // 页面加载时获取购物车数据（优化：接收订单ID，精准清空）
@@ -26,7 +51,7 @@ Page({
   // 回到页面时刷新购物车（核心修改：先重置再请求）
   onShow() {
     // 关键：每次返回购物车先清空旧数据，避免残留
-    this.setData({ cartList: [], totalAll: '0.00' });
+    this.setData({ cartList: [], totalAll: '0.00', isAllPointGoods: false });
     this.getCartList();
   },
 
@@ -52,7 +77,6 @@ Page({
           'Authorization': `Bearer ${accessToken}`
         },
         success: (res) => {
-          // console.log('清空购物车结果：', res.data);
           if (res.data && res.data.code === 200) {
             Toast.success('购物车已清空');
           }
@@ -73,6 +97,7 @@ Page({
     this.setData({
       cartList: [],
       totalAll: '0.00',
+      isAllPointGoods: false,
       loading: true
     });
     // 清除本地购物车缓存（如果有）
@@ -87,18 +112,13 @@ Page({
     });
   },
 
-  // 1. 获取购物车列表（核心优化：总价计算+空数据处理）
+  // 1. 获取购物车列表（核心优化：适配积分商品+总价计算）
   getCartList(callback) {
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     const header = {
       'content-type': 'application/json',
       ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
     };
-
-    console.log("===== 购物车请求调试信息 =====");
-    // console.log("当前accessToken：", accessToken ? "存在" : "为空");
-    // console.log("购物车列表请求头：", header);
-    // console.log("请求URL：", 'http://localhost:8000/app01/cart/');
 
     this.setData({ loading: true });
 
@@ -107,7 +127,6 @@ Page({
       method: 'GET',
       header: header,
       success: (res) => {
-        // console.log('购物车接口返回：', res);
         if (res.statusCode === 401 || (res.data && res.data.detail === "身份认证信息未提供")) {
           wx.removeStorageSync('accessToken');
           app.globalData.accessToken = '';
@@ -121,53 +140,83 @@ Page({
             }
           });
           // 401时强制清零
-          this.setData({ cartList: [], totalAll: '0.00' });
+          this.setData({ cartList: [], totalAll: '0.00', isAllPointGoods: false });
           return;
         }
 
         // 正常解析数据
         let cartList = [];
         let totalAll = '0.00'; // 初始化为0.00，避免残留
+        let isAllPointGoods = true; // 默认全为积分商品，后续校验
+        
         if (res.data && res.data.code === 200) {
           cartList = res.data.data.cart_list || [];
-          // console.log('解析后的购物车商品数：', cartList.length);
-          // 格式化数据
+          // 格式化数据：适配积分商品
           const formatCartList = cartList.map(item => {
+            // 处理商品图片URL
             if (item.goods?.image_url) {
               item.goods.image_url = item.goods.image_url.replace('//media/', '/media/');
             }
-            item.total_price = Number(item.total_price || 0).toFixed(2);
-            return item;
+            
+            // 判断是否为积分商品
+            const isPointGoods = this.isPointGoods(item.goods);
+            // 计算积分价格
+            const pointPrice = isPointGoods ? this.calcPointPrice(item.goods.member_price) : 0;
+            // 计算小计：积分商品=积分单价*数量，普通商品=金额单价*数量
+            const total_price = isPointGoods 
+              ? (pointPrice * item.num).toString() // 积分无小数
+              : Number(item.total_price || 0).toFixed(2); // 金额保留2位小数
+            
+            // 只要有一个不是积分商品，就标记为非全积分
+            if (!isPointGoods) {
+              isAllPointGoods = false;
+            }
+
+            return {
+              ...item,
+              isPointGoods: isPointGoods, // 标记是否为积分商品
+              pointPrice: pointPrice, // 积分单价
+              total_price: total_price // 适配后的小计
+            };
           });
           cartList = formatCartList;
-          // 核心优化：购物车为空时总价直接为0.00
+
+          // 核心优化：计算总价/总积分
           totalAll = cartList.length > 0 
-            ? cartList.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2)
-            : '0.00';
+            ? cartList.reduce((sum, item) => {
+                return sum + Number(item.total_price);
+              }, 0) 
+            : 0;
+          
+          // 格式化：积分无小数，金额保留2位
+          totalAll = isAllPointGoods 
+            ? totalAll.toString() 
+            : totalAll.toFixed(2);
         }
-        // 无论是否有数据，都强制更新（关键！）
-        this.setData({ cartList, totalAll });
+        
+        // 无论是否有数据，都强制更新
+        this.setData({ cartList, totalAll, isAllPointGoods });
       },
       fail: (err) => {
         console.error('购物车请求失败：', err);
         // 失败时强制清零
-        this.setData({ cartList: [], totalAll: '0.00' });
+        this.setData({ cartList: [], totalAll: '0.00', isAllPointGoods: false });
         wx.showToast({ title: '网络错误，无法获取购物车', icon: 'none' });
       },
       complete: () => {
-        // console.log('购物车请求完成');
         this.setData({ loading: false });
         callback && callback();
       }
     });
   },
 
-  // 2. 增减商品数量（无修改，保留原有逻辑）
+  // 2. 增减商品数量（适配积分商品）
   changeNum(e) {
     const { id, type } = e.currentTarget.dataset;
     const num = type === 'plus' ? 1 : -1;
     const that = this;
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    
     if (!accessToken) {
       wx.showToast({ title: '请先登录', icon: 'none' });
       return;
@@ -195,12 +244,21 @@ Page({
           const cartList = that.data.cartList.map(item => {
             if (item.id === id) {
               item.num = res.data.data.num;
-              item.total_price = (item.num * Number(item.goods.member_price)).toFixed(2);
+              // 适配：积分商品/普通商品计算小计
+              item.total_price = item.isPointGoods 
+                ? (item.pointPrice * item.num).toString() // 积分无小数
+                : (item.num * Number(item.goods.member_price)).toFixed(2); // 金额保留2位
             }
             return item;
           });
-          // 重新计算总价（避免残留）
-          const totalAll = cartList.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2);
+          
+          // 重新计算总价/总积分
+          let totalAll = cartList.reduce((sum, item) => sum + Number(item.total_price), 0);
+          // 格式化总价
+          totalAll = that.data.isAllPointGoods 
+            ? totalAll.toString() 
+            : totalAll.toFixed(2);
+          
           that.setData({ cartList, totalAll });
           wx.showToast({ title: type === 'plus' ? '数量+1' : '数量-1', icon: 'success', duration:800 });
         } else {
@@ -214,7 +272,7 @@ Page({
     });
   },
 
-  // 3. 删除购物车商品（无修改，保留原有逻辑）
+  // 3. 删除购物车商品（适配积分商品总价）
   deleteCart(e) {
     const id = e.currentTarget.dataset.id;
     const that = this;
@@ -249,9 +307,16 @@ Page({
 
               if (res.data && res.data.code === 200) {
                 const cartList = that.data.cartList.filter(item => item.id !== id);
-                // 重新计算总价（避免残留）
-                const totalAll = cartList.reduce((sum, item) => sum + Number(item.total_price), 0).toFixed(2);
-                that.setData({ cartList, totalAll });
+                // 重新校验是否全为积分商品
+                const isAllPointGoods = cartList.every(item => item.isPointGoods);
+                // 重新计算总价/总积分
+                let totalAll = cartList.reduce((sum, item) => sum + Number(item.total_price), 0);
+                // 格式化总价
+                totalAll = isAllPointGoods 
+                  ? totalAll.toString() 
+                  : totalAll.toFixed(2);
+                
+                that.setData({ cartList, totalAll, isAllPointGoods });
                 wx.showToast({ title: '删除成功', icon: 'success', duration:800 });
               } else {
                 wx.showToast({ title: res.data?.msg || '删除失败', icon: 'none' });
@@ -272,7 +337,7 @@ Page({
     wx.switchTab({ url: '/pages/mall/mall' });
   },
 
-  // 5. 跳转到结算页面（新增：传递页面标识）
+  // 5. 跳转到结算页面（新增：传递页面标识+积分标识）
   toCheckout() {
     const accessToken = wx.getStorageSync('accessToken');
     if (!accessToken) {
@@ -280,9 +345,9 @@ Page({
       wx.navigateTo({ url: '/pages/login/login' });
       return;
     }
-    // 跳转时携带购物车页面标识，便于结算页返回时识别
+    // 跳转时携带购物车页面标识+积分标识，便于结算页适配
     wx.navigateTo({ 
-      url: '/pages/checkout/checkout?fromCart=true' 
+      url: `/pages/checkout/checkout?fromCart=true&isAllPointGoods=${this.data.isAllPointGoods}` 
     });
   }
 });

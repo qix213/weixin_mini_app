@@ -113,7 +113,6 @@ class GoodsImage(models.Model):
     def image_url(self):
         return f"http://localhost:8000{self.image.url}"
 
-# 原有Goods模型（补充注释，无需修改）
 class Goods(models.Model):
     name = models.CharField('商品名称', max_length=100)
     brief_intro = models.CharField('简短介绍', max_length=200)
@@ -123,10 +122,22 @@ class Goods(models.Model):
     member_price = models.DecimalField('会员价', max_digits=10, decimal_places=2)
     stock = models.IntegerField('库存', default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='所属分类')
-    image = models.ImageField('商品主图', upload_to='goods/')  # 主图保留
+    image = models.ImageField('商品主图', upload_to='goods/')
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
     is_star = models.BooleanField('是否明星产品', default=False)
+    # 保留商品自身的积分兑换开关
+    is_support_point_exchange = models.BooleanField(default=False, verbose_name="是否支持积分兑换")
+    exchange_points = models.IntegerField(default=0, verbose_name="兑换所需积分（备用）")
+
+    # 积分定价，自动计算
+    point_price = models.DecimalField(
+        "积分定价",
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+        help_text="自动按会员价×100计算，无需手动填写"
+    )
 
     class Meta:
         verbose_name = '商品'
@@ -139,8 +150,58 @@ class Goods(models.Model):
     def image_url(self):
         return f"http://localhost:8000{self.image.url}"
 
-from django.contrib.auth.models import User
+    # 【核心修改】简化save方法：仅基于商品自身的is_support_point_exchange判断
+    def save(self, *args, **kwargs):
+        # 1. 计算积分定价 = 会员价×100（强制整数）
+        if self.member_price:
+            self.point_price = int(self.member_price * 100)
+        else:
+            self.point_price = 0
 
+        # 2. 仅基于商品自身的开关判断：不支持积分兑换则积分定价归零
+        if not (self.is_support_point_exchange and self.point_price > 0):
+            self.point_price = 0
+
+        super().save(*args, **kwargs)
+
+    # 【核心修改】简化积分兑换资格判断：仅判断商品自身开关+积分定价>0
+    @property
+    def can_point_exchange(self):
+        return self.is_support_point_exchange and self.point_price > 0
+
+    # 积分兑换计算逻辑（无修改，仅依赖简化后的can_point_exchange）
+    def calculate_point_exchange(self, buy_num, user_points):
+        if not self.can_point_exchange:
+            return {
+                "can_exchange": False,
+                "msg": f"商品「{self.name}」不支持积分兑换",
+                "need_point": 0,
+                "actual_deduct_point": 0,
+                "deduct_money": 0.0,
+                "cash_pay": float(self.member_price * buy_num),
+                "total_pay": float(self.member_price * buy_num)
+            }
+
+        single_point_price = int(self.point_price)
+        total_need_point = single_point_price * buy_num
+        actual_deduct_point = min(user_points, total_need_point)
+        deduct_money = actual_deduct_point * 0.01
+        total_money = float(self.member_price * buy_num)
+        cash_pay = max(total_money - deduct_money, 0)
+
+        return {
+            "can_exchange": True,
+            "msg": "积分兑换计算完成",
+            "need_point": total_need_point,
+            "actual_deduct_point": actual_deduct_point,
+            "deduct_money": deduct_money,
+            "cash_pay": cash_pay,
+            "total_pay": deduct_money + cash_pay,
+            "single_point_price": single_point_price,
+            "total_money": total_money
+        }
+
+from django.contrib.auth.models import User
 # 视频课程模型
 class VideoCourse(models.Model):
     title = models.CharField(max_length=100, verbose_name="课程标题")
@@ -439,7 +500,6 @@ class User(AbstractUser):
         return direct_subs
 
     # 获取下级消费记录
-    # User模型中的get_sub_consume_records方法（仅修改订单查询行）
     def get_sub_consume_records(self, current_level=0):
         """
         返回按下级会员分组的消费记录（包含会员信息+订单列表）
@@ -487,47 +547,48 @@ class User(AbstractUser):
         return sub_consume_data
 
     # 在你的User模型中补充/修复add_points方法
-    def add_points(self, points, points_type, related_id='', related_desc=''):
+    def add_points(self, points, points_type, related_id="", related_desc=""):
         """
-        通用加积分方法（防重复、防负数）
-        :param points: 要添加的积分（正数）
-        :param points_type: 积分类型（1=注册，2=消费，3=观看视频）
-        :param related_id: 关联ID（订单号/视频ID）
-        :param related_desc: 描述
+        添加/扣减用户积分
+        :param points: 积分值（正数=增加，负数=扣减）
+        :param points_type: 积分类型（1=注册，2=消费，3=视频奖励，4=抵扣，5=其他）
+        :param related_id: 关联ID（如订单号）
+        :param related_desc: 描述（兼容原有参数名，内部映射到description字段）
         :return: (success: bool, msg: str)
         """
-        from django.db import transaction
         try:
-            if points <= 0:
-                return False, '积分必须为正数'
+            # 转换为整数，避免浮点问题
+            points = int(points)
+            current_points = self.points or 0
 
-            # 防重复：同一related_id+points_type只允许赠送一次
-            if related_id:
-                exists = PointsRecord.objects.filter(
-                    user=self,
-                    points_type=points_type,
-                    related_id=related_id
-                ).exists()
-                if exists:
-                    return False, f'该{related_desc}积分已赠送过，不可重复领取'
+            # 扣减积分时（points为负），校验积分是否充足
+            if points < 0:
+                deduct_points = abs(points)
+                if current_points < deduct_points:
+                    return False, f"积分不足（当前{current_points}分，需扣减{deduct_points}分）"
 
-            # 原子操作更新积分+记录明细
-            with transaction.atomic():
-                # 更新用户积分
-                self.points += points
-                self.save(update_fields=['points'])
-                # 记录积分明细
-                PointsRecord.objects.create(
-                    user=self,
-                    points=points,
-                    points_type=points_type,
-                    related_id=related_id,
-                    description=related_desc
-                )
-            return True, f'成功添加{points}积分'
+            # 更新积分（支持正负）
+            self.points = current_points + points
+            # 确保积分不会为负数
+            if self.points < 0:
+                self.points = 0
+            self.save(update_fields=["points"])
+
+            # 记录积分变动（关键修复：参数名从related_desc改为description）
+            from .models import PointsRecord
+            PointsRecord.objects.create(
+                user=self,
+                points=points,  # 保留正负，便于区分增减
+                points_type=points_type,
+                related_id=related_id,
+                # 🔥 核心修复：参数名从 related_desc 改为 description
+                description=related_desc,
+                create_time=timezone.now()
+            )
+
+            return True, f"积分{'增加' if points > 0 else '扣减'}成功（{points}分）"
         except Exception as e:
-            logger.error(f'用户{self.member_id}添加积分失败：{str(e)}', exc_info=True)
-            return False, f'添加积分失败：{str(e)[:20]}'
+            return False, f"积分操作失败：{str(e)}"
 
     def get_coupons(self, only_valid=False, coupon_type=None):
         """
@@ -561,6 +622,29 @@ class User(AbstractUser):
             "expired": expired_coupons.count(),
             "used": used_coupons.count()
         }
+
+    def exchange_goods_by_point(self, goods, buy_num=1):
+        """用户积分兑换商品计算，带严格分类校验"""
+        if not goods.can_point_exchange:
+            return {
+                "success": False,
+                "msg": f"商品「{goods.name}」不支持积分兑换（非积分兑换分类）",
+                "data": None
+            }
+
+        exchange_detail = goods.calculate_point_exchange(buy_num, self.points)
+        exchange_detail.update({
+            "user_points": self.points,
+            "points_shortage": max(exchange_detail["need_point"] - self.points, 0),
+            "points_shortage_money": exchange_detail["points_shortage"] * 0.01
+        })
+
+        return {
+            "success": True,
+            "msg": "积分兑换计算完成",
+            "data": exchange_detail
+        }
+
 # ====================== 打卡学习：4个核心模型（正确引用User） ======================
 
 # 1. 学习打卡模型
@@ -687,12 +771,19 @@ class Address(models.Model):
     def __str__(self):
         return f"{self.name} - {self.address}{self.detail}"
 
-# 订单主表
+import logging
+from django.db import models
+from django.core.exceptions import ValidationError
+from decimal import Decimal  # 补充Decimal导入（计算积分抵扣金额用）
+
+# 定义logger（解决deduct_user_points方法中logger未定义问题）
+logger = logging.getLogger(__name__)
+
 class Order(models.Model):
     ORDER_STATUS = (
         (0, "待付款"),
-        (1, "待发货"),   # 快递专用：待发货；到店专用：待取货（通过方法动态替换）
-        (2, "待收货"),   # 仅快递专用
+        (1, "待发货"),  # 快递专用：待发货；到店专用：待取货（通过方法动态替换）
+        (2, "待收货"),  # 仅快递专用
         (3, "已完成"),
         (4, "已取消"),
     )
@@ -709,14 +800,16 @@ class Order(models.Model):
         (2, "到店自取"),
     )
     # 原有核心字段保留
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
+    user = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="用户")
     order_sn = models.CharField(max_length=64, unique=True, verbose_name="订单编号")
     goods_names = models.CharField(max_length=500, null=True, blank=True, verbose_name="订单产品名称（拼接）")
     goods_count = models.IntegerField(default=0, verbose_name="订单商品总数")
-    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="收货地址")
+    address = models.ForeignKey('Address', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="收货地址")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="订单总价")
     status = models.IntegerField(choices=ORDER_STATUS, default=0, verbose_name="订单状态")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    is_point_deducted = models.BooleanField(default=False, verbose_name="积分是否已扣减")
+
     # ========== 新增配送相关字段 ==========
     delivery_type = models.IntegerField(
         choices=DELIVERY_TYPE_CHOICES,
@@ -724,12 +817,13 @@ class Order(models.Model):
         verbose_name="配送方式"
     )
     pick_up_store = models.ForeignKey(
-        Area,  # 关联门店表
+        'Area',  # 关联门店表
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name="取货门店"
     )
+
     # ========== 新增订单详情字段 ==========
     # 1. 支付相关
     PAY_METHOD_CHOICES = (
@@ -755,6 +849,22 @@ class Order(models.Model):
     # 4. 软删除（避免误删订单）
     is_delete = models.BooleanField(default=False, verbose_name="是否删除")
 
+    # ========== 【核心修复1】修复积分抵扣字段的verbose_name重复问题 ==========
+    point_deduct = models.IntegerField(default=0, verbose_name="抵扣积分")  # 移除重复的位置参数'抵扣积分'
+    point_deduct_money = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),  # 改用Decimal('0.00')更规范，避免浮点精度问题
+        verbose_name="积分抵扣金额"
+    )  # 移除重复的位置参数'积分抵扣金额'
+    actual_pay_money = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="实际支付金额"
+    )
+
     class Meta:
         verbose_name = "订单"
         verbose_name_plural = "订单"
@@ -765,15 +875,12 @@ class Order(models.Model):
 
     def get_status_name(self):
         """根据配送类型，返回对应的状态名称"""
-        # 到店自取：使用专用状态映射
         if self.delivery_type == 2:
             return self.PICK_UP_STATUS_MAP.get(self.status, f"未知状态({self.status})")
-        # 快递配送：使用原状态名称
         else:
             return self.get_status_display()
 
     def clean(self):
-        from django.core.exceptions import ValidationError
         # 到店自取订单，禁止设置状态2（待收货）
         if self.delivery_type == 2 and self.status == 2:
             raise ValidationError("到店自取订单不支持「待收货」状态")
@@ -781,7 +888,6 @@ class Order(models.Model):
         if self.delivery_type == 2 and self.status not in [0, 1, 3, 4]:
             raise ValidationError("到店自取订单仅支持状态：待付款(0)、待取货(1)、已完成(3)、已取消(4)")
 
-    # ✅ 修复1：重写save方法，先保存生成主键，再处理订单商品统计
     def save(self, *args, **kwargs):
         self.clean()  # 保存前校验状态合法性
         is_new = self.pk is None
@@ -790,30 +896,24 @@ class Order(models.Model):
         super().save(*args, **kwargs)
 
         # 第二步：只有订单已保存（有主键），才处理商品名称和数量统计
-        if not is_new and self.items.exists():
-            # 拼接商品名称
+        if not is_new and hasattr(self, 'items') and self.items.exists():
             self.goods_names = "、".join([item.goods_name for item in self.items.all()])
-            # 计算商品总数
             self.goods_count = sum([item.num for item in self.items.all()])
-            # 再次保存（仅更新统计字段，不会重复创建）
             super().save(update_fields=['goods_names', 'goods_count'])
 
-    # ✅ 修复2：在Order模型中定义goods_names_str属性（视图需要的字段）
     @property
     def goods_names_str(self):
-        """返回订单商品名称拼接字符串，如：商品A、商品B"""
+        """返回订单商品名称拼接字符串"""
         if self.goods_names:
             return self.goods_names
-        # 兜底：如果goods_names为空，从items重新拼接
-        if self.pk and self.items.exists():
+        if self.pk and hasattr(self, 'items') and self.items.exists():
             return "、".join([item.goods_name for item in self.items.all()])
         return "无商品"
 
-    # 可选：快捷获取订单商品列表
     @property
     def goods_list(self):
         """返回订单商品详情列表"""
-        if self.pk and self.items.exists():
+        if self.pk and hasattr(self, 'items') and self.items.exists():
             return [
                 {
                     "name": item.goods_name,
@@ -824,9 +924,67 @@ class Order(models.Model):
                 for item in self.items.all()
             ]
         return []
+
     @property
     def status_display(self):
         return self.get_status_name()
+
+    def deduct_user_points(self, user, deduct_point, goods_list):
+        """
+        积分抵扣核心方法（支付成功后调用）
+        新增幂等性校验：已扣减则直接返回成功
+        """
+        from django.db import transaction
+
+        # 1. 幂等性校验：已扣过积分则直接返回成功
+        if self.is_point_deducted:
+            return True, "该订单积分已扣减，无需重复操作"
+
+        # 2. 二次校验：订单状态必须是已支付（待发货/待收货/已完成），避免未支付扣积分
+        if self.status not in [1, 2, 3]:
+            return False, f"订单状态异常（当前状态：{self.get_status_display()}），仅已支付订单可扣减积分"
+
+        # 3. 原有校验逻辑（保留）
+        for goods in goods_list:
+            if not hasattr(goods, 'can_point_exchange') or not goods.can_point_exchange:
+                return False, f"订单包含非积分兑换商品「{goods.name}」，无法使用积分抵扣"
+
+        if deduct_point <= 0:
+            return True, "无需积分抵扣"
+
+        if not hasattr(user, 'points') or user.points < deduct_point:
+            current_points = getattr(user, 'points', 0)
+            return False, f"积分不足：当前{current_points}分，需{deduct_point}分"
+
+        try:
+            with transaction.atomic():
+                # 1. 扣减用户积分
+                user.points -= deduct_point
+                user.save(update_fields=['points'])
+
+                # 2. 记录积分变动
+                from .models import PointsRecord
+                PointsRecord.objects.create(
+                    user=user,
+                    points=-deduct_point,
+                    points_type=4,
+                    related_id=self.order_sn,
+                    description=f"订单{self.order_sn}抵扣{deduct_point}积分(抵扣{deduct_point * 0.01}元)"
+                )
+
+                # 3. 更新订单字段（新增：标记积分已扣减）
+                self.point_deduct = deduct_point
+                self.point_deduct_money = Decimal(str(deduct_point * 0.01))
+                self.actual_pay_money = max(self.total_price - self.point_deduct_money, Decimal('0.00'))
+                self.is_point_deducted = True  # 标记已扣减
+                self.save(update_fields=['point_deduct', 'point_deduct_money', 'actual_pay_money', 'is_point_deducted'])
+
+            return True, f"成功抵扣{deduct_point}积分（抵扣{self.point_deduct_money}元）"
+
+        except Exception as e:
+            logger.error(f"订单{self.order_sn}积分抵扣失败：{str(e)}", exc_info=True)
+            error_msg = str(e)[:20] if len(str(e)) > 20 else str(e)
+            return False, f"积分抵扣失败：{error_msg}"
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')

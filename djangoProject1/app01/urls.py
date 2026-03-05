@@ -84,6 +84,8 @@ urlpatterns = [
     path('user/coupons/use/', views.UserCouponUseView.as_view(), name='user_coupon_use'),
     # 3. 领取优惠券
     path('coupon/claim/', views.claim_coupon),
+    path('user/points/', views.UserPointsView.as_view(), name='user_points'),
+    path('user/points/deduct/', views.DeductPointsView.as_view(), name='deduct_points'),  # 扣减积分
     # 新建运单
     path("express/create/", views.express_create, name="express_create"),
     # 运单列表
