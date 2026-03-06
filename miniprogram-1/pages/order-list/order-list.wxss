@@ -106,3 +106,60 @@ page {
   background: #fafafa;
   padding: 15rpx;
 }
+
+.pending-pay {
+  color: #f4333c; /* 微信支付红 */
+  font-weight: bold;
+  cursor: pointer; /* 提示可点击 */
+}
+
+/* 订单头部布局优化 */
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+  margin-bottom: 10rpx;
+}
+
+/* 积分商品标签 */
+.point-tag {
+  position: absolute;
+  left: 200rpx;
+  color: #ff9900;
+  font-size: 24rpx;
+  background: #fff8e6;
+  padding: 2rpx 8rpx;
+  border-radius: 4rpx;
+}
+
+/* 待付款状态样式 */
+.pending-pay {
+  color: #f4333c;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 价格区域布局 */
+.price-area {
+  text-align: right;
+}
+
+/* 金额样式 */
+.price {
+  color: #f4333c;
+  font-weight: bold;
+  font-size: 30rpx;
+}
+.point-price {
+  color: #ff9900; /* 积分价格用橙色，和人民币红色区分 */
+}
+/* 积分抵扣数量样式 */
+.point-deduct {
+  display: block;
+  color: #ff9900;
+  font-size: 24rpx;
+  margin-top: 4rpx;
+  font-weight: normal;
+}

@@ -91,7 +91,7 @@
         </view>
       </van-card>
     </view>
-
+a
     <van-empty image="search" description="暂无商品" wx:if="{{!loading && goodsList.length === 0}}" />
   </view>
   <van-toast id="van-toast" />

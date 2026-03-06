@@ -224,43 +224,17 @@ Page({
     wx.showToast({ title: '验证码发送成功（123456）', icon: 'success' });
   },
 
- sendRegisterPoints(phone) {
-   if (!phone) return;
-   wx.request({
-     url: `${app.globalData.baseUrl}/app01/member/give-register-points/`, // 后端赠积分接口
-     method: 'POST',
-     header: {
-       'Content-Type': 'application/json',
-       'Authorization': `Bearer ${app.globalData.accessToken}` // 注册成功后已有token
-     },
-     data: {
-       phone: phone,
-       points: 0 // 赠送的积分值
-     },
-     success: (res) => {
-       if (res.data.code === 200) {
-         console.log('注册送1000积分成功：', res.data);
-       } else {
-         console.warn('注册送积分失败：', res.data.msg);
-       }
-     },
-     fail: (err) => {
-       console.error('注册送积分接口请求失败：', err);
-     }
-   });
- },
-  // 注册逻辑（核心优化：跳转支付页时新增scene场景参数）
+  // 核心修改：彻底移除注册页的后端注册调用，仅做前端验证+暂存数据+跳转支付
   handleRegister() {
     const {
       memberId, nickname, phone, password, passwordConfirm,
       selectedUserType, recommenderId, verifyCode, activeTab
     } = this.data;
-    // 移除重复的getApp()声明（顶部已声明）
     const userType = selectedUserType.value;
     const userTypeName = selectedUserType.name;
-    const userTypeAmount = selectedUserType.amount; // 获取费用
+    const userTypeAmount = selectedUserType.amount;
 
-    // 1. 基础验证（仅保留昵称、手机号、密码校验）
+    // 1. 严格前端验证（所有场景统一校验）
     if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
     const phoneReg = /^1[3-9]\d{9}$/;
     if (!phone || !phoneReg.test(phone)) { wx.showToast({ title: '请输入正确的11位手机号', icon: 'none' }); return; }
@@ -271,69 +245,30 @@ Page({
     if (password !== passwordConfirm) {
       wx.showToast({ title: '两次密码不一致', icon: 'none' }); return;
     }
+    if (!verifyCode) { wx.showToast({ title: '请输入验证码', icon: 'none' }); return; }
 
-    // 2. 组装注册数据
+    // 2. 暂存注册信息（全局+本地存储，确保支付页能获取）
     const registerData = {
+      memberId: memberId,
       nickname: nickname,
       phone: phone,
       password: password,
       password_confirm: passwordConfirm,
       user_type: userType,
-      recommender_id: recommenderId,       
+      recommender_id: recommenderId,
+      verifyCode: verifyCode
     };
+    app.globalData.pendingRegisterData = registerData;
+    wx.setStorageSync('pendingRegisterData', registerData);
 
-    // 3. 发送注册请求
-    wx.showLoading({ title: '注册中...', mask: true });
-    wx.request({
-      url: app.globalData.baseUrl + '/app01/register/',
-      method: 'POST',
-      header: {
-        'Content-Type': 'application/json'
-      },
-      data: registerData,
-      success: (res) => {
-        wx.hideLoading();
-        if (res.data.code === 200) {
-          // 存储用户信息
-          const userInfo = res.data.user_info;
-          app.globalData.userInfo = userInfo;
-          app.globalData.accessToken = res.data.access;
-          app.globalData.refreshToken = res.data.refresh;
-          app.globalData.isLogin = true;
-
-          wx.setStorageSync('userInfo', userInfo);
-          wx.setStorageSync('accessToken', res.data.access);
-          wx.setStorageSync('refreshToken', res.data.refresh);
-          wx.setStorageSync('isLogin', true);
-          this.sendRegisterPoints(phone); // 传手机号，异步执行不阻塞跳转
-          
-          // ====== 核心优化：跳转逻辑（新增scene场景参数） ======
-          if (userType === 1) {
-            // 0元会员：直接跳首页
-            wx.showToast({ title: '注册成功', icon: 'success', duration:1500 });
-            setTimeout(()=>{
-              wx.switchTab({ url: '/pages/index/index' });
-            },1000);
-          } else {
-            // 付费会员/开店：跳转支付页，传递scene区分场景
-            const scene = activeTab === 0 ? 'member' : 'shop'; // 0=会员缴费，1=开店缴费
-            wx.showToast({ title: '注册成功，请完成支付', icon: 'success', duration:1500 });
-            setTimeout(()=>{
-              wx.navigateTo({
-                url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${encodeURIComponent(phone)}`,
-              });
-            },1000);
-          }
-        } else {
-          wx.showToast({ title: res.data.msg || '注册失败', icon: 'none' });
-        }
-      },
-      fail: (err) => {
-        wx.hideLoading();
-        wx.showToast({ title: '网络错误', icon: 'none' });
-        console.error('注册请求失败：', err);
-      }
-    });
+    // 3. 统一跳转支付页（0元会员也走支付页，标记金额为0，支付页处理免支付逻辑）
+    const scene = activeTab === 0 ? 'member' : 'shop';
+    wx.showToast({ title: '信息验证通过，即将跳转支付页', icon: 'success', duration: 1500 });
+    setTimeout(() => {
+      wx.navigateTo({
+        url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${encodeURIComponent(phone)}&memberId=${memberId}`,
+      });
+    }, 1000);
   },
 
   startCountDown() {

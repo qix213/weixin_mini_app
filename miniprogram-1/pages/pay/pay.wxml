@@ -4,10 +4,14 @@
     
     <view class="order-item">
       <label class="label">订单金额：</label>
-      <text class="amount">¥{{originalAmount}}</text>
+      <!-- 仅使用JS提前计算好的字段，无WXML内计算 -->
+      <text class="amount {{isPointGoods ? 'point-text' : ''}}">
+        {{isPointGoods ? exchangePoints + ' 积分（¥' + exchangePointsRmb + '）' : '¥' + (originalAmount || '0.00')}}
+      </text>
     </view>
 
-    <view class="order-item coupon-dropdown">
+    <!-- 优惠券：积分商品隐藏 -->
+    <view class="order-item coupon-dropdown" wx:if="{{!isPointGoods}}">
       <label class="label">使用优惠券：</label>
       <picker 
         mode="selector" 
@@ -24,15 +28,43 @@
       </picker>
     </view>
 
-    <!-- 积分抵扣（只显示积分数量） -->
-    <view class="order-item">
+    <!-- 积分商品专属操作区域 -->
+    <view class="point-operate-area" wx:if="{{isPointGoods}}">
+      <view class="point-info">
+        <label class="label">可用积分：</label>
+        <text class="point-text">{{userPoints}} 积分</text>
+        <!-- 仅使用JS提前计算好的字段 -->
+        <text class="max-tip">最大可抵扣：{{maxDeductPoint}} 积分（¥{{maxDeductPointRmb}}）</text>
+      </view>
+      <view class="point-deduct-op">
+        <label class="label">本次抵扣：</label>
+        <button class="btn-minus" bindtap="minusPoint">-</button>
+        <input 
+          type="number" 
+          value="{{pointDeductPoints}}" 
+          bindinput="inputPoint"
+          placeholder="请输入抵扣积分"
+          class="point-input"
+        />
+        <button class="btn-plus" bindtap="plusPoint">+</button>
+        <button class="btn-all" bindtap="useAllPoints">使用全部</button>
+      </view>
+      <!-- 仅使用JS提前计算好的字段 -->
+      <view class="point-deduct-tip">
+        <text>本次抵扣金额：¥{{pointDeductRmb}}</text>
+      </view>
+    </view>
+
+    <!-- 积分抵扣：非积分商品显示 -->
+    <view class="order-item" wx:if="{{!isPointGoods}}">
       <label class="label">积分抵扣：</label>
-      <text class="amount">{{pointDeductPoints}} 积分</text>
+      <text class="amount">{{pointDeductPoints || 0}} 积分</text>
     </view>
 
     <view class="order-item amount-item">
       <label class="label">实付金额：</label>
-      <text class="amount">¥{{actualAmount}}</text>
+      <!-- 统一显示提前计算好的人民币 -->
+      <text class="amount">¥{{actualAmount || '0.00'}}</text>
     </view>
   </view>
 
@@ -57,7 +89,7 @@
     loading="{{payLoading}}"
     disabled="{{payLoading}}" 
   >
-    {{payLoading ? '支付中...' : '确认支付 ¥' + actualAmount}}
+    {{payLoading ? '支付中...' : '确认支付 ¥' + (actualAmount || '0.00')}}
   </button>
 
   <button 

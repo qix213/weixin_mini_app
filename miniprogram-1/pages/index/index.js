@@ -16,73 +16,53 @@ Page({
   },
 
   onLoad() {
-    // 强制先获取全局数据，再执行判断
+    // 简化：先读取缓存/全局的登录状态，再加载数据
     this.syncGlobalUserState().then(() => {
-      // 打印关键数据，排查问题
-      // console.log('===== 首页初始化数据 =====');
-      // console.log('全局会员信息：', app.globalData.memberInfo || app.globalData.userInfo);
-      // console.log('页面memberInfo：', this.data.memberInfo);
-      // console.log('user_type：', this.data.memberInfo.user_type);
-      // console.log('是否为4/5级会员：', this.data.isAdminMember);
-
       if (this.data.isAdminMember) {
-        // 4/5级会员：仅加载明星产品数据（用于表格展示）
         this.fetchStarGoods().finally(() => {
           this.setData({ loading: false });
-          // console.log('✅ 已识别为4/5级会员，加载明星产品表格');
         });
       } else {
-        // 普通会员：加载所有首页数据
         this.loadHomeData().finally(() => {
           this.setData({ loading: false });
-          // console.log('❌ 非4/5级会员，显示原有首页内容');
         });
       }
     });
   },
 
-  // 重构：强制同步并校验会员等级
+  // 核心简化：只做缓存+全局变量的同步，不做多余的接口验证（先保证生效）
   syncGlobalUserState() {
     return new Promise((resolve) => {
-      // 1. 优先从全局获取会员信息（兜底处理）
-      const globalUserInfo = app.globalData.userInfo || {};
-      const globalMemberInfo = app.globalData.memberInfo || globalUserInfo;
-      const globalIsLogin = app.globalData.isLogin || false;
+      // 1. 优先从缓存读取（pay.js里保存的）
+      const cacheIsLogin = wx.getStorageSync('isLogin') || false;
+      const cacheMemberInfo = wx.getStorageSync('memberInfo') || {};
+      const cacheAccessToken = wx.getStorageSync('accessToken') || '';
 
-      // 2. 强制提取user_type（转数字，避免字符串类型导致判断失败）
-      const userType = Number(globalMemberInfo.user_type || globalUserInfo.user_type || 0);
-      // console.log('提取到的user_type（数字）：', userType);
+      // 2. 同步到全局变量
+      app.globalData.isLogin = cacheIsLogin;
+      app.globalData.memberInfo = cacheMemberInfo;
+      app.globalData.accessToken = cacheAccessToken;
+      app.globalData.userInfo = cacheMemberInfo; // 统一userInfo和memberInfo
 
-      // 3. 核心判断：严格检查4/5级
-      const isAdminMember = globalIsLogin && [4, 5].includes(userType);
-      // console.log('登录状态：', globalIsLogin, '是否4/5级：', isAdminMember);
+      // 3. 计算会员等级（4/5级为管理员）
+      const userType = Number(cacheMemberInfo.user_type || 0);
+      const isAdminMember = cacheIsLogin && [4, 5].includes(userType);
 
-      // 4. 完善用户信息兜底
-      globalUserInfo.nickname = globalUserInfo.nickname || globalUserInfo.username || '用户';
-
-      // 5. 强制更新页面数据（用setData确保渲染）
+      // 4. 更新页面数据
       this.setData({
-        isLogin: globalIsLogin,
-        userInfo: globalUserInfo,
-        memberInfo: globalMemberInfo,
-        isAdminMember: isAdminMember // 关键：确保赋值
+        isLogin: cacheIsLogin,
+        userInfo: cacheMemberInfo,
+        memberInfo: cacheMemberInfo,
+        isAdminMember: isAdminMember
       }, () => {
-        // 回调中确认数据已更新
-        // console.log('页面数据更新完成：', this.data.isAdminMember);
         resolve();
       });
     });
   },
 
-  // 新增：页面显示时重新校验（防止登录后数据未刷新）
+  // 页面显示时重新同步（关键：支付后跳转回来触发）
   onShow() {
-    this.syncGlobalUserState().then(() => {
-      // console.log('onShow重新校验会员等级：', this.data.isAdminMember);
-      // 如果是4/5级会员，确保加载明星产品数据
-      if (this.data.isAdminMember && this.data.star_goods.length === 0) {
-        this.fetchStarGoods();
-      }
-    });
+    this.syncGlobalUserState();
   },
 
   goToOrderList() {

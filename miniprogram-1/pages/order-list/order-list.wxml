@@ -1,17 +1,31 @@
 <view class="container">
   <!-- 遍历订单列表 -->
   <block wx:for="{{orderList}}" wx:key="order_sn">
-    <view class="order-card">
-      <!-- 订单号+状态 -->
+    <view class="order-card" bindtap="handleOrderClick" data-order="{{item}}">
+      <!-- 订单号+状态 + 积分商品标识 -->
       <view class="order-header">
         <text class="sn">订单号：{{item.order_sn}}</text>
-        <text class="status">{{item.status}}</text>
+        <!-- 积分商品标签：仅当 isPointsExchange 为 true 时显示 -->
+        <text class="point-tag" wx:if="{{item.isPointsExchange}}">积分兑换商品</text>
+        <!-- 待付款状态添加点击事件 -->
+        <text 
+          class="status {{item.status === '待付款' ? 'pending-pay' : ''}}"
+          catchtap="goToPay" 
+          data-orderid="{{item.order_id}}" 
+          data-ordersn="{{item.order_sn}}"
+          data-actualpayprice="{{item.actual_pay_price}}" 
+          data-order="{{item}}"
+          wx:if="{{item.status === '待付款'}}"
+        >
+          {{item.status}}
+        </text>
+        <!-- 其他状态正常显示 -->
+        <text class="status" wx:else>{{item.status}}</text>
       </view>
 
-      <!-- 商品列表（核心：渲染预处理的goodsList） -->
+      <!-- 商品列表 -->
       <view class="goods-area">
         <text class="goods-title">商品：</text>    
-        <!-- 用view替代block，直接循环goodsList -->
         <view 
           wx:for="{{item.goodsList}}" 
           wx:key="index" 
@@ -19,18 +33,24 @@
         >
           {{item}} ×1
         </view>
-
-        <!-- 兜底提示（仅当数组为空时显示） -->
         <view class="no-goods" wx:if="{{item.goodsList.length === 0}}">
           暂无商品信息
         </view>
       </view>
 
-      <!-- 订单时间+总价 -->
+      <!-- 订单信息 + 积分抵扣数量 -->
       <view class="order-info">
-        <text>{{item.create_time}}</text>
-        <text class="price">￥{{item.total_price}}</text>
-      </view>
+  <text>{{item.create_time}}</text>
+  <view class="price-area">
+    <!-- 核心调整：非积分商品显示人民币价格，积分商品显示积分数量 -->
+    <text class="price" wx:if="{{!item.isPointsExchange}}">￥{{item.total_price}}</text>
+    <!-- 积分商品显示积分数量（优先取exchangePoints，无则显示0积分） -->
+    <text class="price point-price" wx:elif="{{item.isPointsExchange && item.exchangePoints > 0}}">
+      {{item.exchangePoints}}积分
+    </text>
+    <text class="price point-price" wx:else>0积分</text>
+  </view>
+</view>
     </view>
   </block>
 

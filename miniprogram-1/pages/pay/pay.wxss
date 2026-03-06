@@ -1,3 +1,87 @@
+/* 核心：金额字体+颜色统一调整（主题蓝色+高转化字体规范） */
+/* 抵扣积分提示样式 */
+.point-deduct-tip {
+  margin-top: 15rpx;
+  font-size: 24rpx;
+  color: #999;
+  padding-left: 180rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 统一字体 */
+}
+
+/* 积分操作区域样式 */
+.point-operate-area {
+  margin: 20rpx 0;
+  padding: 20rpx 0;
+  border-top: 1rpx solid #eee;
+  border-bottom: 1rpx solid #eee;
+}
+.point-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 统一字体 */
+}
+.point-info .label {
+  color: #666;
+  width: 180rpx;
+}
+.point-info .max-tip {
+  margin-left: 20rpx;
+  font-size: 24rpx;
+  color: #999;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.point-deduct-op {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 28rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.point-deduct-op .label {
+  color: #666;
+  width: 180rpx;
+}
+.btn-minus, .btn-plus {
+  width: 60rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0;
+  font-size: 32rpx;
+  background-color: #f5f5f5;
+  color: #333;
+  border-radius: 8rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.point-input {
+  flex: 1;
+  height: 60rpx;
+  border: 1rpx solid #eee;
+  border-radius: 8rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.btn-all {
+  width: 120rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0;
+  font-size: 24rpx;
+  background-color: #ff9900;
+  color: #fff;
+  border-radius: 8rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+/* 积分文字改为主题蓝色（替代原橙色） */
+.point-text {
+  color: #1677FF !important;
+  font-weight: 600; /* 加粗增强视觉焦点 */
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 支付容器基础样式 */
 .pay-container {
   padding: 40rpx 30rpx;
   background-color: #f5f5f5;
@@ -6,9 +90,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 全局统一字体 */
 }
-
-/* 订单信息卡片 */
 .order-card {
   background-color: #fff;
   border-radius: 20rpx;
@@ -24,16 +107,19 @@
   margin-bottom: 40rpx;
   padding-bottom: 20rpx;
   border-bottom: 1rpx solid #eee;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .order-item {
   display: flex;
   align-items: center;
   margin-bottom: 30rpx;
   font-size: 32rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .label {
   color: #666;
   width: 180rpx;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .amount-item {
   justify-content: center;
@@ -42,18 +128,19 @@
   padding-top: 20rpx;
   border-top: 1rpx dashed #eee;
 }
+/* 核心修改：金额改为主题蓝色+高转化字体规范 */
 .amount {
-  color: #f53f3f;
-  font-size: 40rpx;
-  font-weight: bold;
+  color: #1677FF; /* 主题蓝色（替代原红色） */
+  font-size: 40rpx; /* 最优售价字号 */
+  font-weight: 600; /* bold加粗，增强视觉焦点 */
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 无衬线高转化字体 */
 }
-
-/* 支付方式样式 */
 .pay-methods-title {
   font-size: 30rpx;
   color: #333;
   margin-bottom: 20rpx;
   font-weight: 500;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .pay-methods-container {
   display: flex;
@@ -72,6 +159,7 @@
   gap: 15rpx;
   position: relative;
   transition: all 0.3s ease;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .pay-method-selected {
   border-color: #1677ff !important;
@@ -85,6 +173,7 @@
 .pay-method-name {
   font-size: 28rpx;
   color: #333;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .pay-method-check {
   position: absolute;
@@ -95,19 +184,41 @@
   color: #fff;font-size: 20rpx;
   display: flex;align-items: center;justify-content: center;
   opacity: 0;transition: opacity 0.3s ease;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .check-visible {opacity: 1;}
-
-/* 按钮样式 */
 .pay-btn {
   width: 100%;height: 88rpx;line-height: 88rpx;
   background-color: #1677ff;color: #fff;
   font-size: 34rpx;border-radius: 10rpx;
   margin-bottom: 30rpx;
+  font-weight: 600; /* 按钮文字加粗 */
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 .cancel-btn {
   width: 100%;height: 88rpx;line-height: 88rpx;
   background-color: #fff;color: #666;
   font-size: 34rpx;border-radius: 10rpx;
   border: 1rpx solid #eee;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 优惠券选择器样式补充（统一字体） */
+.coupon-dropdown {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.native-picker {
+  flex: 1;
+}
+.picker-text {
+  font-size: 28rpx;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.picker-arrow {
+  font-size: 24rpx;
+  color: #999;
 }
