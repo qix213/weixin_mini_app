@@ -236,3 +236,17 @@
   color: #999 !important;
   font-weight: normal !important;
 }
+/* --- modal弹窗内二维码样式 --- */
+.modal-qrcode-img {
+  width: 400rpx;      /* 相当于之前的 200px */
+  display: block;     /* 变成块级元素 */
+  margin: 0 auto;     /* 居中 */
+}
+
+.modal-qrcode-text {
+  font-size: 28rpx;   /* 相当于之前的 14px */
+  color: #666;
+  margin-top: 20rpx;  /* 相当于之前的 10px */
+  display: block;     /* 独占一行 */
+  text-align: center; /* 文字居中 */
+}

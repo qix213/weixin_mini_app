@@ -1,4 +1,10 @@
-/**app.wxss**/
+@font-face {
+  font-family: 'vant-icon';
+  src: url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.woff2?t=1694918397022') format('woff2'),
+       url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.woff?t=1694918397022') format('woff'),
+       url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.ttf?t=1694918397022') format('truetype');
+}
+
 @import "/static/css/iconfont.wxss";
 /* 1. 变量定义（保持不变） */
 :root {

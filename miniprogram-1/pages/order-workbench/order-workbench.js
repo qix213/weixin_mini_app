@@ -29,54 +29,57 @@ Page({
   fetchOrderList() {
     return new Promise((resolve, reject) => {
       const app = getApp();
-      const header = app.getRequestHeader ? app.getRequestHeader() : {
-        'Content-Type': 'application/json'
-      };
-
+      const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
+  
       wx.request({
         url: `${app.globalData.baseUrl}/app01/member/sub-consume/`,
         method: 'GET',
         header: header,
         data: { current_level: this.data.currentLevel },
         success: (res) => {
-          this.setData({ loading: false });
-
           if (res.data?.code === 200) {
             let allOrders = [];
             const rawOrderData = res.data.data || [];
-
+  
             rawOrderData.forEach((memberItem) => {
-              const memberInfo = memberItem.member_info || {};
-              const memberNickname = memberInfo.nickname || '未知会员';
+              const memberNickname = memberItem.member_info?.nickname || '未知会员';
               const memberOrders = memberItem.orders || [];
-
+  
               memberOrders.forEach((order) => {
                 let formatted = this.formatOrderData(order, memberNickname);
-                formatted.expanded = false;
-                formatted.trackExpanded = false; // 新增：物流轨迹展开状态
                 allOrders.push(formatted);
               });
             });
-
-            const filteredOrders = allOrders.filter(o => o.status !== 0);
-
-            this.fetchExpressList(filteredOrders).then(() => {
+  
+            // 这里的 filteredOrders 是初始过滤（排除未付款）
+            const validOrders = allOrders.filter(o => o.status !== 0);
+  
+            // 🔥 关键点：物流信息获取后的二次清洗
+            this.fetchExpressList(validOrders).then(() => {
+              
+              // 对所有订单进行状态二次校对
+              const cleanedOrders = validOrders.map(order => {
+                const logisStatus = order.latestExpress?.logisticsStatusName || '';
+                // 只要物流包含“签收”或“已完成”，强制把 Tab 分类改为 completed
+                if (logisStatus.indexOf('签收') !== -1 || logisStatus.indexOf('完成') !== -1) {
+                  order.statusKey = 'completed';
+                }
+                return order;
+              });
+  
               this.setData({
-                allOrders: filteredOrders,
-                filteredOrders: filteredOrders
+                loading: false,
+                allOrders: cleanedOrders,
+                filteredOrders: this.data.activeTab === 'all' 
+                  ? cleanedOrders 
+                  : cleanedOrders.filter(o => o.statusKey === this.data.activeTab)
               });
               resolve();
-            }).catch(err => {
-              reject(err);
             });
-          } else {
-            wx.showToast({ title: '获取订单失败', icon: 'none' });
-            reject(new Error(`订单接口错误：${res.data?.msg || '未知错误'}`));
           }
         },
         fail: (err) => {
           this.setData({ loading: false });
-          wx.showToast({ title: '网络错误', icon: 'none' });
           reject(err);
         }
       });
@@ -159,28 +162,38 @@ Page({
 
   formatOrderData(order, memberNickname) {
     const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
-    const status = this.safeToNumber(order.status || 0);
+    let status = this.safeToNumber(order.status || 0);
     
-    const formattedOrder = {
+    // 获取物流状态名称（用于精准分类）
+    const logisticsStatus = order.latest_express?.logistics_status_name || '';
+    
+    let statusKey = this.getStatusKeyByCode(status);
+    
+    // 🔥 核心修正：如果物流显示“已签收”，强制分类到“已完成”
+    if (logisticsStatus.indexOf('已签收') !== -1 || logisticsStatus === '已完成') {
+      statusKey = 'completed';
+    }
+
+    return {
       id: orderSn,
       orderSn: orderSn,
       status: status,
       statusName: order.status_name || this.data.statusMap[status],
-      statusKey: this.getStatusKeyByCode(status),
-      totalPrice: this.safeToNumber(order.total_price || 0),
-      createTime: this.formatDate(order.create_time || ''),
+      statusKey: statusKey, // 使用修正后的 key
+      totalPrice: this.safeToNumber(order.total_price || 0).toFixed(2), // 统一保留两位小数
+      createTime: order.create_time || '未知时间',
       expressList: [],
       latestExpress: {},
-      trackExpanded: false, // 物流轨迹展开状态
+      trackExpanded: false,
+      expanded: false,
       goodsList: (order.goods_list||[]).map(g=>({
-        goodsName: g.goods_name||g.name||'未知商品',
-        num: this.safeToNumber(g.num||g.quantity||1),
-        price: this.safeToNumber(g.price||0),
-        totalPrice: this.safeToNumber(g.total_price||g.amount||0)
+        goodsName: g.goods_name||'未知商品',
+        num: this.safeToNumber(g.num||1),
+        price: this.safeToNumber(g.price||0).toFixed(2),
+        totalPrice: this.safeToNumber(g.total_price||0).toFixed(2)
       })),
       memberNickname: memberNickname
     };
-    return formattedOrder;
   },
 
   getStatusKeyByCode(s) {

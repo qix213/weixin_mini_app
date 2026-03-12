@@ -1,127 +1,131 @@
+<wxs module="statusFormatter">
+  module.exports.getClass = function(status) {
+    var currentStatus = status || '待发货';
+    if (currentStatus === '待发货') return 'status-pending';
+    if (currentStatus === '已揽收' || currentStatus === '运送中') return 'status-transit';
+    if (currentStatus === '派送中') return 'status-delivering';
+    if (currentStatus === '已签收') return 'status-success';
+    if (currentStatus === '异常件' || currentStatus === '已取消') return 'status-error';
+    return 'status-default';
+  }
+</wxs>
+
 <view class="container">
-  <!-- 加载中 -->
-  <view class="loading" wx:if="{{loading}}">
-    <text>加载订单数据中...</text>
+  <view class="loading-box" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>正在获取最新订单数据...</text>
   </view>
 
-  <!-- 主内容（非加载状态） -->
-  <view class="main" wx:else>
-    <!-- 顶部状态Tab栏（横向滚动） -->
-    <scroll-view class="tab-scroll" scroll-x="true" scroll-with-animation="true">
-      <view class="tab-list">
-        <view 
-          class="tab-item {{activeTab === item.key ? 'active' : ''}}"
-          wx:for="{{orderStatusTabs}}"
-          wx:key="key"
-          bindtap="onTabChange"
-          data-key="{{item.key}}"
-        >
-          <text class="tab-text">{{item.name}}</text>
+  <block wx:else>
+    <view class="tab-container">
+      <scroll-view class="tab-scroll" scroll-x="true" scroll-with-animation="true">
+        <view class="tab-list">
+          <view 
+            class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+            wx:for="{{orderStatusTabs}}"
+            wx:key="key"
+            bindtap="onTabChange"
+            data-key="{{item.key}}"
+          >
+            <view class="tab-text">{{item.name}}</view>
+            <view class="tab-line"></view>
+          </view>
         </view>
-      </view>
-    </scroll-view>
-
-    <!-- 无订单提示 -->
-    <view class="empty" wx:if="{{filteredOrders.length === 0}}">
-      <text>暂无{{activeTabName}}</text>
+      </scroll-view>
     </view>
 
-    <!-- 订单列表 -->
+    <view class="empty-state" wx:if="{{filteredOrders.length === 0}}">
+      <view class="empty-icon">📦</view>
+      <text>暂无相关{{activeTabName}}记录</text>
+    </view>
+
     <view class="order-list" wx:else>
-      <view class="order-card" wx:for="{{filteredOrders}}" wx:key="id" wx:for-index="idx">
-        <!-- 订单头部（点击展开/收起） -->
+      <view class="order-card {{item.expanded ? 'card-active' : ''}}" wx:for="{{filteredOrders}}" wx:key="orderSn" wx:for-index="idx">
+        
         <view class="order-header" bindtap="toggleOrderExpand" data-index="{{idx}}">
-          <view class="header-left">
-            <text class="order-sn">订单号：{{item.orderSn}}</text>
-            <text class="status {{item.statusKey}}">{{item.statusName}}</text>
+          <view class="header-main">
+            <view class="sn-row">
+              <text class="sn-label">订单号</text>
+              <text class="sn-num">{{item.orderSn}}</text>
+            </view>
+            <view class="status-tag {{statusFormatter.getClass(item.latestExpress.logisticsStatusName)}}">
+              {{item.latestExpress.logisticsStatusName || '待发货'}}
+            </view>
           </view>
-          <view class="header-right">
-            <text class="total-price">¥{{item.totalPrice}}</text>
-            <text class="toggle-icon">{{item.expanded ? '▼' : '▶'}}</text>
+          
+          <view class="header-sub">
+            <view class="order-info-left">
+              <text class="order-time">{{item.createTime}}</text>
+              <text class="member-tag">会员: {{item.memberNickname}}</text>
+            </view>
+            <view class="price-box">
+              <text class="currency">¥</text>
+              <text class="amount">{{item.totalPrice}}</text>
+              <view class="arrow-icon {{item.expanded ? 'arrow-up' : ''}}">{{item.expanded ? '▲' : '▼'}}</view>
+            </view>
           </view>
         </view>
 
-        <!-- 订单详情（展开时显示） -->
-        <view class="order-detail" wx:if="{{item.expanded}}">
-          <!-- 订单日期 -->
-          <view class="detail-row">
-            <text class="label">下单时间：</text>
-            <text class="value">{{item.createTime}}</text>
-          </view>
-
-          <!-- 物流信息 -->
+        <view class="order-content {{item.expanded ? 'show' : ''}}">
           <view class="detail-section">
-            <text class="section-title">物流信息</text>
-            <!-- 无物流信息提示 -->
-            <view class="no-express" wx:if="{{item.expressList.length === 0}}">
-              <text class="empty-text">暂无物流轨迹</text>
+            <view class="section-head">
+              <view class="title-dot"></view>
+              <text>物流详情</text>
             </view>
-            <!-- 有物流信息时展示 -->
-            <view wx:else>
-              <!-- 最新物流概览 -->
-              <view class="detail-row">
-                <text class="label">运单号：</text>
-                <text class="value">{{item.latestExpress.logisticsNo}}</text>
+            
+            <view class="express-preview" wx:if="{{item.expressList.length > 0}}">
+              <view class="express-info">
+                <text class="company">{{item.latestExpress.logisticsCompany}}</text>
+                <text class="waybill">{{item.latestExpress.logisticsNo}}</text>
               </view>
-              <view class="detail-row">
-                <text class="label">物流公司：</text>
-                <text class="value">{{item.latestExpress.logisticsCompany}}</text>
-              </view>
-              <view class="detail-row">
-                <text class="label">当前状态：</text>
-                <text class="value">{{item.latestExpress.logisticsStatusName}}</text>
-              </view>
-              <view class="detail-row">
-                <text class="label">最新位置：</text>
-                <text class="value">{{item.latestExpress.acceptAddress}}</text>
-              </view>
-              <view class="detail-row" wx:if="{{item.latestExpress.courierName}}">
-                <text class="label">派件人：</text>
-                <text class="value">{{item.latestExpress.courierName}}</text>
-              </view>
-              <view class="detail-row" wx:if="{{item.latestExpress.courierPhone}}">
-                <text class="label">派件电话：</text>
-                <text class="value">{{item.latestExpress.courierPhone}}</text>
-              </view>
-
-              <!-- 完整物流轨迹（可点击展开） -->
-              <view class="express-tracks" wx:if="{{item.expressList.length > 1}}">
-                <!-- 修复：添加data-index="{{idx}}"，绑定toggleTrackExpand方法 -->
-                <text class="track-title" bindtap="toggleTrackExpand" data-index="{{idx}}">
-                  查看完整物流轨迹（共{{item.expressList.length}}条）{{item.trackExpanded ? '▲' : '▼'}}
-                </text>
-                <view class="track-list" wx:if="{{item.trackExpanded}}">
-                  <view class="track-item" wx:for="{{item.expressList}}" wx:for-item="track" wx:key="logisticsTime">
-                    <text class="track-time">{{track.logisticsTime}}</text>
-                    <text class="track-content">{{track.acceptAddress}} - {{track.logisticsStatusName}}</text>
+              <view class="timeline">
+                <view class="timeline-item active">
+                  <view class="dot"></view>
+                  <view class="content">
+                    <text class="txt">{{item.latestExpress.acceptAddress}}</text>
+                    <text class="time">{{item.latestExpress.logisticsStatusName}}</text>
                   </view>
                 </view>
+                <block wx:if="{{item.trackExpanded}}">
+                  <view class="timeline-item" wx:for="{{item.expressList}}" wx:for-item="track" wx:key="logisticsTime" wx:if="{{index > 0}}">
+                    <view class="dot"></view>
+                    <view class="content">
+                      <text class="txt">{{track.acceptAddress}}</text>
+                      <text class="time">{{track.logisticsTime}}</text>
+                    </view>
+                  </view>
+                </block>
+              </view>
+              <view class="more-btn" catchtap="toggleTrackExpand" data-index="{{idx}}" wx:if="{{item.expressList.length > 1}}">
+                {{item.trackExpanded ? '收起轨迹 ▲' : '查看完整轨迹 ▼'}}
               </view>
             </view>
+            <view class="no-data" wx:else>暂无物流更新数据</view>
           </view>
 
-          <!-- 商品明细 -->
           <view class="detail-section">
-            <text class="section-title">商品明细</text>
-            <!-- 商品表头 -->
-            <view class="goods-header">
-              <text class="col-goods">商品名称</text>
-              <text class="col-num">数量</text>
-              <text class="col-price">单价</text>
-              <text class="col-total">小计</text>
+            <view class="section-head">
+              <view class="title-dot"></view>
+              <text>商品清单</text>
             </view>
-            <!-- 商品列表 -->
-            <view class="goods-list">
-              <view class="goods-item" wx:for="{{item.goodsList}}" wx:for-item="goods" wx:key="goodsName">
-                <text class="col-goods">{{goods.goodsName}}</text>
-                <text class="col-num">{{goods.num}}</text>
-                <text class="col-price">¥{{goods.price}}</text>
-                <text class="col-total">¥{{goods.totalPrice}}</text>
+            <view class="goods-table">
+              <view class="goods-row head">
+                <text class="col-n">商品名称</text>
+                <text class="col-s">单价/数量</text>
+                <text class="col-p">小计</text>
+              </view>
+              <view class="goods-row" wx:for="{{item.goodsList}}" wx:for-item="goods" wx:key="goodsName">
+                <text class="col-n">{{goods.goodsName}}</text>
+                <view class="col-s">
+                  <text class="g-price">¥{{goods.price}}</text>
+                  <text class="g-num">x{{goods.num}}</text>
+                </view>
+                <text class="col-p">¥{{goods.totalPrice}}</text>
               </view>
             </view>
           </view>
         </view>
       </view>
     </view>
-  </view>
+  </block>
 </view>

@@ -90,13 +90,12 @@
 
   <!-- 公众号二维码弹窗 -->
   <modal wx:if="{{showQrcode}}" title="关注公众号" confirm-text="知道了" bindconfirm="hideQrcode">
-  <!-- 给图片添加show-menu-by-longpress属性，支持长按识别 -->
-  <image 
-    src="/images/公众号二维码.png" 
-    mode="widthFix" 
-    style="width: 200px; margin: 0 auto;"
-    show-menu-by-longpress="true"  
-  ></image>
-  <text style="font-size: 14px; color: #666; margin-top: 10px; display: block; text-align: center;">长按图片识别二维码关注</text>
-</modal>
+    <image 
+      class="modal-qrcode-img"
+      src="/images/bg/qrcode.jpg" 
+      mode="widthFix" 
+      show-menu-by-longpress="true"  
+    ></image>
+    <text class="modal-qrcode-text">长按图片识别二维码关注</text>
+  </modal>
 </view>

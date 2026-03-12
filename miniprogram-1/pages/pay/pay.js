@@ -42,7 +42,7 @@ Page({
   },
 
   onLoad(options) {
-    console.log('支付页接收的参数：', options); 
+    // console.log('支付页接收的参数：', options); 
     const scene = options.scene || 'order';
     const typeName = decodeURIComponent(options.typeName || (scene === 'member' ? '会员缴费' : '开店缴费'));
     const memberId = options.memberId || '';
@@ -54,9 +54,9 @@ Page({
     const actualAmount = Number(options.actualAmount || originalAmount).toFixed(2);
     const pointDeductPoints = parseInt(options.deduct_point || 0);
     
-    console.log('支付页金额初始化：', {
-      scene, originalAmount, actualAmount, isPointGoods: options.isPointGoods === 'true'
-    });
+    // console.log('支付页金额初始化：', {
+    //   scene, originalAmount, actualAmount, isPointGoods: options.isPointGoods === 'true'
+    // });
 
     // 积分商品参数
     const isPointGoods = options.isPointGoods === 'true';
@@ -70,7 +70,7 @@ Page({
 
     // ========== 关键修改1：读取注册页暂存的完整注册数据 ==========
     const pendingRegisterData = app.globalData.pendingRegisterData || wx.getStorageSync('pendingRegisterData') || {};
-    console.log('从注册页读取的完整注册数据：', pendingRegisterData);
+    // console.log('从注册页读取的完整注册数据：', pendingRegisterData);
 
     // 初始化页面数据
     this.setData({

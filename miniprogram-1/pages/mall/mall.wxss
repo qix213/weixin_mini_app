@@ -1,140 +1,256 @@
-:root {
-  --primary-color: #1E88E5;
-  --primary-light: #E3F2FD;
-  --text-dark: #333;
-  --text-gray: #666;
+/* 全局变量与底色 */
+page {
+  --primary-color: #1677ff;
+  --primary-light: #E6F0FF;
+  --text-main: #333333;
+  --text-gray: #999999;
+  --danger-color: #FF4D4F;
 }
 
 .mall-container {
-  background-color: #f5f5f5;
+  background-color: #F4F6F9;
   min-height: 100vh;
-  padding-bottom: 20rpx;
+  padding-bottom: 40rpx;
 }
 
-/* 分类样式 */
+/* ================= 顶部搜索栏 ================= */
+.search-header {
+  padding: 20rpx 24rpx;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  box-shadow: 0 4rpx 10rpx rgba(22, 119, 255, 0.1);
+}
+.search-box {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+  height: 72rpx;
+  backdrop-filter: blur(10px);
+}
+.search-input {
+  flex: 1;
+  color: #fff;
+  font-size: 28rpx;
+  margin-left: 16rpx;
+}
+.search-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+.search-action-btn {
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 500;
+  padding: 10rpx 0 10rpx 20rpx;
+  border-left: 1rpx solid rgba(255, 255, 255, 0.3);
+}
+
+/* ================= 分类宫格 ================= */
 .category-grid {
   background: #fff;
-  padding: 10rpx 0;
-  margin-bottom: 10rpx;
+  padding: 20rpx 0;
+  border-radius: 0 0 24rpx 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
 }
-.category-grid .van-grid-item.active {
-  color: var(--primary-color);
+.category-grid .van-grid-item.active .van-grid-item__text {
+  color: var(--primary-color) !important;
+  font-weight: bold;
 }
-.category-grid .van-grid-item__icon {
-  font-size: 40rpx !important;
+.category-grid .van-grid-item.active .van-grid-item__icon {
+  color: var(--primary-color) !important;
 }
 
-/* 商品列表布局：微调卡片宽度，减少间距 */
-.goods-list {
-  padding: 10rpx;
+/* ================= 商品列表区域 ================= */
+.goods-list-wrap {
+  padding: 24rpx;
+}
+.skeleton-wrap {
+  display: flex;
+  justify-content: space-between;
+}
+.skeleton-item {
+  width: 48%;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx 0;
+}
+
+/* 双列网格布局 */
+.goods-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 8rpx;
-}
-.goods-card-wrap {
-  width: 49%;
-  margin-bottom: 20rpx;
-  flex-shrink: 0;
-}
-.skeleton-item {
-  width: 49%;
-  margin-bottom: 20rpx;
-  flex-shrink: 0;
 }
 
-/* 商品卡片：核心调整内部布局 */
+/* 独立的商品卡片（竖向结构） */
 .goods-card {
+  width: 48.5%;
+  background: #fff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+.img-wrap {
+  width: 100%;
+  height: 340rpx;
+  background-color: #f9f9f9;
+}
+.goods-img {
   width: 100%;
   height: 100%;
-  background: #fff;
-  min-height: 800rpx;
 }
-.goods-card .van-card__thumb {
-  width: 120rpx !important;
-  height: 120rpx !important;
-  flex-shrink: 0;
-}
-.goods-card .van-card__content {
+
+/* 卡片信息区 */
+.goods-info {
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  padding-left: 12rpx !important;
-  min-width: 0;
 }
-/* 标题：禁止换行 */
-.goods-card .van-card__title {
-  font-size: 28rpx !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  max-width: 100% !important;
-}
-/* 描述：优化换行规则 */
-.goods-card .van-card__desc {
-  font-size: 24rpx !important;
-  color: var(--text-gray) !important;
-  word-break: keep-all !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  max-width: 100% !important;
-}
-
-/* 核心：强制隐藏积分商品的默认价格 */
-.point-goods-card .van-card__price,
-.point-goods-card .van-card__origin-price {
-  display: none !important;
-}
-
-/* 🔥 新增：积分价格禁止换行（核心修复） */
-.goods-card [slot="tags"] {
-  white-space: nowrap !important; /* 容器禁止换行 */
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  min-width: 120rpx !important; /* 保证最小宽度，避免挤压 */
-}
-.goods-card [slot="tags"] text {
-  white-space: nowrap !important; /* 文字禁止换行 */
-}
-
-/* 数量控制 */
-.num-control {
-  display: flex;
-  align-items: center;
-  margin-right: 10rpx;
-}
-.num-control button {
-  width: 60rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  padding: 0;
+.goods-name {
   font-size: 28rpx;
-  border: 1rpx solid #eee;
-  background: #fff;
+  color: var(--text-main);
+  font-weight: bold;
+  line-height: 40rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 8rpx;
 }
-.num-control input {
-  width: 80rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  text-align: center;
-  border: 1rpx solid #eee;
-  margin: 0 5rpx;
+.goods-desc {
+  font-size: 22rpx;
+  color: var(--text-gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 16rpx;
 }
 
-/* 卡片底部 */
-.card-footer {
+/* 价格与积分展示 */
+.price-row {
+  margin-bottom: 16rpx;
+  display: flex;
+  align-items: baseline;
+}
+
+/* 积分标签：淡蓝背景 + 蓝字 */
+.point-badge {
+  background: var(--primary-light); /* 淡蓝色背景 */
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  display: inline-flex;
+  align-items: baseline;
+}
+.point-badge .price-val {
+  color: var(--primary-color); /* 主题蓝色 */
+  font-size: 32rpx;
+  font-weight: bold;
+  font-family: 'DIN Alternate', sans-serif;
+  margin-right: 4rpx;
+}
+.point-badge .price-unit {
+  color: var(--primary-color); /* 主题蓝色 */
+  font-size: 22rpx;
+}
+
+/* 价格展示：蓝字 */
+.price-badge .price-unit {
+  color: var(--primary-color); /* 主题蓝色 */
+  font-size: 24rpx;
+}
+.price-badge .price-val {
+  color: var(--primary-color); /* 主题蓝色 */
+  font-size: 34rpx;
+  font-weight: bold;
+  font-family: 'DIN Alternate', sans-serif;
+}
+.origin-price {
+  color: var(--text-gray);
+  font-size: 22rpx;
+  text-decoration: line-through;
+  margin-left: 12rpx;
+}
+/* 底部操作栏 */
+.action-footer {
+  margin-top: auto; /* 将操作栏推到底部 */
+}
+.stock-text {
+  font-size: 22rpx;
+  color: var(--text-gray);
+  margin-bottom: 12rpx;
+  display: block;
+}
+.action-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 精致的小巧步进器 */
+.custom-stepper {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  background: #F4F6F9;
+  border-radius: 8rpx;
+  overflow: hidden;
 }
-
-/* 搜索框 */
-.search-btn {
-  width: 60rpx;
-  height: 60rpx;
+.step-btn {
+  width: 44rpx;
+  height: 44rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 10rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+.step-btn.disabled {
+  color: #ccc;
+}
+.step-input {
+  width: 50rpx;
+  height: 44rpx;
+  min-height: 44rpx;
+  text-align: center;
+  font-size: 24rpx;
+  background: #fff;
+  color: #333;
+}
+
+/* 购物车圆形按钮 */
+.add-cart-btn {
+  width: 52rpx;
+  height: 52rpx;
+  background: linear-gradient(135deg, #4096ff, #1677ff);
   border-radius: 50%;
-  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4rpx 10rpx rgba(22, 119, 255, 0.3);
+}
+.add-cart-btn:active {
+  opacity: 0.8;
+}
+
+/* ================= 空白页 ================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 0;
+}
+.empty-img {
+  width: 320rpx;
+  height: 320rpx;
+  margin-bottom: 20rpx;
+}
+.empty-text {
+  font-size: 28rpx;
+  color: #999;
 }
