@@ -1,6 +1,7 @@
 {
   "entryPagePath": "pages/welcome/welcome",
   "pages": [
+    "pages/ai-chat/ai-chat",
     "pages/welcome/welcome",
     "pages/index/index",
     "pages/order-list/order-list",
@@ -19,8 +20,7 @@
     "pages/cart/cart",
     "pages/checkout/checkout",
     "pages/address/address",
-    "pages/addressAdd/addressAdd",
-    "config/settings.js"
+    "pages/addressAdd/addressAdd"
   ],
   "window": {
     "navigationBarTitleText": "蓝色奇迹",

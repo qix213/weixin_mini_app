@@ -63,7 +63,12 @@
       <view class="function-name">订单状态</view>
       <view class="function-arrow">→</view>
     </view>
-    
+  <!-- 🔥 新增：AI蓝博士 入口 -->
+  <view class="function-item" bindtap="{{isLogin ? 'goToAIChat' : 'goToLogin'}}">
+    <view class="function-icon">🤖</view>
+    <view class="function-name" style="{{!isLogin ? 'color:#999' : ''}}">AI蓝博士</view>
+    <view class="function-arrow" style="{{!isLogin ? 'color:#ccc' : ''}}">→</view>
+  </view>
     <!-- 新增：推荐会员消费记录入口 -->
     <view class="function-item" bindtap="{{isLogin ? 'goToSubMemberConsume' : 'goToLogin'}}">
       <view class="function-icon">📊</view>

@@ -1,0 +1,24 @@
+<view class="chat-container">
+  <!-- 消息列表 -->
+  <scroll-view class="msg-scroll" scroll-y="true" scroll-into-view="last-msg">
+    <view class="msg-box" wx:for="{{messageList}}" wx:key="index">
+      <!-- AI消息 -->
+      <view wx:if="{{item.role === 'assistant'}}" class="ai-msg">
+        <view class="avatar">🤖</view>
+        <view class="msg-content">{{item.content}}</view>
+      </view>
+      <!-- 用户消息 -->
+      <view wx:else class="user-msg">
+        <view class="msg-content">{{item.content}}</view>
+        <view class="avatar">👤</view>
+      </view>
+    </view>
+    <view id="last-msg"></view>
+  </scroll-view>
+
+  <!-- 输入框 -->
+  <view class="input-bar">
+    <input class="input" placeholder="请输入问题..." value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="sendMessage"/>
+    <button class="send-btn" bindtap="sendMessage">发送</button>
+  </view>
+</view>

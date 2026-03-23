@@ -1,0 +1,98 @@
+/* AI聊天页面 最终修复版样式 */
+page {
+  background: #f5f5f5;
+}
+.chat-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+/* 消息滚动区域 */
+.msg-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20rpx;
+}
+
+/* 消息容器 */
+.msg-box {
+  margin-bottom: 30rpx;
+  width: 100%;
+}
+
+/* ========== AI消息（左侧） ========== */
+.ai-msg {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+/* ========== 用户消息（强制右侧） ========== */
+.user-msg {
+  display: flex;
+  /* 核心：强制右对齐 */
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15rpx;
+}
+
+/* 头像样式（大小适中） */
+.avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #1677ff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  flex-shrink: 0;
+}
+
+/* 消息内容 */
+.msg-content {
+  max-width: 60%;
+  padding: 15rpx 20rpx;
+  border-radius: 15rpx;
+  font-size: 28rpx;
+  line-height: 1.4;
+  background: #fff;
+}
+
+/* 用户消息气泡样式（蓝色） */
+.user-msg .msg-content {
+  background: #1677ff;
+  color: #fff;
+  order: -1;
+}
+
+/* 输入框区域 */
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+.input {
+  flex: 1;
+  height: 70rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid #eee;
+  border-radius: 35rpx;
+  background: #fff;
+  font-size: 28rpx;
+}
+.send-btn {
+  width: 100rpx;
+  height: 70rpx;
+  border-radius: 35rpx;
+  background: #1677ff;
+  color: #fff;
+  border: none;
+  font-size: 28rpx;
+  line-height: 70rpx;
+  padding: 0;
+}

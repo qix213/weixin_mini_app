@@ -3,11 +3,18 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/mall/mall",
-          "pathName": "pages/mall/mall",
+          "name": "pages/my/my",
+          "pathName": "pages/my/my",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/mall/mall",
+          "pathName": "pages/mall/mall",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "pages/school/school",

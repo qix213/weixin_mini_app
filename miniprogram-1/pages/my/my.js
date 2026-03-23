@@ -292,5 +292,19 @@ Page({
     });
     // 5. 提示退出成功
     wx.showToast({ title: '退出登录成功', icon: 'success' });
+  },
+
+  // 🔥 新增：跳转AI蓝博士对话页
+goToAIChat() {
+  // 登录校验
+  if (!this.checkLogin('/pages/my/my?action=aiChat')) {
+    return;
   }
+  console.log("✅ 校验通过，强制跳转AI页面");
+
+  // 🔥 直接用 reLaunch 清空所有页面栈（彻底解决超时）
+  wx.navigateTo({
+    url: '/pages/ai-chat/ai-chat'
+  });
+},
 });
