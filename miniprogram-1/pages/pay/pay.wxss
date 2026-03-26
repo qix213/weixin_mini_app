@@ -1,224 +1,317 @@
-/* 核心：金额字体+颜色统一调整（主题蓝色+高转化字体规范） */
-/* 抵扣积分提示样式 */
-.point-deduct-tip {
-  margin-top: 15rpx;
-  font-size: 24rpx;
-  color: #999;
-  padding-left: 180rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 统一字体 */
+/* ================= 全局与背景 ================= */
+page {
+  background: #f0f9ff;
+  min-height: 100vh;
 }
 
-/* 积分操作区域样式 */
-.point-operate-area {
-  margin: 20rpx 0;
-  padding: 20rpx 0;
-  border-top: 1rpx solid #eee;
-  border-bottom: 1rpx solid #eee;
-}
-.point-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20rpx;
-  font-size: 28rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 统一字体 */
-}
-.point-info .label {
-  color: #666;
-  width: 180rpx;
-}
-.point-info .max-tip {
-  margin-left: 20rpx;
-  font-size: 24rpx;
-  color: #999;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.point-deduct-op {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  font-size: 28rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.point-deduct-op .label {
-  color: #666;
-  width: 180rpx;
-}
-.btn-minus, .btn-plus {
-  width: 60rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  padding: 0;
-  font-size: 32rpx;
-  background-color: #f5f5f5;
-  color: #333;
-  border-radius: 8rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.point-input {
-  flex: 1;
-  height: 60rpx;
-  border: 1rpx solid #eee;
-  border-radius: 8rpx;
-  text-align: center;
-  font-size: 28rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.btn-all {
-  width: 120rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  padding: 0;
-  font-size: 24rpx;
-  background-color: #ff9900;
-  color: #fff;
-  border-radius: 8rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-/* 积分文字改为主题蓝色（替代原橙色） */
-.point-text {
-  color: #1677FF !important;
-  font-weight: 600; /* 加粗增强视觉焦点 */
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-/* 支付容器基础样式 */
 .pay-container {
-  padding: 40rpx 30rpx;
-  background-color: #f5f5f5;
+  position: relative;
+  padding: 40rpx 24rpx;
   min-height: 100vh;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 全局统一字体 */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
 }
+
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= 订单信息卡片 ================= */
 .order-card {
-  background-color: #fff;
-  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
   padding: 40rpx 30rpx;
-  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.08);
-  margin-bottom: 40rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  margin-bottom: 50rpx;
 }
+
 .order-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1e293b;
   text-align: center;
   margin-bottom: 40rpx;
-  padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #eee;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  padding-bottom: 30rpx;
+  border-bottom: 2rpx dashed rgba(14, 165, 233, 0.2);
 }
+
 .order-item {
   display: flex;
   align-items: center;
   margin-bottom: 30rpx;
-  font-size: 32rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 }
+
 .label {
-  color: #666;
+  color: #64748b;
   width: 180rpx;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  font-weight: 500;
 }
-.amount-item {
-  justify-content: center;
-  margin-top: 20rpx;
-  margin-bottom: 0;
-  padding-top: 20rpx;
-  border-top: 1rpx dashed #eee;
-}
-/* 核心修改：金额改为主题蓝色+高转化字体规范 */
+
 .amount {
-  color: #1677FF; /* 主题蓝色（替代原红色） */
-  font-size: 40rpx; /* 最优售价字号 */
-  font-weight: 600; /* bold加粗，增强视觉焦点 */
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif; /* 无衬线高转化字体 */
+  color: #0ea5e9;
+  font-size: 36rpx;
+  font-weight: 800;
+  font-family: 'DIN Alternate', 'PingFang SC', sans-serif;
 }
+
+.highlight-blue {
+  color: #0ea5e9 !important;
+  font-weight: bold;
+}
+
+.amount-item {
+  justify-content: space-between;
+  margin-top: 40rpx;
+  margin-bottom: 0;
+  padding: 30rpx;
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.6), rgba(255, 255, 255, 0.6));
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(56, 189, 248, 0.3);
+}
+
+.final-amount {
+  font-size: 48rpx;
+  color: #0284c7;
+  text-shadow: 0 4rpx 10rpx rgba(2, 132, 199, 0.1);
+}
+
+/* ================= 优惠券下拉框 ================= */
+.coupon-dropdown {
+  justify-content: space-between;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx dashed rgba(14, 165, 233, 0.2);
+}
+
+.native-picker {
+  flex: 1;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #0284c7;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.picker-val { flex: 1; text-align: right; }
+.picker-arrow { font-size: 20rpx; color: #94a3b8; margin-left: 10rpx; }
+
+/* ================= 积分抵扣区域 ================= */
+.point-operate-area {
+  margin: 30rpx 0;
+  padding: 30rpx 0;
+  border-top: 2rpx dashed rgba(14, 165, 233, 0.2);
+  border-bottom: 2rpx dashed rgba(14, 165, 233, 0.2);
+}
+
+.point-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.max-tip {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #94a3b8;
+  background: rgba(241, 245, 249, 0.8);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.point-deduct-op {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 20rpx;
+}
+
+.stepper-glass {
+  display: flex;
+  align-items: center;
+  background: rgba(241, 245, 249, 0.6);
+  border: 2rpx solid rgba(226, 232, 240, 1);
+  border-radius: 16rpx;
+  overflow: hidden;
+  height: 64rpx;
+}
+
+.btn-minus, .btn-plus {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.btn-minus:active, .btn-plus:active { background: rgba(226, 232, 240, 0.8); }
+
+.point-input {
+  width: 120rpx;
+  height: 64rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1e293b;
+  border-left: 2rpx solid rgba(226, 232, 240, 0.6);
+  border-right: 2rpx solid rgba(226, 232, 240, 0.6);
+}
+
+.btn-all {
+  height: 64rpx;
+  padding: 0 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.2);
+}
+
+.point-deduct-tip {
+  font-size: 24rpx;
+  color: #64748b;
+  padding-left: 180rpx;
+}
+
+/* ================= 支付方式选择模块 ================= */
 .pay-methods-title {
   font-size: 30rpx;
-  color: #333;
+  font-weight: 800;
+  color: #1e293b;
   margin-bottom: 20rpx;
-  font-weight: 500;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  padding-left: 10rpx;
 }
+
 .pay-methods-container {
   display: flex;
   gap: 20rpx;
   margin-bottom: 60rpx;
 }
+
 .pay-method-item {
   flex: 1;
-  background-color: #fff;
-  border: 2rpx solid #eee;
-  border-radius: 15rpx;
-  padding: 25rpx 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 24rpx;
+  padding: 30rpx 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15rpx;
+  gap: 16rpx;
   position: relative;
-  transition: all 0.3s ease;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.pay-method-selected {
-  border-color: #1677ff !important;
-  background-color: #f0f7ff !important;
-}
-.pay-method-icon {
-  width: 60rpx;
-  height: 60rpx;
-  object-fit: contain;
-}
-.pay-method-name {
-  font-size: 28rpx;
-  color: #333;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.pay-method-check {
-  position: absolute;
-  top: 15rpx;right: 15rpx;
-  width: 30rpx;height: 30rpx;
-  border-radius: 50%;
-  background-color: #1677ff;
-  color: #fff;font-size: 20rpx;
-  display: flex;align-items: center;justify-content: center;
-  opacity: 0;transition: opacity 0.3s ease;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.check-visible {opacity: 1;}
-.pay-btn {
-  width: 100%;height: 88rpx;line-height: 88rpx;
-  background-color: #1677ff;color: #fff;
-  font-size: 34rpx;border-radius: 10rpx;
-  margin-bottom: 30rpx;
-  font-weight: 600; /* 按钮文字加粗 */
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-.cancel-btn {
-  width: 100%;height: 88rpx;line-height: 88rpx;
-  background-color: #fff;color: #666;
-  font-size: 34rpx;border-radius: 10rpx;
-  border: 1rpx solid #eee;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.02);
 }
 
-/* 优惠券选择器样式补充（统一字体） */
-.coupon-dropdown {
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+.pay-method-selected {
+  border-color: #0ea5e9 !important;
+  background: rgba(224, 242, 254, 0.8) !important;
+  box-shadow: 0 6rpx 20rpx rgba(14, 165, 233, 0.15) !important;
+  transform: translateY(-4rpx);
 }
-.native-picker {
-  flex: 1;
+
+.pay-method-icon {
+  width: 56rpx;
+  height: 56rpx;
 }
-.picker-text {
+
+.pay-method-name {
   font-size: 28rpx;
-  color: #333;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #334155;
+  font-weight: 600;
 }
-.picker-arrow {
+
+.pay-method-check {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #fff;
   font-size: 24rpx;
-  color: #999;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.3s ease;
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.4);
+}
+
+.check-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ================= 底部操作按钮 ================= */
+.action-footer {
+  margin-top: auto;
+  padding-bottom: 20rpx;
+}
+
+.pay-btn {
+  width: 100%;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 800;
+  border-radius: 48rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 10rpx 25rpx rgba(14, 165, 233, 0.3);
+  transition: transform 0.2s;
+  border: none;
+}
+
+.pay-btn:active { transform: scale(0.98); }
+
+.cancel-btn {
+  width: 100%;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  color: #64748b;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 48rpx;
+  border: 2rpx solid rgba(255, 255, 255, 1);
 }

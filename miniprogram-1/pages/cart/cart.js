@@ -66,8 +66,8 @@ Page({
 
       // 构建请求参数：有订单ID则精准清空，无则全清（根据后端接口调整）
       const clearUrl = orderId 
-        ? `http://localhost:8000/app01/cart/clear/${orderId}/` // 精准清空订单对应商品
-        : `http://localhost:8000/app01/cart/clear/`; // 全清购物车
+      ? `${app.globalData.baseUrl}/app01/cart/clear/${orderId}/`
+      : `${app.globalData.baseUrl}/app01/cart/clear/`;
 
       wx.request({
         url: clearUrl,
@@ -123,7 +123,7 @@ Page({
     this.setData({ loading: true });
 
     wx.request({
-      url: 'http://localhost:8000/app01/cart/', 
+      url: `${app.globalData.baseUrl}/app01/cart/`,
       method: 'GET',
       header: header,
       success: (res) => {
@@ -222,7 +222,7 @@ Page({
       return;
     }
 
-    const requestUrl = `http://localhost:8000/app01/cart/${id}/`;
+    const requestUrl = `${app.globalData.baseUrl}/app01/cart/${id}/`;
     wx.request({
       url: requestUrl,
       method: 'PUT',
@@ -288,7 +288,7 @@ Page({
       content: '确定删除该商品吗？',
       success: (res) => {
         if (res.confirm) {
-          const requestUrl = `http://localhost:8000/app01/cart/${id}/`;
+          const requestUrl = `${app.globalData.baseUrl}/app01/cart/${id}/`;
           wx.request({
             url: requestUrl,
             method: 'DELETE',

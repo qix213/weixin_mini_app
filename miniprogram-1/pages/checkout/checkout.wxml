@@ -10,19 +10,17 @@
   <view style="font-size:30rpx;font-weight:600;margin-bottom:20rpx;">配送方式</view>
   <view style="display:flex;gap:20rpx;">
     <view 
-      data-type="1"
-      bindtap="switchDeliveryType"
-      style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;
-      {{deliveryType==1?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
-      快递上门
+  data-type="1"
+  bindtap="switchDeliveryType"
+  style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;     font-size:28rpx;border:1rpx solid #ddd;{{deliveryType==1?'background:#0066cc;                color:#fff':'background:#fff;color:#333'}}">
+    快递上门
     </view>
     <view 
-      data-type="2"
-      bindtap="switchDeliveryType"
-      style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;
-      {{deliveryType==2?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
-      到店自取
-    </view>
+  data-type="2"
+  bindtap="switchDeliveryType"
+  style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;{{deliveryType==2?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
+  到店自取
+</view>
   </view>
 </view>
 
@@ -66,13 +64,12 @@
   show="{{storeShow}}"
   bindcancel="closeStore"
 >
-  <view wx:for="{{areaList}}" wx:key="id" 
-    style="padding:24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;
-    {{selectedStore && selectedStore.id==item.id ? 'background:#e6f0ff;color:#0066cc' : ''}}"
-    data-store="{{item}}"
-    bindtap="selectStore">
-    {{item.name}}
-  </view>
+<view wx:for="{{areaList}}" wx:key="id" 
+  style="padding:24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;{{selectedStore && selectedStore.id==item.id ? 'background:#e6f0ff;color:#0066cc' : ''}}"
+  data-store="{{item}}"
+  bindtap="selectStore">
+  {{item.name}}
+</view>
 </van-action-sheet>
 
 <!-- 商品列表 -->

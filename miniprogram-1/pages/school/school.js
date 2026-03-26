@@ -1,9 +1,11 @@
+// 顶部获取全局App实例
+const app = getApp();
+
 Page({
   data: {
     searchValue: '',
     categoryList: ['全部视频', '蓝朋友', '蓝明星', '护肤私教', 'MINI-studio 主理人', 'Ta创+'],
     activeTab: 0,
-    // 全部视频（0）强制不传递任何等级参数，其他分类正常传
     levelMap: { 0: undefined, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
     videoList: [],
     loading: false,       
@@ -32,7 +34,7 @@ Page({
   },
 
   checkLoginStatus() {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     console.log('=== 登录态校验 ===', {
       tokenExist: !!accessToken,
       tokenValue: accessToken || '无'
@@ -66,25 +68,24 @@ Page({
     console.log('=== 进入getVideoList ===');
     const { page, pageSize, activeTab } = this.data;
     const requiredLevel = this.data.levelMap[activeTab];
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
 
     this.setData({ loading: true });
 
-    // 核心：全部视频（activeTab=0）时，请求参数里完全不包含required_level
     const requestData = { page, page_size: pageSize };
-    // 仅非全部视频时，才添加等级过滤参数
     if (activeTab !== 0 && requiredLevel !== undefined) {
       requestData.required_level = requiredLevel;
     }
 
     console.log('=== 发送请求 ===', {
-      url: 'http://localhost:8000/app01/video_courses/',
+      url: `${app.globalData.baseUrl}/app01/video_courses/`,
       header: { 'Authorization': `Bearer ${accessToken}` },
-      data: requestData // 全部视频时，无required_level字段
+      data: requestData
     });
 
     wx.request({
-      url: 'http://localhost:8000/app01/video_courses/',
+      // 🔥 全局配置地址
+      url: `${app.globalData.baseUrl}/app01/video_courses/`,
       method: 'GET',
       header: {
         'content-type': 'application/json',
@@ -98,10 +99,9 @@ Page({
           data: res.data
         });
 
-        // 绝对不做前端过滤：后端返回什么视频，就展示什么视频
         const newList = res.data?.results || res.data?.data || (Array.isArray(res.data) ? res.data : []);
         this.setData({
-          videoList: newList, // 直接赋值，无任何等级过滤逻辑
+          videoList: newList,
           finished: newList.length < pageSize
         });
 
@@ -121,7 +121,6 @@ Page({
     });
   },
 
-  // 点击视频仅做权限校验，不影响列表展示
   toVideoPlay(e) {
     const videoId = e.currentTarget.dataset.id;
     const videoItem = this.data.videoList.find(item => item.id === videoId);
@@ -130,9 +129,10 @@ Page({
       return;
     }
 
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${videoId}/check_permission/`,
+      // 🔥 全局配置地址
+      url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/check_permission/`,
       method: 'GET',
       header: {
         'content-type': 'application/json',
@@ -145,7 +145,6 @@ Page({
           });
           this.updatePlayCount(videoId);
         } else {
-          // 仅弹窗提示，不隐藏视频
           wx.showModal({
             title: '很抱歉',
             content: `需要${videoItem.required_level_name}以上会员等级才能够观看`,
@@ -161,11 +160,11 @@ Page({
     });
   },
 
-  // 以下方法无修改，保留即可
   updatePlayCount(videoId) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken;
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${videoId}/add_play_count/`,
+      // 🔥 全局配置地址
+      url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/add_play_count/`,
       method: 'POST',
       header: {
         'content-type': 'application/json',

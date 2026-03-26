@@ -1,35 +1,77 @@
 /* pages/mine/mine.wxss */
-.mine-container {
-  padding: 0;
-  margin: 0;
+page {
+  background: #f0f9ff;
   min-height: 100vh;
-  background-color: #f5f5f5;
 }
 
-/* 会员信息卡片 */
+.mine-container {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: 60rpx;
+  box-sizing: border-box;
+}
+
+/* 动态流光背景 (与AI页面一致) */
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ========== 会员信息卡片 (深邃科技蓝 + 玻璃反光) ========== */
 .user-info-card {
-  background: linear-gradient(135deg, #1677ff, #4096ff);
+  position: relative;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
   color: #fff;
-  padding: 30rpx 20rpx;
-  border-bottom-left-radius: 30rpx;
-  border-bottom-right-radius: 30rpx;
+  margin: 30rpx 20rpx;
+  padding: 40rpx 30rpx;
+  border-radius: 40rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 220rpx;
+  min-height: 180rpx;
+  box-shadow: 0 15rpx 35rpx rgba(2, 132, 199, 0.3);
+  overflow: hidden;
+}
+
+/* 卡片内部的流光反光层 */
+.user-info-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+  transform: rotate(30deg);
+  pointer-events: none;
 }
 
 .avatar-area {
   display: flex;
   align-items: center;
   flex: 1;
+  z-index: 1;
 }
 
 .avatar {
   width: 120rpx;
   height: 120rpx;
   border-radius: 60rpx;
-  border: 4rpx solid #fff;
+  border: 4rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 20rpx rgba(255, 255, 255, 0.4);
 }
 
 .user-base-info {
@@ -37,216 +79,215 @@
 }
 
 .nickname {
-  font-size: 36rpx;
-  font-weight: bold;
+  font-size: 38rpx;
+  font-weight: 800;
   margin-bottom: 10rpx;
+  text-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
 }
 
-.member-type {
-  font-size: 28rpx;
-  opacity: 0.8;
-  margin-bottom: 8rpx;
-}
-
-.member-id {
+.member-type, .member-id {
   font-size: 26rpx;
-  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 6rpx;
+  font-weight: 300;
 }
 
+/* 卡片内按钮 (磨砂玻璃质感) */
 .member-card-btn {
-  background-color: #fff;
-  color: #1677ff;
-  padding: 20rpx 30rpx;
-  border-radius: 20rpx;
-  font-size: 28rpx;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  padding: 18rpx 32rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  z-index: 1;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.1);
 }
 
-/* 未登录样式 */
 .unlogin-area {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1;
 }
 
 .unlogin-btn {
-  background-color: #fff;
-  color: #1677ff;
-  padding: 25rpx 60rpx;
-  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  color: #fff;
+  padding: 24rpx 70rpx;
+  border-radius: 50rpx;
   font-size: 32rpx;
-  font-weight: bold;
+  font-weight: 800;
+  box-shadow: 0 10rpx 20rpx rgba(0,0,0,0.1);
 }
 
-/* 积分+优惠券样式 */
+/* ========== 共用白透毛玻璃面板 ========== */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  margin: 0 20rpx 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08); /* 极度柔和的天蓝阴影 */
+}
+
+/* 积分+优惠券 */
 .asset-container {
   display: flex;
-  background-color: #fff;
-  margin: 30rpx 20rpx;
-  border-radius: 10rpx;
-  padding: 30rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  align-items: center;
+  padding: 30rpx 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  margin: 0 20rpx 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
 }
 
 .asset-item {
   flex: 1;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.asset-item:active {
+  transform: scale(0.95);
+  opacity: 0.8;
 }
 
 .asset-divider {
   width: 2rpx;
   height: 60rpx;
-  background-color: #eee;
+  background-color: rgba(14, 165, 233, 0.2); /* 淡淡的蓝线分隔 */
 }
 
 .asset-title {
-  font-size: 28rpx;
-  color: #666;
-  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  color: #64748b;
+  margin-bottom: 12rpx;
+  font-weight: 500;
 }
 
 .asset-value {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #0ea5e9; /* 亮天蓝字 */
 }
 
-/* 会员到期时间样式 */
+.asset-value-gray {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+/* 会员到期时间 */
 .vip-expire-container {
-  background-color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 35rpx 40rpx;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
   margin: 0 20rpx 30rpx;
-  border-radius: 10rpx;
-  padding: 25rpx 30rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
 }
 
 .vip-expire-title {
   font-size: 28rpx;
-  color: #666;
-  margin-bottom: 8rpx;
+  color: #334155;
+  font-weight: 600;
 }
 
 .vip-expire-value {
-  font-size: 32rpx;
-  color: #1677ff;
-  font-weight: 500;
+  font-size: 28rpx;
+  color: #0ea5e9;
+  font-weight: 800;
 }
 
-/* 功能列表样式 */
+/* ========== 功能列表 ========== */
 .function-list {
-  background-color: #fff;
+  padding: 10rpx 20rpx;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
   margin: 0 20rpx 30rpx;
-  border-radius: 10rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
 }
 
 .function-item {
   display: flex;
   align-items: center;
-  padding: 30rpx 20rpx;
-  border-bottom: 1rpx solid #eee;
+  padding: 35rpx 20rpx;
+  border-bottom: 2rpx solid rgba(14, 165, 233, 0.08);
+  transition: background 0.2s;
 }
 
 .function-item:last-child {
   border-bottom: none;
 }
 
+.function-item:active {
+  background: rgba(240, 249, 255, 0.5);
+  border-radius: 20rpx;
+}
+
+/* 图标包裹层：增加高科技微光底色 */
 .function-icon {
-  font-size: 36rpx;
-  margin-right: 30rpx;
-  width: 40rpx;
-  text-align: center;
+  width: 64rpx;
+  height: 64rpx;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  margin-right: 25rpx;
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.15);
 }
 
 .function-name {
   flex: 1;
-  font-size: 32rpx;
-  color: #333;
+  font-size: 30rpx;
+  color: #334155;
+  font-weight: 600;
 }
 
 .function-arrow {
   font-size: 28rpx;
-  color: #999;
-  margin-right: 10rpx;
-}
-
-/* 二维码弹窗样式 */
-.qrcode-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.qrcode-content {
-  background-color: #fff;
-  padding: 30rpx;
-  border-radius: 10rpx;
-  text-align: center;
-}
-
-.qrcode-img {
-  width: 300rpx;
-  height: 300rpx;
-  margin-bottom: 20rpx;
-}
-
-.qrcode-tip {
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.close-btn {
-  background-color: #1677ff;
-  color: #fff;
-  padding: 10rpx 40rpx;
-  border-radius: 20rpx;
-}
-.asset-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20rpx;
-  flex: 1;
-  text-align: center;
-}
-/* 点击态样式 */
-.asset-item-hover {
-  background-color: #f5f5f5;
-  border-radius: 8rpx;
-}
-.asset-title {
-  font-size: 28rpx;
-  color: #666;
-}
-.asset-value {
-  font-size: 32rpx;
+  color: #cbd5e1;
   font-weight: bold;
-  color: #1677ff;
-  margin-top: 8rpx;
 }
-.asset-value-gray {
-  color: #999 !important;
-  font-weight: normal !important;
-}
-/* --- modal弹窗内二维码样式 --- */
+
+/* ========== 二维码弹窗 (保持极简) ========== */
 .modal-qrcode-img {
-  width: 400rpx;      /* 相当于之前的 200px */
-  display: block;     /* 变成块级元素 */
-  margin: 0 auto;     /* 居中 */
+  width: 400rpx;
+  display: block;
+  margin: 0 auto;
+  border-radius: 20rpx;
+  box-shadow: 0 10rpx 20rpx rgba(0,0,0,0.1);
 }
 
 .modal-qrcode-text {
-  font-size: 28rpx;   /* 相当于之前的 14px */
-  color: #666;
-  margin-top: 20rpx;  /* 相当于之前的 10px */
-  display: block;     /* 独占一行 */
-  text-align: center; /* 文字居中 */
+  font-size: 26rpx;
+  color: #64748b;
+  margin-top: 30rpx;
+  display: block;
+  text-align: center;
+  font-weight: 500;
 }

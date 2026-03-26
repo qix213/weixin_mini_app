@@ -1,7 +1,7 @@
 App({
   // 全局数据（统一规范）
   globalData: {
-    baseUrl: 'http://localhost:8000', // 后端基础地址
+    baseUrl: 'http://175.178.57.168:8000', // 后端基础地址
     isLogin: false,                   // 登录状态
     userInfo: {},                     // 用户基础信息
     memberInfo: {},                   // 会员信息

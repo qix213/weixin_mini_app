@@ -1,262 +1,363 @@
-/* 全局样式 */
+/* ================= 全局变量与底色 ================= */
 page {
-  background-color: #f5f5f5;
-  font-size: 28rpx;
-}
-.business-school {
+  background: #f0f9ff;
   min-height: 100vh;
 }
 
-/* 原生搜索栏样式 */
-.search-bar {
+.business-school {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: 60rpx;
+  box-sizing: border-box;
+}
+
+/* 动态流光背景 (全站统一DNA) */
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= 悬浮搜索栏 ================= */
+.search-header {
+  padding: 20rpx 24rpx;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: linear-gradient(to bottom, rgba(240, 249, 255, 0.95) 30%, rgba(240, 249, 255, 0));
+}
+
+.search-box {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 50rpx;
   display: flex;
   align-items: center;
-  padding: 10rpx 20rpx;
-  background-color: #1E88E5;
+  padding: 0 10rpx 0 30rpx;
+  height: 80rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.1);
 }
-.search-input-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background-color: rgba(255,255,255,0.2);
-  border-radius: 40rpx;
-  padding: 0 20rpx;
-  height: 70rpx;
-}
+
 .search-icon {
-  margin-right: 10rpx;
+  margin-right: 15rpx;
 }
+
 .search-input {
   flex: 1;
-  color: #fff;
+  color: #1e293b;
   font-size: 28rpx;
 }
+
 .search-placeholder {
-  color: rgba(255,255,255,0.8);
-  font-size: 28rpx;
+  color: #94a3b8;
 }
+
 .clear-icon {
-  color: #fff;
-  font-size: 32rpx;
-  margin-left: 10rpx;
+  color: #94a3b8;
+  font-size: 36rpx;
+  padding: 0 20rpx;
 }
-.search-btn {
-  background-color: #fff;
-  color: #1E88E5;
-  border: none;
+
+.search-action-btn {
+  background: linear-gradient(135deg, #7dd3fc, #0ea5e9);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 12rpx 36rpx;
   border-radius: 40rpx;
-  padding: 0 20rpx;
-  height: 70rpx;
-  line-height: 70rpx;
-  font-size: 28rpx;
+  box-shadow: 0 4rpx 15rpx rgba(14, 165, 233, 0.3);
   margin-left: 10rpx;
 }
 
-/* 功能按钮组样式 */
-.func-group {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  padding: 10rpx 20rpx;
-  background: #fff;
-  margin-bottom: 10rpx;
-}
-.func-btn {
-  width: 48%;
-  height: 80rpx;
-  line-height: 80rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
-  margin-bottom: 10rpx;
-  border: none;
-}
-.primary-btn {
-  background-color: #1E88E5;
-  color: #fff;
-}
-.warning-btn {
-  background-color: #FF9800;
-  color: #fff;
+/* ================= 拟物化功能网格 ================= */
+.func-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+  padding: 10rpx 24rpx 20rpx;
 }
 
-/* 分类标签样式 */
+.func-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 24rpx;
+  padding: 24rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.05);
+  transition: transform 0.2s;
+}
+
+.func-card:active {
+  transform: scale(0.96);
+}
+
+.func-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.func-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #334155;
+}
+
+/* 区分不同功能的微光底色 */
+.func-card.primary {
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(224,242,254,0.6));
+}
+
+.func-card.warning {
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(254,240,138,0.4));
+}
+
+/* ================= 悬浮分类胶囊 ================= */
 .category-wrap {
-  background-color: #fff;
-  margin-bottom: 10rpx;
-}
-.category-scroll {
-  white-space: nowrap;
-  padding: 0 20rpx;
-}
-.category-item {
-  display: inline-block;
-  padding: 20rpx 30rpx;
-  font-size: 28rpx;
-  color: #666;
-}
-.category-item.active {
-  color: #1E88E5;
-  font-weight: bold;
-  border-bottom: 4rpx solid #1E88E5;
+  margin-bottom: 20rpx;
 }
 
-/* 视频列表样式 */
+.category-container {
+  display: flex;
+  padding: 10rpx 24rpx 20rpx;
+}
+
+.category-item {
+  padding: 14rpx 36rpx;
+  font-size: 28rpx;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 40rpx;
+  margin-right: 20rpx;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.3s;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.02);
+}
+
+.category-item.active {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #fff;
+  font-weight: bold;
+  border-color: transparent;
+  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
+}
+
+/* ================= 视频流光卡片 ================= */
 .video-list {
-  padding: 0 10rpx;
+  padding: 0 24rpx;
 }
-/* 骨架屏样式 */
-.skeleton-item {
-  display: flex;
-  padding: 20rpx;
-  background-color: #fff;
-  border-radius: 8rpx;
-  margin-bottom: 20rpx;
-}
-.skeleton-thumb {
-  width: 200rpx;
-  height: 120rpx;
-  background-color: #eee;
-  border-radius: 8rpx;
-  margin-right: 20rpx;
-}
-.skeleton-title {
-  width: 300rpx;
-  height: 40rpx;
-  background-color: #eee;
-  border-radius: 4rpx;
-  margin-bottom: 10rpx;
-}
-.skeleton-desc {
-  width: 200rpx;
-  height: 30rpx;
-  background-color: #eee;
-  border-radius: 4rpx;
-}
-/* 视频卡片样式 */
+
 .video-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  padding: 24rpx;
   display: flex;
-  padding: 20rpx;
-  background-color: #fff;
-  border-radius: 8rpx;
-  margin-bottom: 20rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  transition: transform 0.2s;
 }
+
+.video-card:active {
+  transform: scale(0.98);
+}
+
+.thumb-wrap {
+  position: relative;
+  width: 240rpx;
+  height: 150rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.1);
+}
+
 .video-thumb {
-  width: 200rpx;
-  height: 120rpx;
-  border-radius: 8rpx;
-  margin-right: 20rpx;
+  width: 100%;
+  height: 100%;
 }
+
+/* 视频上的播放小图标遮罩 */
+.play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60rpx;
+  height: 60rpx;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+}
+
+.play-icon {
+  color: #fff;
+  font-size: 24rpx;
+  margin-left: 4rpx; /* 修正播放三角的居中视差 */
+}
+
 .video-info {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
+
 .video-title {
   font-size: 30rpx;
-  font-weight: bold;
-  color: #333;
+  font-weight: 800;
+  color: #1e293b;
   margin-bottom: 10rpx;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 40rpx;
 }
+
 .video-desc {
   font-size: 24rpx;
-  color: #666;
-  margin-bottom: 10rpx;
+  color: #94a3b8;
+  margin-bottom: auto;
 }
+
 .video-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-.play-count {
-  font-size: 24rpx;
-  color: #999;
-}
-.study-btn {
-  background-color: #1E88E5;
-  color: #fff;
-  border: none;
-  border-radius: 40rpx;
-  padding: 0 20rpx;
-  height: 50rpx;
-  line-height: 50rpx;
-  font-size: 24rpx;
+  margin-top: 15rpx;
 }
 
-/* 空数据提示 */
-.empty-tip {
-  text-align: center;
-  padding: 60rpx 0;
+/* 科技感等级徽章 */
+.level-badge {
+  background: rgba(224, 242, 254, 0.8);
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  border: 1rpx solid rgba(56, 189, 248, 0.3);
 }
-.empty-img {
-  width: 200rpx;
-  height: 200rpx;
+
+.badge-icon {
+  font-size: 24rpx;
+  margin-right: 6rpx;
+}
+
+.badge-text {
+  font-size: 22rpx;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.study-btn {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  border-radius: 30rpx;
+  padding: 10rpx 30rpx;
+  font-size: 26rpx;
+  font-weight: bold;
+  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
+}
+
+/* ================= 骨架屏 (高透版) ================= */
+.skeleton-item {
+  display: flex;
+  padding: 24rpx;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 30rpx;
+  margin-bottom: 30rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.skeleton-thumb {
+  width: 240rpx;
+  height: 150rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 20rpx;
+  margin-right: 24rpx;
+}
+
+.skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-title {
+  width: 100%;
+  height: 40rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8rpx;
   margin-bottom: 20rpx;
 }
+
+.skeleton-desc {
+  width: 60%;
+  height: 30rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8rpx;
+  margin-bottom: auto;
+}
+
+.skeleton-footer {
+  width: 100%;
+  height: 50rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8rpx;
+}
+
+/* ================= 空状态与底部加载 ================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.empty-img {
+  width: 320rpx;
+  height: 320rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.8;
+}
+
 .empty-text {
   font-size: 28rpx;
-  color: #999;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
-/* 加载更多/无更多样式 */
 .load-more, .no-more {
   text-align: center;
-  padding: 20rpx 0;
-  font-size: 24rpx;
-  color: #999;
+  padding: 30rpx 0;
+  font-size: 26rpx;
+  color: #94a3b8;
+  font-weight: 500;
 }
-
-/* 会员等级标签 */
-.level-tag {
-  position: absolute;
-  top: 10rpx;
-  right: 10rpx;
-  padding: 5rpx 10rpx;
-  border-radius: 4rpx;
-  font-size: 24rpx;
-  color: #fff;
-}
-/* 有权限的标签样式 */
-.level-allowed {
-  background: #07c160;
-}
-/* 无权限的标签样式 */
-.level-forbidden {
-  background: #ff4757;
-}
-/* 视频信息中的等级提示 */
-.required-level {
-  font-size: 24rpx;
-  color: #999;
-  margin-right: 20rpx;
-}
-/* 自定义导航栏（修复右上角显示） */
-.custom-nav {
-  width: 100%;
-  height: 45px;
-  line-height: 45px;
-  background-color: #1677ff;
-  color: #fff;
-  text-align: center;
-  font-size: 17px;
-  position: relative;
-}
-.nav-title {
-  display: inline-block;
-}
-.nav-right {
-  position: absolute;
-  right: 15px;
-  top: 0;
-}
-
-/* 原有样式保留 */
-.business-school {
-  padding: 10rpx;
-  background: #f5f5f5;
-}
-/* 其他原有样式... */

@@ -51,7 +51,7 @@
         <block wx:for="{{star_goods}}" wx:key="id">
           <view class="table-row" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
             <view class="table-col table-col-img">
-              <image class="row-img" src="{{item.image}}" mode="aspectFill" lazy-load="true" default-src="/images/home/default-img.png" />
+              <image class="row-img" src="{{item.image}}" mode="aspectFill" lazy-load="false" default-src="/images/home/default-img.png" />
             </view>
             <view class="table-col table-col-name text-ellipsis">{{item.name}}</view>
             <view class="table-col table-col-price emphasis">¥{{item.price}}</view>

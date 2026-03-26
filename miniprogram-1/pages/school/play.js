@@ -1,3 +1,6 @@
+// 顶部获取全局App实例
+const app = getApp();
+
 Page({
   data: {
     videoId: '',
@@ -12,13 +15,13 @@ Page({
     playCount: 0,
     durationSeconds: 0,
     currentTime: 0,
-    lastReportedTime: -3,  // 【修改1】初始值改为-3，避免首次上报触发快进判断
+    lastReportedTime: -3,
     isPlaying: false,
     canGetPoint: false,
     hasPermission: false,
     videoLoaded: false,
     isPlayIconHidden: false,
-    finishReported: false  // 【新增】标记是否已调用过finish，避免重复调用
+    finishReported: false
   },
 
   formatVideoUrl(url) {
@@ -45,12 +48,10 @@ Page({
     const durationSeconds = this.data.durationSeconds;
     this.setData({ currentTime });
 
-    // 进度上报逻辑（每3秒一次）
     if (this.data.isPlaying && Math.abs(currentTime - this.data.lastReportedTime) >= 3) {
       this.watchProgress(currentTime);
     }
 
-    // 【修改2：核心兜底】进度≥99%且未上报过finish时，自动调用
     if (durationSeconds > 0 && !this.data.finishReported) {
       const progress = currentTime / durationSeconds;
       if (progress >= 0.99) {
@@ -71,8 +72,6 @@ Page({
   },
 
   onLoadedData(e) {
-    console.log('视频加载完成（localhost）：', e.detail);
-    // 【新增】获取视频实际时长（兼容后端返回的durationSeconds不准确）
     if (e.detail.duration) {
       this.setData({ durationSeconds: Math.floor(e.detail.duration) });
     }
@@ -91,7 +90,7 @@ Page({
   },
 
   onReady() {
-    this.videoContext = wx.createVideoContext('myVideo');  // 注意：id必须和WXML中的myVideo一致
+    this.videoContext = wx.createVideoContext('myVideo');
     this.videoContext.pause();
   },
 
@@ -131,12 +130,12 @@ Page({
         return;
       }
 
-      // 核心修改：将原始视频URL传给代理接口，避免锚点篡改
+      // 🔥 全局配置拼接代理接口
       const rawUrl = this.formatVideoUrl(videoUrlFromCheck || videoUrl);
-      const proxyUrl = `http://localhost:8000/app01/video_proxy/?url=${encodeURIComponent(rawUrl)}`;
+      const proxyUrl = `${app.globalData.baseUrl}/app01/video_proxy/?url=${encodeURIComponent(rawUrl)}`;
       this.setData({
         hasPermission: true,
-        videoUrl: proxyUrl,  // 用代理URL替代原始视频URL
+        videoUrl: proxyUrl,
         requiredLevelName: requiredLevelName || ''
       });
 
@@ -148,7 +147,7 @@ Page({
   },
 
   checkPlayPermission(videoId, callback) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken || '';
     if (!accessToken) {
       wx.showToast({ title: '请先登录', icon: 'none' });
       callback(false, '', '未知等级');
@@ -156,7 +155,8 @@ Page({
     }
 
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${videoId}/check_permission/`,
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/check_permission/`,
       method: 'GET',
       header: {
         'content-type': 'application/json',
@@ -177,14 +177,15 @@ Page({
   },
 
   addPlayCount(videoId, callback) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken || '';
     if (!accessToken) {
       callback && callback();
       return;
     }
 
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${videoId}/add_play_count/`,
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/add_play_count/`,
       method: 'POST',
       header: {
         'content-type': 'application/json',
@@ -203,11 +204,12 @@ Page({
   },
 
   getVideoDetail(videoId) {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken || '';
     if (!accessToken) return;
 
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${videoId}/`,
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/`,
       method: 'GET',
       header: {
         'content-type': 'application/json',
@@ -264,7 +266,7 @@ Page({
   },
 
   getHeader() {
-    const accessToken = wx.getStorageSync('accessToken') || getApp().globalData.accessToken || '';
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken || '';
     return {
       'content-type': 'application/json',
       'Authorization': accessToken ? `Bearer ${accessToken}` : ''
@@ -273,7 +275,8 @@ Page({
 
   watchStart() {
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_start/`,
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${this.data.videoId}/watch_start/`,
       method: 'POST',
       header: this.getHeader(),
       success: res => console.log('开始播放记录成功'),
@@ -284,7 +287,8 @@ Page({
   watchProgress(currentTime) {
     if (!this.data.hasPermission || !currentTime) return;
     wx.request({
-      url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_progress/`,
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${this.data.videoId}/watch_progress/`,
       method: 'POST',
       header: this.getHeader(),
       data: { current_time: currentTime },
@@ -300,38 +304,38 @@ Page({
     });
   },
 
-// 前端watchFinish方法修改：增加传递视频时长
-watchFinish() {
-  if (this.data.finishReported) return;
-  
-  wx.request({
-    url: `http://localhost:8000/app01/video_courses/${this.data.videoId}/watch_finish/`,
-    method: 'POST',
-    header: this.getHeader(),
-    data: {
-      video_duration: this.data.durationSeconds  // 传递前端获取的视频实际时长
-    },
-    success: res => {
-      console.log('watchFinish接口返回：', res.data);
-      this.setData({ finishReported: true });
-      wx.showToast({ 
-        title: res.data.msg, 
-        icon: res.data.code === 200 ? 'success' : 'none' 
-      });
-      if (res.data.code === 200) {
-        this.setData({ canGetPoint: true });
-      }
-    },
-    fail: err => console.error('播放完成领奖失败：', err)
-  });
-},
+  watchFinish() {
+    if (this.data.finishReported) return;
+    
+    wx.request({
+      // 🔥 全局配置
+      url: `${app.globalData.baseUrl}/app01/video_courses/${this.data.videoId}/watch_finish/`,
+      method: 'POST',
+      header: this.getHeader(),
+      data: {
+        video_duration: this.data.durationSeconds
+      },
+      success: res => {
+        console.log('watchFinish接口返回：', res.data);
+        this.setData({ finishReported: true });
+        wx.showToast({ 
+          title: res.data.msg, 
+          icon: res.data.code === 200 ? 'success' : 'none' 
+        });
+        if (res.data.code === 200) {
+          this.setData({ canGetPoint: true });
+        }
+      },
+      fail: err => console.error('播放完成领奖失败：', err)
+    });
+  },
 
   onPlay() {
     this.setData({ 
       isPlaying: true,
       isPlayIconHidden: true 
     });
-    console.log('视频开始播放（localhost），声音已开启');
+    console.log('视频开始播放，声音已开启');
   },
 
   onPause() {
@@ -340,18 +344,17 @@ watchFinish() {
       isPlayIconHidden: false 
     });
     this.watchProgress(this.data.currentTime);
-    console.log('视频暂停播放（localhost）');
+    console.log('视频暂停播放');
   },
 
-  // 【修改4】优化onEnded逻辑，确保执行watchFinish
   onEnded() {
-    console.log('【事件触发】视频播放完成，调用watchFinish');  // 【新增】调试日志
+    console.log('【事件触发】视频播放完成，调用watchFinish');
     this.onPause();
     this.watchFinish();
   },
 
   onVideoError(e) {
-    console.error('视频播放错误（localhost）：', e.detail);
+    console.error('视频播放错误：', e.detail);
     const errMsg = e.detail.errMsg || '未知错误';
     let tip = '视频加载失败，请检查：1. Django代理接口是否启动；2. 原始视频URL是否可访问';
     if (errMsg.includes('url not in domain list')) {

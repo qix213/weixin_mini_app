@@ -1,16 +1,16 @@
 <view class="pay-container">
+  <view class="dynamic-bg"></view>
+
   <view class="order-card">
     <view class="order-title">{{typeName}}</view>
     
     <view class="order-item">
       <label class="label">订单金额：</label>
-      <!-- 仅使用JS提前计算好的字段，无WXML内计算 -->
       <text class="amount {{isPointGoods ? 'point-text' : ''}}">
         {{isPointGoods ? exchangePoints + ' 积分（¥' + exchangePointsRmb + '）' : '¥' + (originalAmount || '0.00')}}
       </text>
     </view>
 
-    <!-- 优惠券：积分商品隐藏 -->
     <view class="order-item coupon-dropdown" wx:if="{{!isPointGoods}}">
       <label class="label">使用优惠券：</label>
       <picker 
@@ -22,49 +22,48 @@
         class="native-picker"
       >
         <view class="picker-text">
-          {{selectedCoupon ? selectedCoupon.title + '（' + selectedCoupon.discountDesc + '）' : '请选择优惠券'}}
+          <text class="picker-val">{{selectedCoupon ? selectedCoupon.title + '（' + selectedCoupon.discountDesc + '）' : '请选择优惠券'}}</text>
           <text class="picker-arrow">▼</text>
         </view>
       </picker>
     </view>
 
-    <!-- 积分商品专属操作区域 -->
     <view class="point-operate-area" wx:if="{{isPointGoods}}">
       <view class="point-info">
         <label class="label">可用积分：</label>
-        <text class="point-text">{{userPoints}} 积分</text>
-        <!-- 仅使用JS提前计算好的字段 -->
-        <text class="max-tip">最大可抵扣：{{maxDeductPoint}} 积分（¥{{maxDeductPointRmb}}）</text>
+        <text class="point-text highlight-blue">{{userPoints}} 积分</text>
+        <text class="max-tip">最大抵扣：{{maxDeductPoint}}积分(¥{{maxDeductPointRmb}})</text>
       </view>
+      
       <view class="point-deduct-op">
         <label class="label">本次抵扣：</label>
-        <button class="btn-minus" bindtap="minusPoint">-</button>
-        <input 
-          type="number" 
-          value="{{pointDeductPoints}}" 
-          bindinput="inputPoint"
-          placeholder="请输入抵扣积分"
-          class="point-input"
-        />
-        <button class="btn-plus" bindtap="plusPoint">+</button>
-        <button class="btn-all" bindtap="useAllPoints">使用全部</button>
+        <view class="stepper-glass">
+          <view class="btn-minus" bindtap="minusPoint">-</view>
+          <input 
+            type="number" 
+            value="{{pointDeductPoints}}" 
+            bindinput="inputPoint"
+            placeholder="0"
+            class="point-input"
+          />
+          <view class="btn-plus" bindtap="plusPoint">+</view>
+        </view>
+        <view class="btn-all" bindtap="useAllPoints">全选</view>
       </view>
-      <!-- 仅使用JS提前计算好的字段 -->
+      
       <view class="point-deduct-tip">
-        <text>本次抵扣金额：¥{{pointDeductRmb}}</text>
+        <text>本次抵扣金额：<text class="highlight-blue">¥{{pointDeductRmb}}</text></text>
       </view>
     </view>
 
-    <!-- 积分抵扣：非积分商品显示 -->
     <view class="order-item" wx:if="{{!isPointGoods}}">
       <label class="label">积分抵扣：</label>
       <text class="amount">{{pointDeductPoints || 0}} 积分</text>
     </view>
 
     <view class="order-item amount-item">
-      <label class="label">实付金额：</label>
-      <!-- 统一显示提前计算好的人民币 -->
-      <text class="amount">¥{{actualAmount || '0.00'}}</text>
+      <label class="label">实付金额</label>
+      <text class="amount final-amount">¥{{actualAmount || '0.00'}}</text>
     </view>
   </view>
 
@@ -76,27 +75,19 @@
         data-methodid="{{item.id}}"
         bindtap="switchPayMethod"
       >
-        <image class="pay-method-icon" src="{{item.icon}}" mode="widthFix"></image>
+        <image class="pay-method-icon" src="{{item.icon}}" mode="aspectFit"></image>
         <text class="pay-method-name">{{item.name}}</text>
         <view class="pay-method-check {{item.selected ? 'check-visible' : ''}}">✓</view>
       </view>
     </block>
   </view>
 
-  <button 
-    class="pay-btn" 
-    bindtap="handlePay"
-    loading="{{payLoading}}"
-    disabled="{{payLoading}}" 
-  >
-    {{payLoading ? '支付中...' : '确认支付 ¥' + (actualAmount || '0.00')}}
-  </button>
-
-  <button 
-    class="cancel-btn" 
-    bindtap="handleCancel"
-    disabled="{{payLoading}}"
-  >
-    取消支付
-  </button>
+  <view class="action-footer">
+    <button class="pay-btn" bindtap="handlePay" loading="{{payLoading}}" disabled="{{payLoading}}">
+      {{payLoading ? '支付中...' : '确认支付 ¥' + (actualAmount || '0.00')}}
+    </button>
+    <button class="cancel-btn" bindtap="handleCancel" disabled="{{payLoading}}">
+      取消支付
+    </button>
+  </view>
 </view>

@@ -1,7 +1,9 @@
 <view class="mall-container">
-  <view class="search-header" style="background: {{primaryColor || '#1677ff'}};">
+  <view class="dynamic-bg"></view>
+
+  <view class="search-header">
     <view class="search-box">
-      <van-icon name="search" color="#fff" size="36rpx" />
+      <van-icon name="search" color="#0ea5e9" size="36rpx" />
       <input 
         class="search-input"
         value="{{searchValue}}"

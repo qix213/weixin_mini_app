@@ -6,7 +6,7 @@ Page({
     goodsId: '',
     goodsDetail: {},
     loading: true,
-    baseUrl: 'http://localhost:8000',
+    baseUrl: 'http://175.178.57.168:8000',
     cartNum: 1,
     currentSwipeIndex: 0,
     imageList: [],

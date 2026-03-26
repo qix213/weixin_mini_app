@@ -1,98 +1,197 @@
-/* AI聊天页面 最终修复版样式 */
+/* ========== 全局与浅色背景 ========== */
 page {
-  background: #f5f5f5;
+  background: #f0f9ff; /* 极浅的天蓝底色兜底 */
+  height: 100%;
 }
+
 .chat-container {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 20rpx;
-  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 
-/* 消息滚动区域 */
+/* 核心：动态流光浅天蓝背景 */
+.dynamic-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  /* 使用极浅的天蓝、纯白、清透的淡蓝进行渐变 */
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ========== 消息滚动区 ========== */
 .msg-scroll {
   flex: 1;
-  overflow-y: auto;
-  margin-bottom: 20rpx;
+  padding: 30rpx 20rpx;
+  box-sizing: border-box;
+  padding-bottom: 140rpx; /* 为底部悬浮输入框留出空间 */
 }
 
-/* 消息容器 */
 .msg-box {
-  margin-bottom: 30rpx;
+  margin-bottom: 40rpx;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ========== AI消息（左侧） ========== */
-.ai-msg {
+.msg-row {
   display: flex;
-  align-items: center;
-  gap: 15rpx;
+  align-items: flex-start;
+  gap: 20rpx;
+  width: 100%;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ========== 用户消息（强制右侧） ========== */
-.user-msg {
-  display: flex;
-  /* 核心：强制右对齐 */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-row {
   justify-content: flex-end;
-  align-items: center;
-  gap: 15rpx;
 }
 
-/* 头像样式（大小适中） */
+/* ========== 头像设计 (清爽版) ========== */
 .avatar {
-  width: 40rpx;
-  height: 40rpx;
+  width: 70rpx;
+  height: 70rpx;
   border-radius: 50%;
-  background: #1677ff;
-  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24rpx;
+  font-size: 32rpx;
   flex-shrink: 0;
+  position: relative;
 }
 
-/* 消息内容 */
-.msg-content {
-  max-width: 60%;
-  padding: 15rpx 20rpx;
-  border-radius: 15rpx;
-  font-size: 28rpx;
-  line-height: 1.4;
-  background: #fff;
+/* AI头像：纯净白 + 天蓝微光 */
+.ai-avatar {
+  background: #ffffff;
+  border: 2rpx solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 4rpx 10rpx rgba(56, 189, 248, 0.15);
 }
 
-/* 用户消息气泡样式（蓝色） */
-.user-msg .msg-content {
-  background: #1677ff;
+.avatar-glow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 0 15rpx rgba(14, 165, 233, 0.4);
+  animation: breathing 3s infinite alternate;
+}
+
+@keyframes breathing {
+  0% { opacity: 0.1; transform: scale(1); }
+  100% { opacity: 0.6; transform: scale(1.15); }
+}
+
+/* 用户头像：天蓝渐变 */
+.user-avatar {
+  background: linear-gradient(135deg, #7dd3fc, #0ea5e9);
   color: #fff;
-  order: -1;
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.2);
 }
 
-/* 输入框区域 */
+/* ========== 消息气泡 (明亮毛玻璃质感) ========== */
+.msg-content {
+  max-width: 65%;
+  padding: 24rpx 30rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  word-break: break-all;
+  position: relative;
+}
+
+/* AI气泡：纯净白毛玻璃 + 极淡的弥散阴影 */
+.ai-content {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 4rpx 30rpx 30rpx 30rpx;
+  color: #334155; /* 深灰蓝色字体，保证浅色背景下的阅读体验 */
+  box-shadow: 0 8rpx 30rpx rgba(14, 165, 233, 0.08); /* 极度柔和的天蓝阴影 */
+}
+
+/* 用户气泡：天蓝水滴质感 */
+.user-content {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border-radius: 30rpx 4rpx 30rpx 30rpx;
+  color: #ffffff;
+  box-shadow: 0 8rpx 20rpx rgba(2, 132, 199, 0.2);
+}
+
+/* ========== 底部悬浮输入区 (浅色版) ========== */
+.input-bar-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 20rpx 30rpx 60rpx; 
+  box-sizing: border-box;
+  /* 底部向上渐变的遮罩，匹配浅色背景 */
+  background: linear-gradient(to top, rgba(240, 249, 255, 1) 40%, rgba(240, 249, 255, 0));
+}
+
 .input-bar {
   display: flex;
   align-items: center;
-  gap: 15rpx;
+  gap: 20rpx;
+  background: rgba(255, 255, 255, 0.8); /* 高透白亚克力 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  padding: 10rpx 10rpx 10rpx 30rpx;
+  border-radius: 50rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.1); /* 悬浮感淡蓝阴影 */
 }
+
 .input {
   flex: 1;
   height: 70rpx;
-  padding: 0 20rpx;
-  border: 1rpx solid #eee;
-  border-radius: 35rpx;
-  background: #fff;
   font-size: 28rpx;
+  color: #1e293b; /* 输入文字为深色 */
 }
+
+.placeholder-style {
+  color: #94a3b8;
+}
+
+/* 发送按钮：无输入时低调，有输入时亮起天蓝 */
 .send-btn {
-  width: 100rpx;
+  width: 120rpx;
   height: 70rpx;
-  border-radius: 35rpx;
-  background: #1677ff;
-  color: #fff;
-  border: none;
+  border-radius: 40rpx;
+  background: rgba(241, 245, 249, 0.8);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 28rpx;
-  line-height: 70rpx;
-  padding: 0;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.send-btn.active {
+  background: linear-gradient(135deg, #7dd3fc, #0ea5e9);
+  color: #fff;
+  box-shadow: 0 4rpx 15rpx rgba(14, 165, 233, 0.4);
+}
+
+.scroll-anchor {
+  height: 10rpx;
 }

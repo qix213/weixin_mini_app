@@ -1,71 +1,88 @@
 <view class="business-school">
-  <!-- 搜索栏 -->
-  <view class="search-bar">
-    <view class="search-input-wrap">
-      <icon type="search" size="16" color="#fff" class="search-icon"></icon>
+  <view class="dynamic-bg"></view>
+
+  <view class="search-header">
+    <view class="search-box">
+      <icon type="search" size="16" color="#0ea5e9" class="search-icon"></icon>
       <input type="text" placeholder="搜索课程/视频关键词" placeholder-class="search-placeholder" 
              value="{{searchValue}}" bindinput="onSearchChange" confirm-type="search" 
              bindconfirm="onSearch" class="search-input" />
       <text bindtap="clearSearch" wx:if="{{searchValue}}" class="clear-icon">×</text>
+      <view bindtap="onSearch" class="search-action-btn">搜索</view>
     </view>
-    <button bindtap="onSearch" class="search-btn">搜索</button>
   </view>
 
-  <!-- 功能入口 -->
-  <view class="func-group">
-    <button bindtap="toCourseStudy" class="func-btn primary-btn">课程学习</button>
-    <button bindtap="toCheckInList" class="func-btn primary-btn">学习打卡</button>
-    <button bindtap="toExam" class="func-btn warning-btn">考核通关</button>
-    <button bindtap="toCertification" class="func-btn warning-btn">线下认证</button>
+  <view class="func-grid">
+    <view class="func-card primary" bindtap="toCourseStudy">
+      <text class="func-icon">📖</text>
+      <text class="func-text">课程学习</text>
+    </view>
+    <view class="func-card primary" bindtap="toCheckInList">
+      <text class="func-icon">📅</text>
+      <text class="func-text">学习打卡</text>
+    </view>
+    <view class="func-card warning" bindtap="toExam">
+      <text class="func-icon">🏆</text>
+      <text class="func-text">考核通关</text>
+    </view>
+    <view class="func-card warning" bindtap="toCertification">
+      <text class="func-icon">🎓</text>
+      <text class="func-text">线下认证</text>
+    </view>
   </view>
 
-  <!-- 分类标签 -->
   <view class="category-wrap">
-    <scroll-view scroll-x="true" class="category-scroll">
-      <view class="category-item {{activeTab === index ? 'active' : ''}}" 
-            wx:for="{{categoryList}}" wx:key="index"
-            bindtap="onTabChange" data-index="{{index}}">
-        {{item}}
+    <scroll-view scroll-x="true" class="category-scroll" show-scrollbar="false" enhanced="true">
+      <view class="category-container">
+        <view class="category-item {{activeTab === index ? 'active' : ''}}" 
+              wx:for="{{categoryList}}" wx:key="index"
+              bindtap="onTabChange" data-index="{{index}}">
+          {{item}}
+        </view>
       </view>
     </scroll-view>
   </view>
 
-  <!-- 视频列表：展示所有加载的视频（无等级过滤） -->
   <view class="video-list">
-    <!-- 加载骨架屏 -->
     <view class="skeleton-item" wx:if="{{loading && videoList.length === 0}}" wx:for="3" wx:key="index">
       <view class="skeleton-thumb"></view>
-      <view class="skeleton-title"></view>
-      <view class="skeleton-desc"></view>
+      <view class="skeleton-info">
+        <view class="skeleton-title"></view>
+        <view class="skeleton-desc"></view>
+        <view class="skeleton-footer"></view>
+      </view>
     </view>
 
-    <!-- 所有视频都展示，包括等级不足的 -->
     <view class="video-card" wx:for="{{videoList}}" wx:key="id" bindtap="toVideoPlay" data-id="{{item.id}}">
-      <image class="video-thumb" src="{{item.cover_url}}" mode="aspectFill"></image>
+      <view class="thumb-wrap">
+        <image class="video-thumb" src="{{item.cover_url}}" mode="aspectFill" lazy-load="true"></image>
+        <view class="play-overlay"><text class="play-icon">▶</text></view>
+      </view>
+      
       <view class="video-info">
         <view class="video-title">{{item.title}}</view>
-        <view class="video-desc">时长：{{item.duration}} | 播放 {{item.play_count}} 次</view>
+        <view class="video-desc">时长：{{item.duration}}  |  播放：{{item.play_count}}</view>
+        
         <view class="video-footer">
-          <text class="required-level">需{{item.required_level_name}}及以上等级</text>
-          <button bindtap="toVideoPlay" data-id="{{item.id}}" catchtap="true" class="study-btn">立即学习</button>
+          <view class="level-badge">
+            <text class="badge-icon">👑</text>
+            <text class="badge-text">需 {{item.required_level_name}}</text>
+          </view>
+          <view bindtap="toVideoPlay" data-id="{{item.id}}" catchtap="true" class="study-btn">立即学习</view>
         </view>
       </view>
     </view>
 
-    <!-- 空数据提示 -->
-    <view class="empty-tip" wx:if="{{!loading && videoList.length === 0}}">
-      <image src="/images/icont/empty.png" class="empty-img" mode="widthFix"></image>
-      <text class="empty-text">暂无相关课程</text>
+    <view class="empty-state" wx:if="{{!loading && videoList.length === 0}}">
+      <image src="https://img.yzcdn.cn/vant/empty-image-default.png" class="empty-img" mode="aspectFit"></image>
+      <text class="empty-text">暂无相关课程，休息一下吧</text>
     </view>
 
-    <!-- 加载更多 -->
     <view class="load-more" wx:if="{{loading && videoList.length > 0}}">
-      <text>加载中...</text>
+      <text>系统正在加载中...</text>
     </view>
-
-    <!-- 无更多数据 -->
     <view class="no-more" wx:if="{{finished && videoList.length > 0}}">
-      <text>没有更多课程了</text>
+      <text>- 已经到底啦 -</text>
     </view>
   </view>
 </view>

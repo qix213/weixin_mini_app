@@ -1,133 +1,227 @@
-.pay-container {
-  padding: 40rpx 30rpx;
-  background-color: #f5f5f5;
+/* ================= 全局与背景 ================= */
+page {
+  background: #f0f9ff;
   min-height: 100vh;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 
-.order-card {
-  background-color: #fff;
-  border-radius: 20rpx;
+.video-play-page {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: 60rpx;
+}
+
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= 视频容器 ================= */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 420rpx;
+  background: #000;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.2);
+  z-index: 10;
+}
+
+.video-player {
+  width: 100%;
+  height: 100%;
+}
+
+.custom-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  padding: 20rpx;
+}
+
+.play-svg {
+  width: 120rpx;
+  height: 120rpx;
+  filter: brightness(0) invert(1);
+}
+
+/* ================= 通用毛玻璃卡片 ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  margin: 30rpx 24rpx;
   padding: 40rpx 30rpx;
-  box-shadow: 0 4rpx 15rpx rgba(0,0,0,0.08);
-  margin-bottom: 40rpx;
 }
-.order-title {
+
+/* ================= 视频信息区 ================= */
+.video-title {
   font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  margin-bottom: 40rpx;
-  padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #eee;
-}
-.order-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 30rpx;
-  font-size: 32rpx;
-}
-.label {
-  color: #666;
-  width: 180rpx;
-}
-.amount-item {
-  justify-content: center;
-  margin-top: 20rpx;
-  margin-bottom: 0;
-}
-.amount {
-  color: #f53f3f;
-  font-size: 40rpx;
-  font-weight: bold;
-}
-
-/* 原生picker样式（下拉按钮必显） */
-.coupon-dropdown {
-  justify-content: space-between;
-  padding-bottom: 10rpx;
-  border-bottom: 1rpx dashed #eee;
-  align-items: center;
-}
-.native-picker {
-  flex: 1;
-}
-.picker-text {
-  font-size: 28rpx;
-  color: #333;
-  text-align: right;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-right: 10rpx;
-}
-.picker-arrow {
-  font-size: 20rpx;
-  color: #999;
-  margin-left: 10rpx;
-}
-
-.pay-methods-title {
-  font-size: 30rpx;
-  color: #333;
+  font-weight: 800;
+  color: #1e293b;
   margin-bottom: 20rpx;
-  font-weight: 500;
+  line-height: 1.4;
 }
-.pay-methods-container {
+
+.video-meta {
   display: flex;
   gap: 20rpx;
-  margin-bottom: 60rpx;
+  margin-bottom: 30rpx;
 }
-.pay-method-item {
+
+.meta-tag {
+  background: rgba(224, 242, 254, 0.8);
+  color: #0284c7;
+  padding: 8rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.level-info {
+  display: flex;
+  align-items: center;
+  background: rgba(248, 250, 252, 0.6);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.8);
+}
+
+.level-item {
   flex: 1;
-  background-color: #fff;
-  border: 2rpx solid #eee;
-  border-radius: 15rpx;
-  padding: 25rpx 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15rpx;
-  position: relative;
-  transition: all 0.3s ease;
 }
-.pay-method-selected {
-  border-color: #1677ff !important;
-  background-color: #f0f7ff !important;
-}
-.pay-method-icon {
-  width: 60rpx;
-  height: 60rpx;
-  object-fit: contain;
-}
-.pay-method-name {
-  font-size: 28rpx;
-  color: #333;
-}
-.pay-method-check {
-  position: absolute;
-  top: 15rpx;right: 15rpx;
-  width: 30rpx;height: 30rpx;
-  border-radius: 50%;
-  background-color: #1677ff;
-  color: #fff;font-size: 20rpx;
-  display: flex;align-items: center;justify-content: center;
-  opacity: 0;transition: opacity 0.3s ease;
-}
-.check-visible {opacity: 1;}
 
-.pay-btn {
-  width: 100%;height: 88rpx;line-height: 88rpx;
-  background-color: #1677ff;color: #fff;
-  font-size: 34rpx;border-radius: 10rpx;
+.level-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.level-item .label {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-bottom: 8rpx;
+}
+
+.level-item .value {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #334155;
+}
+
+.level-item.require .value {
+  color: #0ea5e9; /* 强调要求等级 */
+}
+
+/* ================= 底部功能按钮区 ================= */
+.func-btns {
+  padding: 0 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.func-btn {
+  width: 100% !important;
+  height: 90rpx;
+  border-radius: 45rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  transition: all 0.2s;
+}
+
+.func-btn:active { transform: scale(0.98); }
+
+.primary-btn {
+  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.3);
+}
+
+.warning-btn {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.3);
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  color: #64748b;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+}
+
+/* ================= 无权限拦截页 ================= */
+.no-permission {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+.forbidden-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 80rpx 40rpx;
+  width: 80%;
+}
+
+.lock-icon {
+  font-size: 80rpx;
   margin-bottom: 30rpx;
 }
-.cancel-btn {
-  width: 100%;height: 88rpx;line-height: 88rpx;
-  background-color: #fff;color: #666;
-  font-size: 34rpx;border-radius: 10rpx;
-  border: 1rpx solid #eee;
+
+.forbidden-text {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #1e293b;
+  margin-bottom: 20rpx;
+}
+
+.forbidden-desc {
+  font-size: 28rpx;
+  color: #64748b;
+  margin-bottom: 50rpx;
+}
+
+.forbidden-desc .highlight {
+  color: #0ea5e9;
+  font-weight: bold;
+}
+
+.back-btn {
+  width: 80% !important;
+  height: 80rpx;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #fff;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
 }
