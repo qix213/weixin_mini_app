@@ -1,90 +1,202 @@
-/* pages/login/login.wxss */
-.login-container {
-  padding: 40rpx 30rpx;
-  background-color: #f5f5f5;
+/* ================= 全局与背景 ================= */
+page {
+  background: #f0f9ff;
   min-height: 100vh;
+}
+
+.login-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 80rpx 40rpx;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 动态流光背景 */
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= 头部欢迎语 ================= */
+.login-header {
+  margin-top: 60rpx;
+  margin-bottom: 80rpx;
+  padding-left: 20rpx;
 }
 
 .login-title {
-  font-size: 48rpx;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 40rpx;
-  color: #333;
+  font-size: 56rpx;
+  font-weight: 900;
+  color: #1e293b;
+  letter-spacing: 4rpx;
+  margin-bottom: 10rpx;
+  text-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.1);
+}
+
+.login-subtitle {
+  font-size: 28rpx;
+  color: #0ea5e9;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  font-family: 'DIN Alternate', sans-serif;
+}
+
+/* ================= 毛玻璃表单卡片 ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 40rpx;
+  padding: 50rpx 40rpx;
+  box-shadow: 0 10rpx 40rpx rgba(14, 165, 233, 0.08);
+  margin-bottom: 80rpx;
 }
 
 .input-item {
   display: flex;
   align-items: center;
-  background-color: #fff;
-  padding: 20rpx 30rpx;
-  border-radius: 10rpx;
-  margin-bottom: 30rpx;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  background: rgba(241, 245, 249, 0.6);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 24rpx;
+  padding: 10rpx 30rpx;
+  margin-bottom: 40rpx;
+  height: 100rpx;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2rpx 6rpx rgba(0,0,0,0.02);
 }
 
-.code-input-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* 输入框聚焦时的科技发光感 (通过父级模拟或直接静态提亮) */
+.input-item:focus-within {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #7dd3fc;
+  box-shadow: 0 0 15rpx rgba(14, 165, 233, 0.15);
 }
 
-.code-input {
-  flex: 1;
+.input-item:last-child {
+  margin-bottom: 0;
+}
+
+.input-icon {
+  font-size: 36rpx;
   margin-right: 20rpx;
+  opacity: 0.8;
 }
 
-.input-label {
-  font-size: 32rpx;
-  color: #666;
-  width: 160rpx;
-}
-
-.input-content, .picker-content {
+.input-content {
   flex: 1;
-  font-size: 32rpx;
-  color: #333;
-  padding: 10rpx 0;
+  font-size: 30rpx;
+  color: #1e293b;
+  font-weight: 500;
+  height: 100%;
+}
+
+.ph-style {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* ================= 验证码按钮 ================= */
+.code-wrap {
+  padding-right: 15rpx; /* 为内部按钮留出边距 */
 }
 
 .get-code-btn {
-  width: 200rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  background-color: #1677ff;
-  color: #fff;
+  width: 200rpx !important;
+  height: 70rpx;
+  line-height: 70rpx;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #0284c7;
   font-size: 26rpx;
-  border-radius: 8rpx;
+  font-weight: 800;
+  border-radius: 20rpx;
   padding: 0;
+  margin: 0;
+  border: 1rpx solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.1);
 }
 
+.get-code-btn::after { border: none; } /* 去除微信默认按钮边框 */
+
+.get-code-btn:active {
+  transform: scale(0.96);
+}
+
+/* 禁用状态的亚克力质感 */
 .btn-disabled {
-  background-color: #ccc !important;
-  color: #999 !important;
+  background: rgba(226, 232, 240, 0.5) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: none !important;
+}
+
+/* ================= 底部操作区 ================= */
+.action-area {
+  padding: 0 20rpx;
 }
 
 .login-btn {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background-color: #1677ff;
+  width: 100% !important;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
   color: #fff;
   font-size: 34rpx;
-  border-radius: 10rpx;
-  margin-top: 20rpx;
-  margin-bottom: 60rpx;
+  font-weight: 800;
+  border-radius: 50rpx;
+  margin-bottom: 50rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.4);
+  transition: transform 0.2s;
+}
+
+.login-btn::after { border: none; }
+
+.login-btn:active {
+  transform: scale(0.98);
 }
 
 .to-register-wrap {
   text-align: center;
   font-size: 28rpx;
-  color: #666;
+}
+
+.normal-text {
+  color: #64748b;
 }
 
 .register-btn {
-  color: #1677ff;
+  color: #0ea5e9;
+  font-weight: 800;
   margin-left: 10rpx;
-  text-decoration: underline;
-  font-weight: 500;
+  position: relative;
+}
+
+/* 注册按钮底部的科技感小蓝线 */
+.register-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -4rpx;
+  left: 0;
+  width: 100%;
+  height: 4rpx;
+  background: rgba(14, 165, 233, 0.4);
+  border-radius: 2rpx;
 }

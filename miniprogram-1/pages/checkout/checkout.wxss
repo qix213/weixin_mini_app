@@ -1,94 +1,421 @@
-page{background-color: #f5f5f5;}
-.checkout-container{padding-bottom: 120rpx;}
+/* ================= 全局与背景 ================= */
+page {
+  background: #f0f9ff;
+  min-height: 100vh;
+}
 
-/* 收货地址样式 */
-.address-wrap{margin: 10rpx;background: #fff;border-radius: 10rpx;}
+.checkout-container {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: 140rpx; /* 为底部悬浮栏留出充裕空间 */
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
 
-/* 分割线 */
-.line{height: 10rpx;background-color: #f5f5f5;}
-
-/* 商品标题 */
-.goods-title{padding: 10rpx 20rpx;font-size: 28rpx;color: #333;font-weight: bold;}
-
-/* 商品列表 */
-.goods-list{padding: 0 10rpx;}
-.goods-item{margin-bottom: 10rpx;}
-
-/* 空商品样式 */
-.empty-wrap{padding: 100rpx 0;text-align: center;}
-.empty-text{font-size: 26rpx;color: #999;margin-bottom: 30rpx;}
-
-/* 底部提交栏 */
-.submit-bar{
+.dynamic-bg {
   position: fixed;
-  bottom: 0;left: 0;right: 0;
-  height: 100rpx;background: #fff;
-  border-top: 1rpx solid #e0e0e0;
-  display: flex;align-items: center;justify-content: space-between;
-  padding: 0 20rpx;z-index:999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
 }
-.total-price{font-size: 28rpx;color: #e64340;}
-.total-price span{font-size: 32rpx;font-weight: bold;}
-.submit-btn{width: 240rpx;height: 70rpx;line-height: 70rpx;}
 
-/* 配送方式样式 */
-.delivery-wrap {
-  margin: 10rpx;background: #fff;border-radius: 10rpx;
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
-.delivery-title {
-  padding: 20rpx 20rpx 10rpx;
-  font-size:30rpx;
-  font-weight: bold;
+
+.page-header {
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 99;
 }
-.delivery-type {
+
+/* ================= 通用毛玻璃卡片 ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  margin: 24rpx;
+}
+
+.section-card {
+  padding: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 24rpx;
+}
+
+/* 外部悬浮标题 */
+.out-title {
+  padding: 0 30rpx;
+  margin-top: 40rpx;
+  margin-bottom: 10rpx;
+}
+
+.out-title .badge {
+  color: #0ea5e9;
+  font-family: 'DIN Alternate', sans-serif;
+  font-size: 36rpx;
+}
+
+/* ================= 配送方式按钮 ================= */
+.delivery-options {
   display: flex;
-  padding: 0 20rpx 20rpx;
   gap: 20rpx;
 }
+
 .delivery-btn {
   flex: 1;
-  height:80rpx;
-  line-height:80rpx;
-  text-align:center;
-  font-size:28rpx;
-  border:1rpx solid #ddd;
-  border-radius:8rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2rpx solid rgba(226, 232, 240, 1);
+  transition: all 0.3s ease;
 }
 
-/* 门店选择样式 */
-.store-wrap {
-  margin: 10rpx;background: #fff;border-radius: 10rpx;
+.delivery-btn.active {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
+  transform: translateY(-2rpx);
 }
-.selected-store {
-  text-align: right;
+
+.btn-icon {
+  margin-right: 8rpx;
+  font-size: 24rpx;
 }
+
+/* ================= 地址/门店信息卡片 ================= */
+.location-card {
+  padding: 35rpx 30rpx;
+  display: flex;
+  align-items: center;
+}
+
+.icon-wrap {
+  width: 70rpx;
+  height: 70rpx;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  margin-right: 24rpx;
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.15);
+}
+
+.store-icon { background: linear-gradient(135deg, #fef08a, #fde047); } /* 门店用暖色区分 */
+
+.location-info { flex: 1; }
+
+.location-title {
+  font-size: 26rpx;
+  color: #64748b;
+  margin-bottom: 10rpx;
+}
+
+.location-desc {
+  font-size: 30rpx;
+  color: #1e293b;
+  font-weight: bold;
+}
+
+.contact-name { margin-bottom: 8rpx; }
+.phone { color: #64748b; font-size: 26rpx; font-weight: normal; margin-left: 10rpx;}
+.detail-addr { font-size: 26rpx; color: #475569; font-weight: normal; line-height: 1.4; }
+
+.location-empty {
+  font-size: 30rpx;
+  color: #0ea5e9;
+  font-weight: bold;
+}
+
+.highlight-text { color: #0ea5e9; font-size: 32rpx; }
+.arrow-icon { font-size: 30rpx; color: #cbd5e1; margin-left: 20rpx;}
+
+/* ================= Action Sheet 门店列表 ================= */
+.store-list {
+  padding: 10rpx 0 40rpx;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.store-item {
+  padding: 30rpx 40rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.store-item:active { background: #f8fafc; }
+
+.store-item.active {
+  background: rgba(224, 242, 254, 0.5);
+}
+
 .store-name {
-  font-size: 26rpx;color: #333;margin-top:8rpx;
-}
-.store-desc {
-  font-size: 26rpx;color: #666;margin-top:8rpx;
-}
-.store-option {
-  padding: 24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;
-}
-.option-name {
-  font-size: 26rpx;color: #333;
-}
-.option-desc {
-  font-size: 22rpx;color: #999;margin-top: 4rpx;
+  font-size: 30rpx;
+  color: #334155;
+  font-weight: 500;
 }
 
-/* 积分抵扣模块补充样式 */
-.delivery-wrap .delivery-title {
-  font-size:30rpx;
-  font-weight:600;
+.store-item.active .store-name { color: #0ea5e9; font-weight: bold; }
+.check-mark { color: #0ea5e9; font-weight: bold; font-size: 32rpx; }
+
+/* ================= 商品列表 ================= */
+.goods-list { padding: 0; }
+
+.goods-item {
+  display: flex;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
 }
-input[type="number"] {
-  font-size:28rpx;
-  color:#333;
+
+.goods-img {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 20rpx;
+  margin-right: 24rpx;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.05);
 }
-button {
-  border:none;
-  background:#f5f5f5;
-  border-radius:4rpx;
+
+.goods-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.goods-name {
+  font-size: 30rpx;
+  color: #1e293b;
+  font-weight: bold;
+  line-height: 1.4;
+  margin-bottom: 10rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: auto;
+}
+
+.point-tag {
+  background: rgba(224, 242, 254, 0.8);
+  color: #0284c7;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  border: 1rpx solid rgba(56, 189, 248, 0.3);
+}
+
+.goods-num { font-size: 26rpx; color: #94a3b8; font-weight: bold; }
+
+.goods-price {
+  text-align: right;
+  margin-top: 10rpx;
+}
+
+.goods-price .val {
+  color: #f43f5e;
+  font-size: 36rpx;
+  font-weight: 900;
+  font-family: 'DIN Alternate', sans-serif;
+}
+
+.goods-price .unit {
+  color: #f43f5e;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+/* ================= 积分抵扣模块 ================= */
+.point-deduct-card { padding: 30rpx; }
+
+.point-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.current-points { font-size: 28rpx; color: #334155; font-weight: 500;}
+.current-points .highlight { color: #0ea5e9; font-weight: 800; font-size: 32rpx; font-family: 'DIN Alternate', sans-serif;}
+.current-points .sub-tip { font-size: 22rpx; color: #94a3b8; margin-left: 8rpx; }
+.max-deduct-tip { font-size: 24rpx; color: #64748b; background: rgba(241, 245, 249, 0.8); padding: 4rpx 12rpx; border-radius: 8rpx;}
+
+.point-operate-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+/* 水晶步进器 */
+.stepper-glass {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: rgba(241, 245, 249, 0.6);
+  border: 2rpx solid rgba(226, 232, 240, 1);
+  border-radius: 16rpx;
+  overflow: hidden;
+  height: 70rpx;
+}
+
+.btn-minus, .btn-plus {
+  width: 70rpx;
+  height: 70rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.5);
+}
+.btn-minus:active, .btn-plus:active { background: rgba(226, 232, 240, 0.8); }
+
+.point-input {
+  flex: 1;
+  height: 70rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1e293b;
+  border-left: 2rpx solid rgba(226, 232, 240, 0.6);
+  border-right: 2rpx solid rgba(226, 232, 240, 0.6);
+}
+
+.use-all-btn {
+  width: 180rpx !important;
+  height: 70rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: bold;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.3);
+  padding: 0;
+}
+.use-all-btn.disabled { background: rgba(203, 213, 225, 0.5) !important; color: #94a3b8 !important; box-shadow: none !important; border: 2rpx solid rgba(255, 255, 255, 0.8);}
+
+.deduct-summary {
+  background: rgba(248, 250, 252, 0.6);
+  padding: 20rpx;
+  border-radius: 16rpx;
+  border: 1rpx dashed rgba(14, 165, 233, 0.3);
+}
+
+.summary-item {
+  font-size: 26rpx;
+  color: #64748b;
+  margin-bottom: 8rpx;
+  display: flex;
+  justify-content: space-between;
+}
+.summary-item:last-child { margin-bottom: 0; }
+
+.summary-item .val { font-weight: 800; font-family: 'DIN Alternate', sans-serif;}
+.summary-item .blue { color: #0ea5e9; font-size: 28rpx;}
+.summary-item .red { color: #f43f5e; font-size: 32rpx;}
+
+/* ================= 底部结算悬浮栏 ================= */
+.bottom-submit-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120rpx; /* 加高一些容纳底部安全区 */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(255, 255, 255, 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30rpx;
+  box-shadow: 0 -4rpx 20rpx rgba(0,0,0,0.05);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+
+.total-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.deduct-tip {
+  font-size: 22rpx;
+  color: #64748b;
+  margin-bottom: 4rpx;
+}
+
+.pay-amount {
+  font-size: 28rpx;
+  color: #1e293b;
+  font-weight: bold;
+}
+
+.pay-amount .unit { color: #f43f5e; font-size: 28rpx; margin-left: 8rpx; }
+.pay-amount .val { color: #f43f5e; font-size: 44rpx; font-weight: 900; font-family: 'DIN Alternate', sans-serif;}
+
+/* 将原来的 Vant 按钮重写为原生高颜值的悬浮发光按钮 */
+.submit-btn {
+  width: 280rpx !important;
+  height: 84rpx;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  border-radius: 42rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.4);
+  margin: 0;
+  transition: transform 0.2s;
+}
+
+.submit-btn:active {
+  transform: scale(0.96);
 }

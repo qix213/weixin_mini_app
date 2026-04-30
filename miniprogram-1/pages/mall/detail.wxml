@@ -1,52 +1,71 @@
 <view class="detail-container">
-  <view class="skeleton-wrap" wx:if="{{loading}}">
-    <van-skeleton title row="6" />
+  <view class="dynamic-bg"></view>
+
+  <view class="skeleton-wrap glass-card" wx:if="{{loading}}">
+    <van-skeleton title row="8" />
   </view>
 
   <view class="main-content" wx:if="{{!loading && goodsDetail.id}}">
     
-    <swiper 
-      class="goods-swipe" 
-      indicator-dots="{{true}}" 
-      indicator-color="rgba(255,255,255,0.4)" 
-      indicator-active-color="#1677ff" 
-      autoplay="{{true}}" 
-      interval="4000"
-      circular="{{true}}" 
-      bindchange="onSwipeChange"
-      wx:if="{{imageList.length > 0}}"
-    >
-      <swiper-item wx:for="{{imageList}}" wx:key="index">
-        <image 
-          src="{{item}}" 
-          mode="aspectFill"  
-          class="goods-img"
-          bindtap="previewImages"  
-          data-index="{{index}}" 
-          lazy-load="{{false}}"  
-          show-menu-by-longpress="{{false}}"
-          binderror="imageLoadError" 
-          bindload="imageLoadSuccess" 
-        />
-      </swiper-item>
-    </swiper>
+    <view class="swiper-container glass-card" wx:if="{{mediaList.length > 0}}">
+      <swiper 
+        class="goods-swipe" 
+        indicator-dots="{{false}}"  
+        autoplay="{{!isPlayingVideo}}" 
+        interval="5000"
+        circular="{{true}}" 
+        bindchange="onSwipeChange"
+      >
+        <swiper-item wx:for="{{mediaList}}" wx:key="index">
+          
+          <video 
+            wx:if="{{item.type === 1}}"
+            id="goods-video-{{index}}"  src="{{item.url}}" 
+            class="goods-media"
+            controls
+            object-fit="contain"
+            show-center-play-btn="{{true}}"
+            bindplay="onVideoPlay"
+            bindpause="onVideoPause"
+            bindended="onVideoPause"
+          ></video>
+          
+          <image 
+            wx:else
+            src="{{item.url}}" 
+            mode="aspectFit"  
+            class="goods-media"
+            bindtap="previewImages"  
+            data-index="{{index}}" 
+            data-src="{{item.url}}"
+            binderror="imageLoadError" 
+          />
+        </swiper-item>
+      </swiper>
+      
+      <view class="custom-indicator blur-pill">
+        <text class="current-num">{{currentSwipeIndex + 1}}</text>
+        <text class="slash"> / </text>
+        <text class="total-num">{{mediaList.length}}</text>
+      </view>
+    </view>
     
-    <view class="no-img-tip" wx:elif="{{imageList.length === 0}}">
+    <view class="no-img-tip glass-card" wx:elif="{{mediaList.length === 0}}">
       <image class="default-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
     </view>
 
-    <view class="goods-info-card">
+    <view class="goods-info-card glass-card">
       <view class="price-wrap">
         <block wx:if="{{isPointGoods}}">
           <view class="point-price-box">
-            <text class="price-val">{{pointPoint || pointPrice}}</text>
-            <text class="price-unit">积分</text>
+            <text class="price-val tech-gradient-text">{{pointPrice}}</text>
+            <text class="price-unit"> 积分</text>
           </view>
         </block>
         <block wx:else>
           <view class="money-price-box">
             <text class="price-unit">¥</text>
-            <text class="price-val">{{goodsDetail.member_price}}</text>
+            <text class="price-val tech-gradient-text">{{goodsDetail.member_price}}</text>
             <text class="origin-price" wx:if="{{goodsDetail.original_price}}">¥{{goodsDetail.original_price}}</text>
           </view>
         </block>
@@ -60,24 +79,24 @@
       </view>
 
       <view class="meta-footer">
-        <text class="meta-text">库存：{{goodsDetail.stock}}</text>
-        <text class="meta-text" wx:if="{{goodsDetail.sales}}">销量：{{goodsDetail.sales}}</text>
+        <text class="meta-text"><text class="icon">📦</text> 库存 {{goodsDetail.stock}}</text>
+        <text class="meta-text" wx:if="{{goodsDetail.sales}}"><text class="icon">🔥</text> 销量 {{goodsDetail.sales}}</text>
       </view>
     </view>
 
-    <view class="section-card flex-row-between">
+    <view class="section-card glass-card flex-row-between">
       <text class="section-label">购买数量</text>
       <view class="custom-stepper">
         <view class="step-btn {{cartNum <= 1 ? 'disabled' : ''}}" bindtap="minusNum">-</view>
         <input class="step-input" type="number" value="{{cartNum}}" bindinput="changeNum" />
-        <view class="step-btn" bindtap="plusNum">+</view>
+        <view class="step-btn step-plus" bindtap="plusNum">+</view>
       </view>
     </view>
 
-    <view class="section-card detail-card">
+    <view class="section-card glass-card detail-card">
       <view class="section-header">
         <view class="header-line"></view>
-        <text class="header-title">图文详情</text>
+        <text class="header-title">产品详情</text>
         <view class="header-line"></view>
       </view>
 
@@ -94,17 +113,17 @@
   </view>
 
   <view class="action-bar-placeholder" wx:if="{{!loading && goodsDetail.id}}"></view>
-  <view class="action-bar-wrap" wx:if="{{!loading && goodsDetail.id}}">
+  <view class="action-bar-wrap glass-bar" wx:if="{{!loading && goodsDetail.id}}">
     <view class="action-btn-group">
       <view class="action-btn cart-btn" bindtap="addToCart">加入购物车</view>
-      <view class="action-btn buy-btn" bindtap="buyNow">立即购买</view>
+      <view class="action-btn buy-btn" bindtap="buyNow">立即结算</view>
     </view>
   </view>
 
   <van-toast id="van-toast" />
   
-  <view class="empty-state" wx:if="{{!loading && !goodsDetail.id}}">
+  <view class="empty-state glass-card" wx:if="{{!loading && !goodsDetail.id}}">
     <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
-    <text class="empty-text">商品不存在或已下架</text>
+    <text class="empty-text">商品似乎去了外太空</text>
   </view>
 </view>

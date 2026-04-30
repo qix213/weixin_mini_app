@@ -1,51 +1,63 @@
-<!-- pages/login/login.wxml （完整无错版） -->
 <view class="login-container">
-  <view class="login-title">用户登录</view>
+  <view class="dynamic-bg"></view>
 
-  <!-- 昵称输入框：绑定 handleNicknameInput（关键：无旧事件残留） -->
-  <view class="input-item">
-    <label class="input-label">昵称</label>
-    <input 
-      class="input-content" 
-      placeholder="请输入你的昵称" 
-      bindinput="handleNicknameInput" 
-      value="{{nickname}}"
-    />
+  <view class="login-header">
+    <view class="login-title">欢迎登录</view>
+    <view class="login-subtitle">Connect to the Future</view>
   </view>
 
-  <view class="input-item">
-    <label class="input-label">密码</label>
-    <input 
-      class="input-content" 
-      placeholder="请输入8位以上数字+字母组合" 
-      password
-      bindinput="handlePasswordInput"
-      value="{{password}}"
-    />
+  <view class="glass-card form-box">
+    
+    <view class="input-item">
+      <view class="input-icon">👤</view>
+      <input 
+        class="input-content" 
+        placeholder="请输入你的昵称" 
+        placeholder-class="ph-style"
+        bindinput="handleNicknameInput" 
+        value="{{nickname}}"
+      />
+    </view>
+
+    <view class="input-item">
+      <view class="input-icon">🔒</view>
+      <input 
+        class="input-content" 
+        placeholder="8位以上数字+字母组合" 
+        placeholder-class="ph-style"
+        password
+        bindinput="handlePasswordInput"
+        value="{{password}}"
+      />
+    </view>
+
+    <view class="input-item code-wrap">
+      <view class="input-icon">🛡️</view>
+      <input 
+        class="input-content" 
+        placeholder="6位验证码" 
+        placeholder-class="ph-style"
+        bindinput="handleCodeInput"
+        value="{{verifyCode}}"
+        type="number"
+      />
+      <button 
+        class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}"
+        bindtap="handleGetVerifyCode"
+        disabled="{{countDown > 0}}"
+      >
+        {{countDown > 0 ? countDown + 's' : '获取验证码'}}
+      </button>
+    </view>
+
   </view>
 
-  <view class="input-item code-input-wrap">
-    <label class="input-label">验证码</label>
-    <input 
-      class="input-content code-input" 
-      placeholder="请输入6位验证码" 
-      bindinput="handleCodeInput"
-      value="{{verifyCode}}"
-      type="number"
-    />
-    <button 
-      class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}"
-      bindtap="handleGetVerifyCode"
-      disabled="{{countDown > 0}}"
-    >
-      {{countDown > 0 ? countDown + 's后重新获取' : '获取验证码'}}
-    </button>
-  </view>
-
-  <button class="login-btn" bindtap="handleLogin">立即登录</button>
-
-  <view class="to-register-wrap">
-    <text class="normal-text">没有账号？</text>
-    <text class="register-btn" bindtap="goToRegister">立即注册</text>
+  <view class="action-area">
+    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+    
+    <view class="to-register-wrap">
+      <text class="normal-text">探索新视界？</text>
+      <text class="register-btn" bindtap="goToRegister">立即注册</text>
+    </view>
   </view>
 </view>

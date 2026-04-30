@@ -4,7 +4,14 @@ Page({
     memberInfo: {}, // 完整会员信息（渲染到页面）
     showQrcode: false,
     points: 0, // 新增：积分单独字段（也可直接用memberInfo.points，二选一）
-    couponCount: 0 // 仅统计「有效期内未使用」的优惠券数量
+    couponCount: 0, // 仅统计「有效期内未使用」的优惠券数量
+    levelConfig: [
+      { value: 1, cost: 0, name: '蓝朋友', shortName: '蓝朋友' },
+      { value: 2, cost: 980, name: '蓝明星', shortName: '蓝明星' },
+      { value: 3, cost: 3980, name: '护肤私教', shortName: '私教' },
+      { value: 4, cost: 9800, name: 'MINI主理人', shortName: '主理人' },
+      { value: 5, cost: 98000, name: 'Ta创+', shortName: 'Ta创+' }
+    ]
   },
 
   onShow() {
@@ -148,43 +155,84 @@ Page({
   },
 
   // 核心：请求会员信息接口
-  getMemberInfo() {
-    const app = getApp();
-    const header = app.getRequestHeader();
-    console.log('请求头：', header);
-    console.log('accessToken：', app.globalData.accessToken);
-  
-    wx.showLoading({ title: '加载会员信息...', mask: true });
-    wx.request({
-      url: app.globalData.baseUrl + '/app01/member/info/',
-      method: 'GET',
-      header: header,
-      success: (res) => {
-        wx.hideLoading();
-        if (res.data.code === 200) {
-          const memberInfo = res.data.data;
-          app.globalData.memberInfo = memberInfo; // 全局存储（含积分）
-          // 页面存储：解构积分，优惠券数量不再从这里取
-          this.setData({
-            memberInfo: memberInfo,
-            points: memberInfo.points || 0,
-            isLogin: true
-          });
-          console.log('会员信息加载成功（含积分）：', memberInfo);
+// 核心：请求会员信息接口
+// 核心：请求会员信息接口
+getMemberInfo() {
+  const app = getApp();
+  const header = app.getRequestHeader();
+  console.log('请求头：', header);
+  console.log('accessToken：', app.globalData.accessToken);
+
+  wx.showLoading({ title: '加载会员信息...', mask: true });
+  wx.request({
+    url: app.globalData.baseUrl + '/app01/member/info/',
+    method: 'GET',
+    header: header,
+    success: (res) => {
+      wx.hideLoading();
+      if (res.data.code === 200) {
+        const memberInfo = res.data.data;
+
+        // ================= 🌟 核心逻辑整合：时间、星级与升级提示 =================
+        // 1. 获取当前等级（只声明一次！）
+        const currentType = memberInfo.user_type || 1;
+        
+        // 2. 生成星星数组：等级(value)是几，就生成几个星星
+        memberInfo.starsArray = Array.from({ length: currentType }, (v, i) => i);
+
+        // 3. 计算会员到期时间
+        const joinDateStr = memberInfo.date_joined || memberInfo.create_time; 
+        if (joinDateStr) {
+          const safeDateStr = joinDateStr.substring(0, 10).replace(/-/g, '/');
+          const joinDate = new Date(safeDateStr);
+          
+          // 年份加 1
+          joinDate.setFullYear(joinDate.getFullYear() + 1);
+          
+          // 格式化输出
+          const year = joinDate.getFullYear();
+          const month = String(joinDate.getMonth() + 1).padStart(2, '0');
+          const day = String(joinDate.getDate()).padStart(2, '0');
+          
+          memberInfo.expire_time_text = `${year}-${month}-${day}`;
         } else {
-          wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
+          memberInfo.expire_time_text = '永久有效'; 
         }
-      },
-      fail: (err) => {
-        wx.hideLoading();
-        wx.showToast({ title: '加载会员信息失败', icon: 'none' });
+
+        // 4. 计算距下一级还需充值多少钱
+        const levelCosts = { 1: 0, 2: 980, 3: 3980, 4: 9800, 5: 98000 };
+        const levelNames = { 2: '蓝明星', 3: '护肤私教', 4: 'MINI-studio主理人', 5: 'Ta创+' };
+
+        if (currentType < 5) {
+          memberInfo.nextLevelDiff = levelCosts[currentType + 1] - levelCosts[currentType];
+          memberInfo.nextLevelName = levelNames[currentType + 1];
+        } else {
+          memberInfo.nextLevelDiff = 0; // 满级
+        }
+        // ================================================================
+
+        app.globalData.memberInfo = memberInfo; // 全局存储
+        
         this.setData({
-          points: 0
+          memberInfo: memberInfo,
+          points: memberInfo.points || 0,
+          isLogin: true
         });
-        console.error('获取会员信息失败：', err);
+        console.log('会员信息加载成功：', memberInfo);
+      } else {
+        wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
       }
-    });
-  },
+    },
+    fail: (err) => {
+      wx.hideLoading();
+      wx.showToast({ title: '加载会员信息失败', icon: 'none' });
+      this.setData({
+        points: 0
+      });
+      console.error('获取会员信息失败：', err);
+    }
+  });
+},
 
   // 新增核心方法：请求优惠券列表，过滤「有效期内未使用」的券并统计数量
   getValidCouponCount() {

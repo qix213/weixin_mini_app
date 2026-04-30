@@ -1,14 +1,16 @@
 <view class="chat-container">
-  <view class="dynamic-bg"></view>
+  <view class="dynamic-bg {{modelType === 'pro' ? 'bg-pro' : 'bg-lite'}}"></view>
 
   <scroll-view class="msg-scroll" scroll-y="true" scroll-into-view="last-msg" enhanced="true" show-scrollbar="false">
     <view class="msg-box" wx:for="{{messageList}}" wx:key="index">
       
       <view wx:if="{{item.role === 'assistant'}}" class="msg-row ai-row">
-        <view class="avatar ai-avatar">
+        <view class="avatar ai-avatar {{item.modelType === 'pro' ? 'pro-avatar' : ''}}">
           <view class="avatar-glow"></view> 🤖
         </view>
-        <view class="msg-content ai-content">{{item.content}}</view>
+        <view class="msg-content ai-content {{item.modelType === 'pro' ? 'pro-content' : ''}}">
+          <text>{{item.content}}</text>
+        </view>
       </view>
 
       <view wx:else class="msg-row user-row">
@@ -20,12 +22,37 @@
     <view id="last-msg" class="scroll-anchor"></view>
   </scroll-view>
 
-  <view class="input-bar-wrapper">
-    <view class="input-bar">
-      <input class="input" placeholder="输入指令或提问..." placeholder-class="placeholder-style" value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="sendMessage"/>
-      <view class="send-btn {{inputText.length > 0 ? 'active' : ''}}" bindtap="sendMessage">
-        <text>发送</text>
+  <view class="bottom-console">
+    
+    <view class="model-switch-wrapper">
+      <view class="model-switch-capsule">
+        <view class="switch-slider {{modelType === 'pro' ? 'slider-right' : 'slider-left'}}"></view>
+        
+        <view class="tab {{modelType === 'lite' ? 'active-lite' : ''}}" data-type="lite" bindtap="switchModel">
+          <text class="icon">⚡</text> 本地小模型
+        </view>
+        <view class="tab {{modelType === 'pro' ? 'active-pro' : ''}}" data-type="pro" bindtap="switchModel">
+          <text class="icon">💎</text> 专业大模型
+        </view>
       </view>
     </view>
+
+    <view class="input-bar">
+      <input 
+        class="input" 
+        placeholder="{{modelType === 'pro' ? '向专业大模型提问 (扣除积分)...' : '向本地小模型提问 (完全免费)...'}}" 
+        placeholder-class="placeholder-style" 
+        value="{{inputText}}" 
+        bindinput="onInput" 
+        confirm-type="send" 
+        bindconfirm="sendMessage"
+        cursor-spacing="20"
+      />
+      <view class="send-btn {{inputText.length > 0 ? 'active' : ''}}" bindtap="sendMessage">
+        <view class="send-btn-bg"></view>
+        <text class="iconfont">发送</text>
+      </view>
+    </view>
+
   </view>
 </view>

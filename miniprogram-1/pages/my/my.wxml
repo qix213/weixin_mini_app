@@ -7,17 +7,45 @@
         <image class="avatar" src="/images/bg/bg.png" mode="aspectFill"></image>
         <view class="user-base-info">
           <view class="nickname">{{memberInfo.nickname}}</view>
-          <view class="member-type">会员类型：{{memberInfo.user_type_text}} | 星级：{{memberInfo.star_level}}星</view>
           <view class="member-id">会员ID：{{memberInfo.member_id}}</view>
         </view>
       </view>
-      <view class="member-card-btn" bindtap="goToMemberCenter">会员中心</view>
+      <view class="member-card-btn" bindtap="goToMemberCenter">会员权益</view>
     </block>
     <block wx:else>
       <view class="unlogin-area">
         <button class="unlogin-btn" bindtap="goToLogin">立即登录/注册</button>
       </view>
     </block>
+  </view>
+
+  <view class="vip-board" wx:if="{{isLogin}}">
+    <view class="vip-header">
+      <view class="vip-title">{{memberInfo.user_type_text || '蓝朋友'}}</view>
+    </view>
+    <view class="vip-sub">
+      <view class="vip-expire">会籍有效期：{{memberInfo.expire_time_text}}</view>
+      <view class="vip-upgrade" wx:if="{{memberInfo.nextLevelDiff > 0}}">
+        还需充值{{memberInfo.nextLevelDiff}}元升级为{{memberInfo.nextLevelName}}
+      </view>
+      <view class="vip-upgrade max-level" wx:else>尊贵的顶级会员，您已享最高权益</view>
+    </view>
+
+    <view class="vip-progress">
+      <view class="node-item" wx:for="{{levelConfig}}" wx:key="value">
+        <view class="node-cost">{{item.cost >= 10000 ? (item.cost/10000)+'万' : item.cost}}</view>
+        <view class="node-icon-wrap">
+          <view class="line-left" wx:if="{{index !== 0}}" style="background: {{ memberInfo.user_type >= item.value ? '#0ea5e9' : '#e2e8f0' }}"></view>
+          <view class="line-right" wx:if="{{index !== levelConfig.length - 1}}" style="background: {{ memberInfo.user_type > item.value ? '#0ea5e9' : '#e2e8f0' }}"></view>
+          <view class="star-bg">
+            <van-icon name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#0ea5e9' : '#cbd5e1' }}" size="40rpx" />
+          </view>
+        </view>
+        <view class="node-name" style="color: {{ memberInfo.user_type >= item.value ? '#1e293b' : '#94a3b8' }}; font-weight: {{ memberInfo.user_type >= item.value ? 'bold' : 'normal' }}">
+          {{item.shortName}}
+        </view>
+      </view>
+    </view>
   </view>
 
   <view class="asset-container" wx:if="{{isLogin}}">
@@ -30,11 +58,6 @@
       <view class="asset-title">优惠券</view>
       <view class="asset-value {{couponCount === 0 ? 'asset-value-gray' : ''}}">{{couponCount || 0}}张</view>
     </view>
-  </view>
-
-  <view class="vip-expire-container" wx:if="{{isLogin}}">
-    <view class="vip-expire-title">会员到期时间</view>
-    <view class="vip-expire-value">{{memberInfo.vip_expire_time_text}}</view>
   </view>
 
   <view class="function-list">

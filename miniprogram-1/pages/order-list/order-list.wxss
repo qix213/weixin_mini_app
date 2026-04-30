@@ -1,165 +1,230 @@
-/* 全局重置，避免默认样式干扰 */
+/* ================= 全局与背景 ================= */
 page {
-  background-color: #f5f5f5; /* 页面背景，和订单卡片区分 */
+  background: #f0f9ff;
+  min-height: 100vh;
 }
 
-/* 订单列表容器（匹配WXML的外层view） */
-.container {
-  padding: 15rpx;
+.order-list-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 单个订单卡片（匹配WXML的订单卡片view） */
-.order-card {
-  background: #fff;
-  border-radius: 10rpx;
-  padding: 20rpx;
-  margin-bottom: 20rpx;
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
 }
 
-/* 订单号+状态行（匹配WXML的order-header view） */
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 28rpx;
-  margin-bottom: 20rpx;
-}
-.order-header .sn {
-  color: #333;
-}
-.order-header .status {
-  color: #ff6600;
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-/* 商品列表区域（匹配WXML的商品列表view） */
-.goods-area {
-  margin-bottom: 20rpx;
-}
-/* 商品标题（“商品：”） */
-.goods-title {
-  font-size: 26rpx;
-  color: #666;
-  display: block;
-  margin-bottom: 10rpx;
-}
-/* 单个商品行（匹配WXML的goodsName view） */
-.goods-item {
-  font-size: 26rpx;
-  color: #666; /* 确保文字颜色不是白色（和背景同色会看不见） */
-  margin-bottom: 8rpx;
-  /* 去掉flex，避免挤压文字 */
-  display: block;
-}
-/* 暂无商品提示 */
-.no-goods {
-  font-size: 26rpx;
-  color: #999;
+/* ================= 订单卡片 (高透玻璃) ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2rpx solid rgba(255, 255, 255, 1);
+  border-radius: 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  transition: transform 0.2s ease;
 }
 
-/* 订单时间+总价行 */
-.order-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 26rpx;
-  color: #999;
-}
-.order-info .price {
-  color: #333;
-  font-weight: bold;
+.glass-card:active {
+  transform: scale(0.98);
 }
 
-/* 空订单提示 */
-.empty {
-  text-align: center;
-  padding: 100rpx 0;
-  color: #999;
-  font-size: 28rpx;
-}
-
-/* 所有会员总消费栏 */
-.total-all-bar {
-  padding: 10rpx 20rpx;
-  background: #f5f5f5;
-  border-radius: 8rpx;
-  margin-bottom: 10rpx;
-}
-.total-all-label {
-  font-size: 28rpx;
-  color: #333;
-}
-.total-all-amount {
-  font-size: 30rpx;
-  color: #e64340;
-  font-weight: bold;
-  margin-left: 10rpx;
-}
-
-/* 会员项外层包裹（每个会员独立） */
-.member-item-wrapper {
-  margin-bottom: 15rpx;
-  border: 1px solid #eee;
-  border-radius: 8rpx;
-  overflow: hidden;
-}
-
-/* 原有样式保留，仅补充 */
-.consume-detail {
-  background: #fafafa;
-  padding: 15rpx;
-}
-
-.pending-pay {
-  color: #f4333c; /* 微信支付红 */
-  font-weight: bold;
-  cursor: pointer; /* 提示可点击 */
-}
-
-/* 订单头部布局优化 */
+/* ================= 头部：订单号与状态 ================= */
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10rpx 0;
-  border-bottom: 1rpx solid #f5f5f5;
-  margin-bottom: 10rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx dashed rgba(14, 165, 233, 0.2);
 }
 
-/* 积分商品标签 */
+.sn-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.sn-wrap .icon { font-size: 28rpx; margin-right: 8rpx; }
+.sn-text { font-size: 26rpx; color: #64748b; font-weight: 500; }
+
+.status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.status {
+  font-size: 28rpx;
+  color: #0ea5e9; /* 默认完成状态用主题蓝 */
+  font-weight: 800;
+}
+
+/* 待付款的强调色 (高亮橙红) */
+.status.pending { color: #f97316; }
+
+/* 倒计时徽章 */
+.countdown-badge {
+  background: rgba(249, 115, 22, 0.1);
+  border: 1rpx solid rgba(249, 115, 22, 0.3);
+  color: #ea580c;
+  font-size: 22rpx;
+  font-family: 'DIN Alternate', sans-serif;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+}
+.clock-icon { margin-right: 6rpx; font-size: 20rpx; }
+
+/* ================= 中部：商品列表 ================= */
+.goods-area {
+  padding: 24rpx 0;
+}
+
+.goods-title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.goods-title { font-size: 28rpx; color: #1e293b; font-weight: 800; margin-right: 16rpx;}
+
 .point-tag {
-  position: absolute;
-  left: 200rpx;
-  color: #ff9900;
-  font-size: 24rpx;
-  background: #fff8e6;
-  padding: 2rpx 8rpx;
-  border-radius: 4rpx;
-}
-
-/* 待付款状态样式 */
-.pending-pay {
-  color: #f4333c;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #0284c7;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
   font-weight: bold;
-  cursor: pointer;
+  border: 1rpx solid rgba(56, 189, 248, 0.4);
 }
 
-/* 价格区域布局 */
+.goods-list {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+}
+
+.goods-item {
+  font-size: 26rpx;
+  color: #475569;
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+}
+.goods-item:last-child { margin-bottom: 0; }
+
+.goods-item .dot { color: #0ea5e9; font-weight: bold; margin-right: 8rpx; }
+.goods-count { margin-left: auto; color: #94a3b8; font-size: 24rpx; }
+
+.no-goods { font-size: 24rpx; color: #94a3b8; font-style: italic; }
+
+/* ================= 底部：金额与操作 ================= */
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed rgba(14, 165, 233, 0.2);
+}
+
+.time-text {
+  font-size: 24rpx;
+  color: #94a3b8;
+  margin-bottom: 4rpx;
+}
+
+.action-area {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
 .price-area {
-  text-align: right;
+  display: flex;
+  align-items: baseline;
 }
 
-/* 金额样式 */
-.price {
-  color: #f4333c;
+.price-area .label { font-size: 24rpx; color: #64748b; margin-right: 8rpx; }
+.price-area .unit { font-size: 24rpx; color: #1e293b; font-weight: bold; }
+.price-area .price-val { 
+  font-size: 40rpx; 
+  color: #1e293b; 
+  font-weight: 900; 
+  font-family: 'DIN Alternate', sans-serif;
+}
+.price-area .point-val { color: #0ea5e9; } /* 积分数字用蓝色 */
+
+/* 悬浮支付按钮 */
+.pay-btn {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  font-size: 26rpx;
   font-weight: bold;
-  font-size: 30rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 36rpx;
+  border-radius: 32rpx;
+  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
+  margin: 0;
 }
-.point-price {
-  color: #ff9900; /* 积分价格用橙色，和人民币红色区分 */
+.pay-btn:active { transform: scale(0.95); }
+
+/* ================= 空状态 & 加载态 ================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20vh;
 }
-/* 积分抵扣数量样式 */
-.point-deduct {
-  display: block;
-  color: #ff9900;
-  font-size: 24rpx;
-  margin-top: 4rpx;
-  font-weight: normal;
+
+.empty-icon-wrapper {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
 }
+
+.empty-icon { font-size: 100rpx; z-index: 2; opacity: 0.8; }
+
+.glow-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(14, 165, 233, 0.1);
+  box-shadow: 0 0 40rpx rgba(14, 165, 233, 0.2);
+  animation: pulse 3s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+.empty-text { font-size: 28rpx; color: #64748b; font-weight: 500; }
+.loading-state { text-align: center; padding: 30rpx; font-size: 24rpx; color: #94a3b8; }

@@ -1,3 +1,5 @@
+<view class="dynamic-bg"></view>
+
 <view class="banner-header-wrap">
   <view class="banner-header">
     <view class="banner-text">
@@ -8,11 +10,13 @@
 
     <view class="header-right">
       <image class="banner-logo" src="/images/home/logo.png" mode="aspectFit" />
-      <view class="user-welcome" wx:if="{{isLogin}}">
+      
+      <view class="user-status-capsule" wx:if="{{isLogin}}">
+        <text class="status-dot"></text>
         <text class="welcome-text">Hi, {{userInfo.nickname || '用户'}}</text>
       </view>
       <view class="login-register-btn-group" wx:else>
-        <view class="glass-btn" bindtap="goToLogin">登录</view>
+        <view class="glass-btn primary" bindtap="goToLogin">登录</view>
         <view class="glass-btn outline" bindtap="goToRegister">注册</view>
       </view>
     </view>
@@ -21,17 +25,17 @@
 
 <view class="admin-content" wx:if="{{isAdminMember}}">
   
-  <view class="admin-dashboard-card" bindtap="{{isLogin ? 'goToOrderList' : 'goToLogin'}}">
+  <view class="glass-card admin-dashboard-card" bindtap="{{isLogin ? 'goToOrderList' : 'goToLogin'}}">
     <view class="dashboard-left">
       <view class="dashboard-icon-wrap">
         <text class="dashboard-icon">📊</text>
       </view>
       <view class="dashboard-info">
-        <text class="dashboard-title" style="{{!isLogin || !memberInfo.user_type ? 'color:#999' : ''}}">订单管理工作台</text>
+        <text class="dashboard-title">订单管理工作台</text>
         <text class="dashboard-desc">处理与查看全盘订单数据</text>
       </view>
     </view>
-    <view class="dashboard-arrow" style="{{!isLogin || !memberInfo.user_type ? 'color:#ccc' : ''}}">进入<text class="arrow-icon">→</text></view>
+    <view class="dashboard-arrow">进入 <text class="arrow-icon">→</text></view>
   </view>
 
   <view class="admin-table-section" wx:if="{{star_goods.length > 0}}">
@@ -39,7 +43,7 @@
       <text class="section-title">明星家居产品汇总</text>
     </view>
     
-    <view class="product-table-card">
+    <view class="glass-card product-table-card">
       <view class="table-header">
         <view class="table-col table-col-img">图片</view>
         <view class="table-col table-col-name">产品名称</view>
@@ -71,9 +75,11 @@
 <view class="normal-content" wx:else>
   
   <view class="notice-bar-wrap" wx:if="{{notice || content}}">
-    <view class="notice-bar">
-      <image class="notice-icon" src="/images/home/board.png" mode="aspectFit" />
-      <text class="notice-text">最新活动：{{notice}} {{content}}</text>
+    <view class="glass-card notice-bar">
+      <text class="notice-icon">🔔</text>
+      <view class="notice-marquee">
+        <text class="notice-text">最新活动：{{notice}} {{content}}</text>
+      </view>
     </view>
   </view>
 
@@ -83,6 +89,7 @@
         <image class="swiper-img" src="{{item.img}}" mode="aspectFill" />
       </swiper-item>
     </swiper>
+    <view class="swiper-shadow"></view>
   </view>
 
   <view class="section-title-wrap">
@@ -92,7 +99,7 @@
   <view class="star-goods-wrap" wx:if="{{star_goods.length > 0}}">
     <view class="star-goods-grid">
       <block wx:for="{{star_goods}}" wx:key="id">
-        <view class="goods-card" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+        <view class="glass-card goods-card" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
           <view class="img-box">
             <image src="{{item.image}}" mode="aspectFill" class="goods-img" lazy-load="true" default-src="/images/home/default-img.png" />
           </view>

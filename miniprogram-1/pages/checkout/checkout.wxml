@@ -1,173 +1,142 @@
-<view style="background:#f5f5f5;min-height:100vh;padding-bottom:120rpx;">
+<view class="checkout-container">
+  <view class="dynamic-bg"></view>
 
-<!-- 顶部标题 -->
-<view style="background:#fff;height:88rpx;line-height:88rpx;text-align:center;font-size:32rpx;font-weight:600;">
-  结算页面
-</view>
+  <view class="page-header">结算页面</view>
 
-<!-- 配送方式：按钮选中直接蓝色，100%生效 -->
-<view style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;">
-  <view style="font-size:30rpx;font-weight:600;margin-bottom:20rpx;">配送方式</view>
-  <view style="display:flex;gap:20rpx;">
-    <view 
-  data-type="1"
-  bindtap="switchDeliveryType"
-  style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;     font-size:28rpx;border:1rpx solid #ddd;{{deliveryType==1?'background:#0066cc;                color:#fff':'background:#fff;color:#333'}}">
-    快递上门
-    </view>
-    <view 
-  data-type="2"
-  bindtap="switchDeliveryType"
-  style="flex:1;height:80rpx;line-height:80rpx;border-radius:8rpx;text-align:center;font-size:28rpx;border:1rpx solid #ddd;{{deliveryType==2?'background:#0066cc;color:#fff':'background:#fff;color:#333'}}">
-  到店自取
-</view>
-  </view>
-</view>
-
-<!-- 快递上门：地址 100% 显示 -->
-<view wx:if="{{deliveryType==1}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;" bindtap="toAddressPage">
-  <view style="display:flex;align-items:center;">
-    <view style="font-size:32rpx;margin-right:20rpx;color:#0066cc;">📍</view>
-    <view style="flex:1;">
-      <view style="font-size:28rpx;font-weight:500;">收货地址</view>
-      <view wx:if="{{defaultAddress}}" style="font-size:26rpx;color:#666;margin-top:8rpx;">
-        <view>{{defaultAddress.name}}  {{defaultAddress.phone}}</view>
-        <view>{{defaultAddress.address}} {{defaultAddress.detail}}</view>
+  <view class="glass-card section-card">
+    <view class="section-title">配送方式</view>
+    <view class="delivery-options">
+      <view 
+        class="delivery-btn {{deliveryType==1 ? 'active' : ''}}" 
+        data-type="1" 
+        bindtap="switchDeliveryType">
+        <text class="btn-icon" wx:if="{{deliveryType==1}}">✓</text> 快递上门
       </view>
-      <view wx:else style="font-size:26rpx;color:#0066cc;margin-top:8rpx;">
-        暂无收货地址，点击添加
+      <view 
+        class="delivery-btn {{deliveryType==2 ? 'active' : ''}}" 
+        data-type="2" 
+        bindtap="switchDeliveryType">
+        <text class="btn-icon" wx:if="{{deliveryType==2}}">✓</text> 到店自取
       </view>
     </view>
-    <view style="font-size:24rpx;color:#999;">></view>
   </view>
-</view>
 
-<!-- 到店自取：门店选择 -->
-<view wx:if="{{deliveryType==2}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;" bindtap="openStore">
-  <view style="display:flex;align-items:center;">
-    <view style="font-size:32rpx;margin-right:20rpx;color:#0066cc;">🏪</view>
-    <view style="flex:1;">
-      <view style="font-size:28rpx;font-weight:500;">取货门店</view>
-      <view wx:if="{{selectedStore}}" style="font-size:26rpx;color:#666;margin-top:8rpx;">
+  <view wx:if="{{deliveryType==1}}" class="glass-card location-card" bindtap="toAddressPage">
+    <view class="icon-wrap">📍</view>
+    <view class="location-info">
+      <view class="location-title">收货地址</view>
+      <view wx:if="{{defaultAddress}}" class="location-desc">
+        <view class="contact-name">{{defaultAddress.name}} <text class="phone">{{defaultAddress.phone}}</text></view>
+        <view class="detail-addr">{{defaultAddress.address}} {{defaultAddress.detail}}</view>
+      </view>
+      <view wx:else class="location-empty">暂无收货地址，点击添加</view>
+    </view>
+    <view class="arrow-icon">></view>
+  </view>
+
+  <view wx:if="{{deliveryType==2}}" class="glass-card location-card" bindtap="openStore">
+    <view class="icon-wrap store-icon">🏪</view>
+    <view class="location-info">
+      <view class="location-title">取货门店</view>
+      <view wx:if="{{selectedStore}}" class="location-desc highlight-text">
         {{selectedStore.name}}
       </view>
-      <view wx:else style="font-size:26rpx;color:#666;margin-top:8rpx;">
-        请选择取货门店
+      <view wx:else class="location-empty">请选择取货门店</view>
+    </view>
+    <view class="arrow-icon">></view>
+  </view>
+
+  <van-action-sheet show="{{storeShow}}" bindcancel="closeStore" title="选择取货门店" round>
+    <view class="store-list">
+      <view wx:for="{{areaList}}" wx:key="id" 
+        class="store-item {{selectedStore && selectedStore.id==item.id ? 'active' : ''}}"
+        data-store="{{item}}"
+        bindtap="selectStore">
+        <text class="store-name">{{item.name}}</text>
+        <text class="check-mark" wx:if="{{selectedStore && selectedStore.id==item.id}}">✓</text>
       </view>
     </view>
-    <view style="font-size:24rpx;color:#999;">></view>
-  </view>
-</view>
+  </van-action-sheet>
 
-<!-- 门店弹窗：选中变蓝色 -->
-<van-action-sheet
-  show="{{storeShow}}"
-  bindcancel="closeStore"
->
-<view wx:for="{{areaList}}" wx:key="id" 
-  style="padding:24rpx;border-bottom:1rpx solid #eee;font-size:28rpx;{{selectedStore && selectedStore.id==item.id ? 'background:#e6f0ff;color:#0066cc' : ''}}"
-  data-store="{{item}}"
-  bindtap="selectStore">
-  {{item.name}}
-</view>
-</van-action-sheet>
-
-<!-- 商品列表 -->
-<view style="padding:0 20rpx;font-size:30rpx;font-weight:600;margin:16rpx 0;">
-  结算商品 {{cartList.length}}件
-</view>
-<view style="padding:0 16rpx;">
-  <view wx:for="{{cartList}}" wx:key="id" style="background:#fff;border-radius:12rpx;display:flex;padding:20rpx;margin-bottom:12rpx;">
-    <image src="{{item.goods_image}}" style="width:120rpx;height:120rpx;border-radius:8rpx;margin-right:20rpx;" mode="aspectFill"></image>
-    <view style="flex:1;">
-      <view style="font-size:28rpx;">{{item.goods_name}}</view>
-      <!-- 【修复5：确保积分标识显示】 -->
-      <view wx:if="{{item.isPointGoods}}" style="font-size:22rpx;color:#0066cc;background:#e6f0ff;padding:4rpx 8rpx;border-radius:4rpx;display:inline-block;margin-top:8rpx;">
-        积分兑换商品
-      </view>
-      <view style="font-size:24rpx;color:#999;margin-top:8rpx;">x{{item.num}}</view>
-      <!-- 【修复6：直接显示pointPrice，不依赖formatPrice】 -->
-      <view style="color:#e64340;font-size:30rpx;text-align:right;margin-top:12rpx;">
-        <block wx:if="{{item.isPointGoods}}">
-          {{item.pointPrice}} 积分
-        </block>
-        <block wx:else>
-          ¥{{item.formatPrice}}
-        </block>
-      </view>
-    </view>
-  </view>
-</view>
-
-<!-- 【修复7：放宽显示条件】积分抵扣模块（适配积分/金额商品） -->
-<!-- 积分抵扣模块（原有代码基础上修改） -->
-<view wx:if="{{(hasExchangeGoods || isAllPointGoods) && cartList.length>0}}" style="margin:16rpx;background:#fff;border-radius:12rpx;padding:24rpx;">
-  <view style="font-size:30rpx;font-weight:600;margin-bottom:16rpx;">积分抵扣</view>
-  <view style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12rpx;">
-    <view style="font-size:28rpx;">
-      当前积分：<text style="color:#0066cc;font-weight:500;">{{userPoints}}</text> 分
-      <text style="font-size:24rpx;color:#999;margin-left:12rpx;">
-        {{isAllPointGoods ? '（积分直接抵扣）' : '（1分=0.01元）'}}
-      </text>
-    </view>
-    <view style="font-size:24rpx;color:#999;">
-      最多可抵扣：{{maxDeductPoint}} 分
-    </view>
-  </view>
+  <view class="section-title out-title">结算商品 <text class="badge">{{cartList.length}}</text> 件</view>
   
-  <!-- 新增：积分输入区 + 用全部积分按钮 -->
-  <view style="display:flex;align-items:center;gap:12rpx;margin-bottom:12rpx;">
-    <button bindtap="minusPoint" style="width:80rpx;height:60rpx;line-height:60rpx;padding:0;font-size:28rpx;">-</button>
-    <input 
-      type="number" 
-      style="flex:1;height:60rpx;line-height:60rpx;text-align:center;border:1rpx solid #ddd;border-radius:4rpx;font-size:28rpx;" 
-      value="{{deductPoint}}" 
-      bindinput="inputPoint"
-      placeholder="请输入抵扣积分"
-    ></input>
-    <button bindtap="plusPoint" style="width:80rpx;height:60rpx;line-height:60rpx;padding:0;font-size:28rpx;">+</button>
+  <view class="goods-list">
+    <view wx:for="{{cartList}}" wx:key="id" class="glass-card goods-item">
+      <image src="{{item.goods_image}}" class="goods-img" mode="aspectFill"></image>
+      <view class="goods-info">
+        <view class="goods-name">{{item.goods_name}}</view>
+        
+        <view class="tags-row">
+          <view wx:if="{{item.isPointGoods}}" class="point-tag">积分兑换商品</view>
+          <view class="goods-num">x{{item.num}}</view>
+        </view>
+
+        <view class="goods-price">
+          <block wx:if="{{item.isPointGoods}}">
+            <text class="val">{{item.pointPrice}}</text> <text class="unit">积分</text>
+          </block>
+          <block wx:else>
+            <text class="unit">¥</text><text class="val">{{item.formatPrice}}</text>
+          </block>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{(hasExchangeGoods || isAllPointGoods) && cartList.length>0}}" class="glass-card point-deduct-card">
+    <view class="section-title">积分抵扣</view>
     
-    <!-- 新增：用全部积分按钮 -->
-    <button 
-      bindtap="useAllPoints"
-      disabled="{{maxDeductPoint <= 0}}"
-      style="width:180rpx;height:60rpx;line-height:60rpx;padding:0;font-size:24rpx;background:#0066cc;color:#fff;border-radius:4rpx;{{maxDeductPoint <=0 ? 'background:#ccc;' : ''}}"
-    >
-      用全部积分
-    </button>
+    <view class="point-status-row">
+      <view class="current-points">
+        当前积分：<text class="highlight">{{userPoints}}</text>
+        <text class="sub-tip">{{isAllPointGoods ? '(积分直接抵扣)' : '(1分=0.01元)'}}</text>
+      </view>
+      <view class="max-deduct-tip">最多可抵扣：{{maxDeductPoint}} 分</view>
+    </view>
+    
+    <view class="point-operate-row">
+      <view class="stepper-glass">
+        <view class="btn-minus" bindtap="minusPoint">-</view>
+        <input 
+          class="point-input"
+          type="number" 
+          value="{{deductPoint}}" 
+          bindinput="inputPoint"
+          placeholder="0"
+        />
+        <view class="btn-plus" bindtap="plusPoint">+</view>
+      </view>
+      
+      <button 
+        bindtap="useAllPoints"
+        disabled="{{maxDeductPoint <= 0}}"
+        class="use-all-btn {{maxDeductPoint <= 0 ? 'disabled' : ''}}"
+      >用全部积分</button>
+    </view>
+    
+    <view class="deduct-summary">
+      <block wx:if="{{isAllPointGoods}}">
+        <view class="summary-item">抵扣积分：<text class="val blue">{{deductPoint}}</text> 分</view>
+        <view class="summary-item">需现金支付：<text class="val red">¥{{actualPayMoney}}</text></view>
+      </block>
+      <block wx:else>
+        <view class="summary-item">抵扣金额：<text class="val blue">¥{{deductMoney}}</text></view>
+        <view class="summary-item">需现金支付：<text class="val red">¥{{actualPayMoney}}</text></view>
+      </block>
+    </view>
   </view>
-  
-  <view style="margin-top:16rpx;font-size:28rpx;">
-  <block wx:if="{{isAllPointGoods}}">
-    积分抵扣：{{deductPoint}} 分
-    <text style="margin-left:20rpx;">
-      需现金支付：<text style="color:#e64340;font-weight:600;">¥{{actualPayMoney}}</text>
-    </text>
-  </block>
-  <block wx:else>
-    积分抵扣金额：¥{{deductMoney}} 
-    <text style="margin-left:20rpx;">
-      需现金支付：<text style="color:#e64340;font-weight:600;">¥{{actualPayMoney}}</text>
-    </text>
-  </block>
-</view>
-</view>
 
-<!-- 底部总计：适配积分/金额 -->
-<view wx:if="{{cartList.length>0}}" style="position:fixed;bottom:0;left:0;right:0;height:100rpx;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24rpx;border-top:1rpx solid #eee;">
-  <view>
-    <view style="font-size:24rpx;color:#666;">
-      {{hasExchangeGoods && deductPoint>0 
-        ? (isAllPointGoods ? '积分抵扣'+deductPoint+'分' : '积分抵扣¥'+deductMoney) 
-        : '总计'}}
+  <view wx:if="{{cartList.length>0}}" class="bottom-submit-bar">
+    <view class="total-info">
+      <view class="deduct-tip">
+        {{hasExchangeGoods && deductPoint>0 ? (isAllPointGoods ? '已抵扣 '+deductPoint+' 积分' : '已抵扣 ¥'+deductMoney) : '总计'}}
+      </view>
+      <view class="pay-amount">
+        需支付：<text class="unit">¥</text><text class="val">{{actualPayMoney}}</text>
+      </view>
     </view>
-    <view style="font-size:32rpx;color:#e64340;font-weight:600;">
-      需支付：¥{{actualPayMoney}}
-    </view>
+    
+    <button class="submit-btn" bindtap="submitOrder">提交订单</button>
   </view>
-  <van-button type="primary" bindtap="submitOrder" style="width:240rpx;">
-    提交订单
-  </van-button>
-</view>
 
 </view>

@@ -2,21 +2,20 @@ const app = getApp();
 Page({
   data: {
     memberId: '',
-    nickname: '',        // 昵称
-    phone: '19261080527',// 手机号
-    password: '',        // 密码
-    passwordConfirm: '', // 确认密码
-    activeTab: 0,        // 0=成为会员，1=我要开店
+    nickname: '',        
+    phone: '19261080527',
+    password: '',        
+    passwordConfirm: '', 
+    activeTab: 0,        
     tabList: [
       { name: '成为会员', id: 0 },
       { name: '我要开店', id: 1 }
     ],
-    // 成为会员Tab的类型列表
     memberTypeList: [
       { 
         value: 1, 
         name: '蓝朋友（0元/年）', 
-        amount: 0, // 费用
+        amount: 0,
         benefits: [
           "SSTA新人券：2张200元代金券套，只能用来购买368元mini旅行套；",
           "SSTA价格：零售价格购买产品，不享受会员价；",
@@ -28,7 +27,7 @@ Page({
       { 
         value: 2, 
         name: '蓝明星（980元/年）', 
-        amount: 980, // 费用
+        amount: 980,
         benefits: [
           "蓝粉VIP大礼包（2选1）:（1）3套SSTA旅行套盒，2张100元兑换单品券（每单限用一张），限期一个月；（2）一套小油净化（6次），4张100元兑换单品券（每单限用一张），限期一个月；",
           "会员星价：SSTA家居产品，一年蓝粉星价",
@@ -41,7 +40,7 @@ Page({
       { 
         value: 3, 
         name: '护肤私教（3980元/年）', 
-        amount: 3980, // 费用
+        amount: 3980,
         benefits: [
           "SSTA大礼包（2选1）:（1）3980元SSTA家居产品任选，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；（2）一年24次SSTA小油净化，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；",
           "SSTA积分：SSTA家居产品积分兑换，10元积1分；",
@@ -52,12 +51,11 @@ Page({
         permissionLevel: 3 
       }
     ],
-    // 我要开店Tab的类型列表
     shopTypeList: [
       { 
         value: 4, 
         name: 'MINI-studio 主理人（9800元）', 
-        amount: 9800, // 费用
+        amount: 9800,
         benefits: [
           "产品折扣：享产品零售价5折权益，产品任选；",
           "培训赋能：护肤私教初级班+初级证书；",
@@ -69,7 +67,7 @@ Page({
       { 
         value: 5, 
         name: 'Ta创+（9.8万元）', 
-        amount: 98000, // 费用
+        amount: 98000,
         benefits: [
           "Ta创+高端俱乐部会员，享奇肌疗愈营，高端沙龙活动；",
           "产品折扣：享产品零售价2.5折权益，产品任选；",
@@ -81,14 +79,18 @@ Page({
         permissionLevel: 5 
       }
     ],
-    userTypeIndex: 0,    // 当前Tab下的类型选择索引
-    selectedUserType: {}, // 当前选中的会员/开店类型
-    currentBenefits: [],  // 当前类型对应的权益
-    recommenderId: 'ABCD1234',    // 推荐人ID（默认大写）
-    verifyCode: '123456',       // 验证码（默认123456）
+    userTypeIndex: 0,    
+    selectedUserType: {}, 
+    currentBenefits: [],  
+    recommenderId: 'ABCD1234',    
+    verifyCode: '123456',       
     countDown: 0,
     timer: null,
-    bizId: '' // 验证码业务ID（新增，兼容原有getSmsCode逻辑）
+    bizId: '',
+    
+    // ========== 新增：协议相关状态 ==========
+    isAgreed: false,       // 是否已勾选协议
+    showAgreement: false   // 是否显示协议弹窗
   },
 
   onLoad(options) {
@@ -139,18 +141,13 @@ Page({
     });
   },
 
-  handleNicknameInput(e) {
-    this.setData({ nickname: e.detail.value.trim() });
-  },
-  handlePhoneInput(e) {
-    this.setData({ phone: e.detail.value.trim() });
-  },
-  handlePasswordInput(e) {
-    this.setData({ password: e.detail.value.trim() });
-  },
-  handlePasswordConfirmInput(e) {
-    this.setData({ passwordConfirm: e.detail.value.trim() });
-  },
+  handleNicknameInput(e) { this.setData({ nickname: e.detail.value.trim() }); },
+  handlePhoneInput(e) { this.setData({ phone: e.detail.value.trim() }); },
+  handlePasswordInput(e) { this.setData({ password: e.detail.value.trim() }); },
+  handlePasswordConfirmInput(e) { this.setData({ passwordConfirm: e.detail.value.trim() }); },
+  handleRecommenderIdInput(e) { this.setData({ recommenderId: e.detail.value.trim() }); },
+  handleCodeInput(e) { this.setData({ verifyCode: e.detail.value.trim() }); },
+
   handleUserTypeChange(e) {
     const index = e.detail.value;
     let selected = {};
@@ -164,12 +161,6 @@ Page({
       selectedUserType: selected,
       currentBenefits: selected.benefits
     });
-  },
-  handleRecommenderIdInput(e) {
-    this.setData({ recommenderId: e.detail.value.trim() });
-  },
-  handleCodeInput(e) {
-    this.setData({ verifyCode: e.detail.value.trim() });
   },
 
   getSmsCode() {
@@ -224,17 +215,36 @@ Page({
     wx.showToast({ title: '验证码发送成功（123456）', icon: 'success' });
   },
 
-  // 核心修改：彻底移除注册页的后端注册调用，仅做前端验证+暂存数据+跳转支付
+  // ========== 新增：协议勾选与弹窗逻辑 ==========
+  toggleAgreement() {
+    this.setData({ isAgreed: !this.data.isAgreed });
+  },
+  openAgreement() {
+    this.setData({ showAgreement: true });
+  },
+  closeAgreement() {
+    this.setData({ showAgreement: false });
+  },
+  preventBubbling() {
+    // 阻止点击弹窗内容时触发遮罩层的关闭事件
+  },
+
   handleRegister() {
     const {
       memberId, nickname, phone, password, passwordConfirm,
-      selectedUserType, recommenderId, verifyCode, activeTab
+      selectedUserType, recommenderId, verifyCode, activeTab, isAgreed
     } = this.data;
+
+    // ========== 新增：校验是否勾选协议 ==========
+    if (!isAgreed) {
+      wx.showToast({ title: '请先阅读并勾选《用户充值须知》', icon: 'none' });
+      return;
+    }
+
     const userType = selectedUserType.value;
     const userTypeName = selectedUserType.name;
     const userTypeAmount = selectedUserType.amount;
 
-    // 1. 严格前端验证（所有场景统一校验）
     if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
     const phoneReg = /^1[3-9]\d{9}$/;
     if (!phone || !phoneReg.test(phone)) { wx.showToast({ title: '请输入正确的11位手机号', icon: 'none' }); return; }
@@ -247,7 +257,6 @@ Page({
     }
     if (!verifyCode) { wx.showToast({ title: '请输入验证码', icon: 'none' }); return; }
 
-    // 2. 暂存注册信息（全局+本地存储，确保支付页能获取）
     const registerData = {
       memberId: memberId,
       nickname: nickname,
@@ -261,9 +270,8 @@ Page({
     app.globalData.pendingRegisterData = registerData;
     wx.setStorageSync('pendingRegisterData', registerData);
 
-    // 3. 统一跳转支付页（0元会员也走支付页，标记金额为0，支付页处理免支付逻辑）
     const scene = activeTab === 0 ? 'member' : 'shop';
-    wx.showToast({ title: '信息验证通过，即将跳转支付页', icon: 'success', duration: 1500 });
+    wx.showToast({ title: '验证通过，即将跳转支付页', icon: 'success', duration: 1500 });
     setTimeout(() => {
       wx.navigateTo({
         url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${encodeURIComponent(phone)}&memberId=${memberId}`,

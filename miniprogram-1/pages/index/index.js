@@ -145,7 +145,7 @@ Page({
             starGoods = filteredStarGoods.map(item => ({
               id: item.id,
               name: item.name,
-              image: item.image_url?.startsWith('http') ? item.image_url : `${api.base}${item.image_url || ''}`,
+              image: item.image_url?.startsWith('https') ? item.image_url : `${api.base}${item.image_url || ''}`,
               price: item.member_price || item.price,
               original_price: item.original_price
             }));
@@ -217,7 +217,7 @@ Page({
           if (res.data && res.data.code === 200) {
             const rawImages = res.data.fixed_images || [];
             fixedImages = rawImages.map(item => ({
-              img: item?.img_url?.startsWith('http') ? item.img_url : `${api.base}${item?.img_url || item?.img || ''}`,
+              img: item?.img_url?.startsWith('https') ? item.img_url : `${api.base}${item?.img_url || item?.img || ''}`,
               id: item?.id || '',
               title: item?.title || ''
             }));
