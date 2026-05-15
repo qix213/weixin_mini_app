@@ -1,10 +1,12 @@
-// 🌟 临时修改为公网 IP，等备案通过后再换回域名
-const rootUrl = 'https://101.42.20.250/app01'
+// config.js
+// 🌟 这里不要再写域名了，交给 app.js 统一处理协议头和域名
+const rootPath = '/app01'; 
 
 module.exports = {
-  welcome: rootUrl + '/welcome/',
-  banner: rootUrl + '/banner/', 
-  category: rootUrl + '/categories/', 
-  goods_detail: rootUrl + '/goods/',
-  base : 'https://101.42.20.250', // 🌟 这里也同步修改为 IP
+  welcome: rootPath + '/welcome/',
+  banner: rootPath + '/banner/', 
+  category: rootPath + '/categories/', 
+  goods_detail: rootPath + '/goods/',
+  // 图片显示的基础地址
+  base: 'https://www.lansik2026.com', 
 }

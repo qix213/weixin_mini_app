@@ -315,60 +315,73 @@ Page({
   },
 
   // 支付核心逻辑（优化订单ID提示，适配会员场景）
-  handlePay() {
-    const { payLoading, orderId, scene, originalAmount, actualAmount, isPointGoods } = this.data;
-    if (payLoading) return;
+// 支付核心逻辑（优化订单ID提示，适配会员场景）
+handlePay() {
+  const { payLoading, orderId, scene, originalAmount, actualAmount, isPointGoods } = this.data;
+  if (payLoading) return;
 
-    // 优化：区分场景提示订单ID为空的逻辑
-    if (!orderId) {
-      if (scene === 'member') {
-        console.log('会员缴费场景：无订单ID，正常继续支付流程');
-      } else {
-        console.warn('测试阶段：订单ID为空，继续支付流程');
-      }
-    }
-
-    // 0元场景（积分全额抵扣）
-    if (Number(originalAmount) === 0) {
-      wx.showToast({ title: '0元免支付，正在完成订单...', icon: 'success' });
-      setTimeout(() => {
-        this.paySuccess(orderId, this.data.selectedCoupon);
-      }, 1000);
-      return;
-    }
-
-    // 积分商品校验
-    if (isPointGoods) {
-      if (this.data.exchangePoints === 0) {
-        wx.showToast({ title: '积分商品积分数量异常', icon: 'none' });
-        return;
-      }
-      if (Number(actualAmount) < 0) {
-        wx.showToast({ title: '抵扣积分异常', icon: 'none' });
-        return;
-      }
+  if (!orderId) {
+    if (scene === 'member') {
+      console.log('会员缴费场景：无订单ID，正常继续支付流程');
     } else {
-      // 付费场景金额校验
-      if (Number(actualAmount) <= 0) {
-        wx.showToast({ title: '支付金额异常，无法支付', icon: 'none' });
-        return;
-      }
+      console.warn('测试阶段：订单ID为空，继续支付流程');
     }
+  }
 
-    // 模拟支付（正式环境替换为微信/支付宝SDK）
-    this.setData({ payLoading: true });
-    const selectedMethod = this.data.payMethods.find(m => m.id === this.data.selectedPayMethod).name;
-  
+  // 🌟 情况一：0元场景（0星会员或积分全额抵扣），直接跳过微信支付，执行成功逻辑
+  if (Number(originalAmount) === 0 || Number(actualAmount) === 0) {
+    wx.showToast({ title: '0元免支付，正在开通...', icon: 'success' });
     setTimeout(() => {
-      this.setData({ payLoading: false });
-      wx.showToast({
-        title: `${selectedMethod}支付成功`,
-        icon: 'success',
-        duration: 2000
-      });
       this.paySuccess(orderId, this.data.selectedCoupon);
-    }, 1500);
-  },
+    }, 1000);
+    return;
+  }
+
+  // 积分商品校验
+  if (isPointGoods) {
+    if (this.data.exchangePoints === 0) {
+      wx.showToast({ title: '积分商品积分数量异常', icon: 'none' }); return;
+    }
+    if (Number(actualAmount) < 0) {
+      wx.showToast({ title: '抵扣积分异常', icon: 'none' }); return;
+    }
+  } else {
+    if (Number(actualAmount) <= 0) {
+      wx.showToast({ title: '支付金额异常，无法支付', icon: 'none' }); return;
+    }
+  }
+
+  // 🌟 情况二：真正的付费场景
+  this.setData({ payLoading: true });
+  const selectedMethod = this.data.payMethods.find(m => m.id === this.data.selectedPayMethod).name;
+
+  // ==========================================================
+  // ⚠️ 真实环境微信支付代码位置 (未来你要在这里替换)：
+  // wx.requestPayment({
+  //   timeStamp: '...', nonceStr: '...', package: '...', signType: 'RSA', paySign: '...',
+  //   success: (res) => {
+  //     this.setData({ payLoading: false });
+  //     this.paySuccess(orderId, this.data.selectedCoupon); // 只有这里成功了，才去写数据库！
+  //   },
+  //   fail: (err) => {
+  //     this.setData({ payLoading: false });
+  //     wx.showToast({ title: '已取消支付', icon: 'none' }); // 中途取消，绝不写数据库！
+  //   }
+  // });
+  // ==========================================================
+
+  // 当前模拟支付逻辑：
+  setTimeout(() => {
+    this.setData({ payLoading: false });
+    wx.showToast({
+      title: `${selectedMethod}支付成功`,
+      icon: 'success',
+      duration: 2000
+    });
+    // 模拟微信扣款成功后，才调用数据库写入
+    this.paySuccess(orderId, this.data.selectedCoupon);
+  }, 1500);
+},
 
   handleCancel() {
     wx.navigateBack({ delta: 1 });
@@ -400,61 +413,38 @@ Page({
 // ========== 核心修改：使用注册页传递的完整注册数据调用接口 ==========
 saveMemberInfoAndLogin() {
   return new Promise((resolve, reject) => {
+    // 1. 🌟 把 login_code 和 phone_code 从这行删掉
     const { memberId, phone, originalAmount, selectedPayMethod, pendingRegisterData } = this.data;
     
-    // 1. 校验注册数据是否存在
+    // 校验注册数据是否存在
     if (Object.keys(pendingRegisterData).length === 0) {
       reject('未获取到完整的注册信息，请返回注册页重新操作');
       return;
     }
 
-    // 2. 解构注册页传递的必填参数（避免硬编码）
+    // 2. 🌟 放到这里来解构！它们都藏在 pendingRegisterData 里
     const { 
-      nickname, 
-      password, 
-      password_confirm, 
-      user_type, 
-      recommender_id,
-      verifyCode
+      nickname, password, password_confirm, 
+      user_type, recommender_id, verifyCode,
+      login_code, phone_code  // 👈 真正的数据在这里！
     } = pendingRegisterData;
 
-    // 3. 强化参数校验（包含所有必填项）
-    if (!memberId || memberId.trim() === '') {
-      reject('会员ID不能为空');
-      return;
-    }
-    if (!phone || phone.trim() === '' || !/^1[3-9]\d{9}$/.test(phone.trim())) {
-      reject('请输入有效的手机号');
-      return;
-    }
-    if (!nickname || nickname.trim() === '') {
-      reject('昵称不能为空');
-      return;
-    }
-    if (!password || password.trim() === '') {
-      reject('密码不能为空');
-      return;
-    }
-    if (!password_confirm || password_confirm.trim() === '') {
-      reject('确认密码不能为空');
-      return;
-    }
-    if (!user_type || isNaN(Number(user_type))) {
-      reject('用户类型选择异常');
-      return;
-    }
+    // 强化参数校验
+    if (!memberId || memberId.trim() === '') { reject('会员ID不能为空'); return; }
+    if (!phone_code && (!phone || phone.trim() === '')) { reject('手机号凭证获取失败，请重新授权'); return; }
+    if (!nickname || nickname.trim() === '') { reject('昵称不能为空'); return; }
+    if (!password || password.trim() === '') { reject('密码不能为空'); return; }
+    if (!password_confirm || password_confirm.trim() === '') { reject('确认密码不能为空'); return; }
+    if (!user_type || isNaN(Number(user_type))) { reject('用户类型选择异常'); return; }
+    
     const amount = Number(originalAmount);
-    if (isNaN(amount) || amount < 0) {
-      reject('缴费金额异常');
-      return;
-    }
+    if (isNaN(amount) || amount < 0) { reject('缴费金额异常'); return; }
+    
     const payMethod = Number(selectedPayMethod);
-    if (![1, 2].includes(payMethod)) {
-      reject('支付方式选择异常');
-      return;
-    }
+    if (![1, 2].includes(payMethod)) { reject('支付方式选择异常'); return; }
 
     wx.showLoading({ title: '正在激活会员...' });
+    
     wx.request({
       url: `${app.globalData.baseUrl}/app01/register/`, 
       method: 'POST',
@@ -462,16 +452,19 @@ saveMemberInfoAndLogin() {
         'content-type': 'application/json'
       },
       data: {
-        // 4. 使用注册页传递的完整必填参数
-        member_id: memberId.trim(),       // 会员ID
-        phone: phone.trim(),              // 手机号
-        nickname: nickname.trim(),        // 注册页填写的昵称（不再硬编码）
-        password: password.trim(),        // 注册页填写的密码（不再硬编码）
-        password_confirm: password_confirm.trim(), // 新增：必填的确认密码
-        user_type: Number(user_type),     // 新增：必填的用户类型
-        recommender_id: recommender_id || '', // 推荐人ID（可选）
-        verify_code: verifyCode || '',    // 验证码（根据后端字段名调整，若需要）
-        // 缴费相关扩展参数
+        member_id: memberId.trim(),       
+        phone: phone.trim(),              
+        nickname: nickname.trim(),        
+        password: password.trim(),        
+        password_confirm: password_confirm.trim(), 
+        user_type: Number(user_type),     
+        
+        login_code: login_code || '',    // 👈 这次就有真实的值了
+        phone_code: phone_code || '',    // 👈 这次就有真实的值了
+        is_paid: true, 
+
+        recommender_id: recommender_id || '', 
+        verify_code: verifyCode || '',    
         amount: amount,                   
         pay_method: payMethod,
         pay_no: 'test_pay_no_' + Date.now() 
@@ -480,31 +473,18 @@ saveMemberInfoAndLogin() {
         wx.hideLoading();
         // 适配注册接口的响应格式
         if (res.data?.code === 200 && res.data?.access) {
-          // 获取登录凭证（access_token）
           const accessToken = res.data.access;
           if (accessToken) {
             try {
-              // ========== 关键补充：设置isLogin为true ==========
-              // 1. 保存accessToken到缓存（同步操作）
               wx.setStorageSync('accessToken', accessToken);
-              // 2. 保存到全局变量
               app.globalData.accessToken = accessToken;
-              // 3. 保存会员信息
               const memberInfo = res.data.data || {};
               wx.setStorageSync('memberInfo', memberInfo);
               app.globalData.memberInfo = memberInfo;
-              // 4. 核心补充：设置登录状态为true（缓存+全局）
               wx.setStorageSync('isLogin', true);
               app.globalData.isLogin = true;
 
-              // 打印日志，验证保存是否成功
-              console.log('登录凭证保存成功：', {
-                accessToken: wx.getStorageSync('accessToken'),
-                memberInfo: wx.getStorageSync('memberInfo'),
-                isLogin: wx.getStorageSync('isLogin'),
-                globalIsLogin: app.globalData.isLogin
-              });
-
+              console.log('登录凭证保存成功');
               resolve(true);
             } catch (e) {
               reject('登录凭证保存失败：' + e.message);
@@ -513,6 +493,7 @@ saveMemberInfoAndLogin() {
             reject('后端未返回登录凭证，自动登录失败');
           }
         } else {
+          // 这里的 msg 就会显示后端防火墙拦截的原因（如果你之前没传 is_paid 的话）
           reject(res.data?.msg || '保存会员信息失败，请联系客服');
         }
       },

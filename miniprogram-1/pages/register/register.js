@@ -1,120 +1,98 @@
 const app = getApp();
+
 Page({
   data: {
+    // 基础表单字段
     memberId: '',
     nickname: '',        
-    phone: '19261080527',
     password: '',        
     passwordConfirm: '', 
     activeTab: 0,        
+    
+    // 🌟 伸缩式生日选择器状态
+    birthDate: '',       
+    showDatePicker: false,
+    dpStep: 'decade', 
+    dpDecade: '',     
+    dpYear: '',       
+    dpMonth: '',      
+    dpDay: '',        
+    decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020], 
+    months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    days: [],         
+
     tabList: [
       { name: '成为会员', id: 0 },
       { name: '我要开店', id: 1 }
     ],
     memberTypeList: [
-      { 
-        value: 1, 
-        name: '蓝朋友（0元/年）', 
-        amount: 0,
-        benefits: [
-          "SSTA新人券：2张200元代金券套，只能用来购买368元mini旅行套；",
-          "SSTA价格：零售价格购买产品，不享受会员价；",
-          "SSTA卡券：节日活动或生日优享券，优享活动参与资格；",
-          "公益课程：护肤知识课程。"
-        ],
-        permissionLevel: 1 
-      },
-      { 
-        value: 2, 
-        name: '蓝明星（980元/年）', 
-        amount: 980,
-        benefits: [
-          "蓝粉VIP大礼包（2选1）:（1）3套SSTA旅行套盒，2张100元兑换单品券（每单限用一张），限期一个月；（2）一套小油净化（6次），4张100元兑换单品券（每单限用一张），限期一个月；",
-          "会员星价：SSTA家居产品，一年蓝粉星价",
-          "会员积分：SSTA家居产品，10元积1分，可兑换",
-          "SSTA卡券：节日活动或生日优享券，优享活动参与资格",
-          "公益课程：家居护肤课程。"
-        ],
-        permissionLevel: 2 
-      },
-      { 
-        value: 3, 
-        name: '护肤私教（3980元/年）', 
-        amount: 3980,
-        benefits: [
-          "SSTA大礼包（2选1）:（1）3980元SSTA家居产品任选，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；（2）一年24次SSTA小油净化，2套SSTA旅行套，5张100元兑换单品券（每单限用一张），限期三个月；",
-          "SSTA积分：SSTA家居产品积分兑换，10元积1分；",
-          "SSTA奇肌币：裂变客户购买产品15%返点，可提现；",
-          "SSTA卡券：节日或活动优享券；",
-          "专业课程：护肤专业课程。"
-        ],
-        permissionLevel: 3 
-      }
+      { value: 1, name: '蓝朋友 0星', amount: 0 },
+      { value: 2, name: '蓝朋友 1星', amount: 980 },
+      { value: 3, name: '蓝朋友 2星', amount: 3980 },
+      { value: 4, name: '蓝朋友 3星', amount: 9800 }
     ],
     shopTypeList: [
-      { 
-        value: 4, 
-        name: 'MINI-studio 主理人（9800元）', 
-        amount: 9800,
-        benefits: [
-          "产品折扣：享产品零售价5折权益，产品任选；",
-          "培训赋能：护肤私教初级班+初级证书；",
-          "工具系统：系统化配套标准化+工具设备；",
-          "专业课程：蓝色奇肌商学院小程序专业皮肤课程。"
-        ],
-        permissionLevel: 4 
-      },
-      { 
-        value: 5, 
-        name: 'Ta创+（9.8万元）', 
-        amount: 98000,
-        benefits: [
-          "Ta创+高端俱乐部会员，享奇肌疗愈营，高端沙龙活动；",
-          "产品折扣：享产品零售价2.5折权益，产品任选；",
-          "SSTA运营：运营中心模版店的打造及扶持；",
-          "培训赋能：护肤私教全部体系课程+证书；",
-          "专业课程：蓝色奇肌商学院小程序专业皮肤课程；",
-          "《她力量》，《明星代言人》首推官资格。",
-        ],
-        permissionLevel: 5 
-      }
+      { value: 5, name: 'Ta创+', amount: 59800 }
     ],
     userTypeIndex: 0,    
     selectedUserType: {}, 
-    currentBenefits: [],  
-    recommenderId: 'ABCD1234',    
-    verifyCode: '123456',       
-    countDown: 0,
-    timer: null,
-    bizId: '',
     
-    // ========== 新增：协议相关状态 ==========
-    isAgreed: false,       // 是否已勾选协议
-    showAgreement: false   // 是否显示协议弹窗
+    // 🌟 推荐人ID（现为必填项）
+    recommenderId: '',    
+    
+    isAgreed: false,       
+    showAgreement: false   
   },
 
   onLoad(options) {
     this.generateMemberId();
-    const defaultUserType = this.data.memberTypeList[0];
-    this.setData({
-      selectedUserType: defaultUserType,
-      currentBenefits: defaultUserType.benefits
-    });
+    this.setData({ selectedUserType: this.data.memberTypeList[0] });
   },
 
-  onUnload() {
-    if (this.data.timer) {
-      clearInterval(this.data.timer);
-      this.setData({ timer: null });
+  toggleDatePicker() {
+    const isShowing = !this.data.showDatePicker;
+    let step = this.data.dpStep;
+    if (isShowing) {
+      if (this.data.dpYear && this.data.dpMonth) {
+        step = 'day';
+        const daysInMonth = new Date(this.data.dpYear, this.data.dpMonth, 0).getDate();
+        this.setData({ days: Array.from({length: daysInMonth}, (_, i) => i + 1) });
+      } else {
+        step = 'decade';
+      }
     }
+    this.setData({ showDatePicker: isShowing, dpStep: step });
+  },
+
+  goToDpStep(e) { this.setData({ dpStep: e.currentTarget.dataset.step }); },
+  selectDecade(e) { this.setData({ dpDecade: e.currentTarget.dataset.val, dpStep: 'year' }); },
+  selectYear(e) { this.setData({ dpYear: e.currentTarget.dataset.val, dpStep: 'month' }); },
+  selectMonth(e) {
+    const month = e.currentTarget.dataset.val;
+    const daysInMonth = new Date(this.data.dpYear, month, 0).getDate();
+    this.setData({ 
+      dpMonth: month, 
+      days: Array.from({length: daysInMonth}, (_, i) => i + 1),
+      dpStep: 'day' 
+    });
+  },
+  selectDay(e) {
+    const day = e.currentTarget.dataset.val;
+    const y = this.data.dpYear;
+    const m = this.data.dpMonth < 10 ? '0' + this.data.dpMonth : this.data.dpMonth;
+    const d = day < 10 ? '0' + day : day;
+    
+    this.setData({ 
+      dpDay: day,
+      birthDate: `${y}-${m}-${d}`,
+      showDatePicker: false 
+    });
   },
 
   generateMemberId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let memberId = '';
-    for (let i = 0; i < 8; i++) {
-      memberId += chars[Math.floor(Math.random() * chars.length)];
-    }
+    for (let i = 0; i < 8; i++) { memberId += chars[Math.floor(Math.random() * chars.length)]; }
     this.setData({ memberId });
   },
 
@@ -125,172 +103,106 @@ Page({
 
   switchTab(e) {
     const tabId = Number(e.currentTarget.dataset.tabid);
-    this.setData({
-      activeTab: tabId,
-      userTypeIndex: 0
-    });
-    let defaultType = {};
-    if (tabId === 0) {
-      defaultType = this.data.memberTypeList[0];
-    } else {
-      defaultType = this.data.shopTypeList[0];
-    }
-    this.setData({
-      selectedUserType: defaultType,
-      currentBenefits: defaultType.benefits
-    });
+    const defaultType = tabId === 0 ? this.data.memberTypeList[0] : this.data.shopTypeList[0];
+    this.setData({ activeTab: tabId, userTypeIndex: 0, selectedUserType: defaultType });
   },
 
+  // 表单输入绑定
   handleNicknameInput(e) { this.setData({ nickname: e.detail.value.trim() }); },
-  handlePhoneInput(e) { this.setData({ phone: e.detail.value.trim() }); },
   handlePasswordInput(e) { this.setData({ password: e.detail.value.trim() }); },
   handlePasswordConfirmInput(e) { this.setData({ passwordConfirm: e.detail.value.trim() }); },
   handleRecommenderIdInput(e) { this.setData({ recommenderId: e.detail.value.trim() }); },
-  handleCodeInput(e) { this.setData({ verifyCode: e.detail.value.trim() }); },
 
   handleUserTypeChange(e) {
     const index = e.detail.value;
-    let selected = {};
-    if (this.data.activeTab === 0) {
-      selected = this.data.memberTypeList[index];
-    } else {
-      selected = this.data.shopTypeList[index];
-    }
-    this.setData({
-      userTypeIndex: index,
-      selectedUserType: selected,
-      currentBenefits: selected.benefits
-    });
+    const selected = this.data.activeTab === 0 ? this.data.memberTypeList[index] : this.data.shopTypeList[index];
+    this.setData({ userTypeIndex: index, selectedUserType: selected });
   },
 
-  getSmsCode() {
-    const { phone } = this.data;
-    if (!/^1[3-9]\d{9}$/.test(phone)) {
-        wx.showToast({ title: "请输入正确的手机号", icon: "none" });
-        return;
-    }
-    wx.request({
-        url: `${app.globalData.baseUrl}/app01/send-sms/`,
-        method: "POST",
-        data: { phone },
-        success: (res) => {
-            if (res.data.code === 200) {
-                wx.showToast({ title: "验证码已发送", icon: "success" });
-                this.setData({ bizId: res.data.data.biz_id });
-                this.startCountDown();
-            } else {
-                wx.showToast({ title: res.data.msg, icon: "none" });
-            }
-        },
-        fail: (err) => {
-            wx.showToast({ title: "网络异常", icon: "none" });
-            console.error("发送验证码失败：", err);
-        }
-    });
-  },
+  toggleAgreement() { this.setData({ isAgreed: !this.data.isAgreed }); },
+  openAgreement() { this.setData({ showAgreement: true }); },
+  closeAgreement() { this.setData({ showAgreement: false }); },
+  preventBubbling() { },
 
-  handleGetVerifyCode() {
-    const { phone } = this.data;
-    const phoneReg = /^1[3-9]\d{9}$/;
-    if (!phone || !phoneReg.test(phone)) {
-      wx.showToast({ title: '请输入正确的11位手机号', icon: 'none' });
-      return;
-    }
-    if (this.data.countDown > 0) {
-      wx.showToast({ title: '请稍后再获取验证码', icon: 'none' });
-      return;
-    }
-    let count = 60;
-    this.setData({
-      countDown: count,
-      timer: setInterval(() => {
-        count--;
-        this.setData({ countDown: count });
-        if (count <= 0) {
-          clearInterval(this.data.timer);
-          this.setData({ timer: null });
-        }
-      }, 1000)
-    });
-    wx.showToast({ title: '验证码发送成功（123456）', icon: 'success' });
-  },
-
-  // ========== 新增：协议勾选与弹窗逻辑 ==========
-  toggleAgreement() {
-    this.setData({ isAgreed: !this.data.isAgreed });
-  },
-  openAgreement() {
-    this.setData({ showAgreement: true });
-  },
-  closeAgreement() {
-    this.setData({ showAgreement: false });
-  },
-  preventBubbling() {
-    // 阻止点击弹窗内容时触发遮罩层的关闭事件
-  },
-
-  handleRegister() {
+  // ================= 🌟 核心：一键授权并提交注册 =================
+  handleRegisterWithPhone(e) {
     const {
-      memberId, nickname, phone, password, passwordConfirm,
-      selectedUserType, recommenderId, verifyCode, activeTab, isAgreed
+      memberId, nickname, password, passwordConfirm, 
+      selectedUserType, recommenderId, activeTab, isAgreed, birthDate
     } = this.data;
 
-    // ========== 新增：校验是否勾选协议 ==========
-    if (!isAgreed) {
-      wx.showToast({ title: '请先阅读并勾选《用户充值须知》', icon: 'none' });
-      return;
+    // 1. 协议校验
+    if (!isAgreed) { wx.showToast({ title: '请先阅读并勾选《用户充值须知》', icon: 'none' }); return; }
+
+    // 2. 基础表单严校验
+    if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
+    if (!birthDate) { wx.showToast({ title: '请选择出生日期', icon: 'none' }); return; }
+    
+    // 🌟 新增：强制校验推荐人ID
+    if (!recommenderId) { 
+      wx.showToast({ title: '推荐人ID为必填项', icon: 'none' }); 
+      return; 
     }
 
-    const userType = selectedUserType.value;
-    const userTypeName = selectedUserType.name;
-    const userTypeAmount = selectedUserType.amount;
-
-    if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
-    const phoneReg = /^1[3-9]\d{9}$/;
-    if (!phone || !phoneReg.test(phone)) { wx.showToast({ title: '请输入正确的11位手机号', icon: 'none' }); return; }
-    const pwdReg = /^(?=.*[0-9])(?=.*[a-zA-Z])(?!.*\s).{8,}$/;
-    if (!password || !pwdReg.test(password)) {
+    if (!/^(?=.*[0-9])(?=.*[a-zA-Z])(?!.*\s).{8,}$/.test(password)) {
       wx.showToast({ title: '密码需8位以上数字+字母组合', icon: 'none' }); return;
     }
     if (password !== passwordConfirm) {
-      wx.showToast({ title: '两次密码不一致', icon: 'none' }); return;
+      wx.showToast({ title: '两次输入密码不一致，请检查', icon: 'none' }); return;
     }
-    if (!verifyCode) { wx.showToast({ title: '请输入验证码', icon: 'none' }); return; }
 
-    const registerData = {
-      memberId: memberId,
-      nickname: nickname,
-      phone: phone,
-      password: password,
-      password_confirm: passwordConfirm,
-      user_type: userType,
-      recommender_id: recommenderId,
-      verifyCode: verifyCode
-    };
-    app.globalData.pendingRegisterData = registerData;
-    wx.setStorageSync('pendingRegisterData', registerData);
+    // 3. 检查用户是否同意了微信手机号授权
+    if (e.detail.errMsg !== "getPhoneNumber:ok") {
+      wx.showToast({ title: '需授权手机号才能完成注册', icon: 'none' }); 
+      return;
+    }
 
-    const scene = activeTab === 0 ? 'member' : 'shop';
-    wx.showToast({ title: '验证通过，即将跳转支付页', icon: 'success', duration: 1500 });
-    setTimeout(() => {
-      wx.navigateTo({
-        url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(userTypeName)}&amount=${userTypeAmount}&phone=${encodeURIComponent(phone)}&memberId=${memberId}`,
-      });
-    }, 1000);
-  },
+    // 4. 获取用于解密真实手机号的 code
+    const phoneCode = e.detail.code;
 
-  startCountDown() {
-    let count = 60;
-    this.setData({
-      countDown: count,
-      timer: setInterval(() => {
-        count--;
-        this.setData({ countDown: count });
-        if (count <= 0) {
-          clearInterval(this.data.timer);
-          this.setData({ timer: null });
+    wx.showLoading({ title: '安全校验中...' });
+
+    // 5. 获取用于换取 openid 的 login code
+    wx.login({
+      success: (res) => {
+        wx.hideLoading();
+        if (res.code) {
+          const loginCode = res.code;
+
+          // 6. 构建全新的注册数据结构（彻底抛弃明文 phone 和 verifyCode）
+          const registerData = {
+            memberId: memberId,
+            nickname: nickname,
+            password: password,
+            password_confirm: passwordConfirm,
+            user_type: selectedUserType.value,
+            recommender_id: recommenderId, // 必填的推荐人ID
+            birth_date: birthDate,
+            phone_code: phoneCode,         // 传给后端去换取真实手机号
+            login_code: loginCode          // 传给后端去换取 openid
+          };
+          
+          app.globalData.pendingRegisterData = registerData;
+          wx.setStorageSync('pendingRegisterData', registerData);
+
+          // 7. 跳转支付页
+          const scene = activeTab === 0 ? 'member' : 'shop';
+          wx.showToast({ title: '授权成功，即将前往支付', icon: 'success', duration: 1500 });
+          
+          setTimeout(() => {
+            wx.navigateTo({
+              // phone 字段传入占位文字，实际手机号由后端解析生成
+              url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(selectedUserType.name)}&amount=${selectedUserType.amount}&phone=微信授权手机号&memberId=${memberId}`,
+            });
+          }, 1000);
+        } else {
+          wx.showToast({ title: '微信登录失败', icon: 'none' });
         }
-      }, 1000)
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '网络异常', icon: 'none' });
+      }
     });
   }
 });

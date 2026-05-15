@@ -1,6 +1,5 @@
 {
   "usingComponents": {
-    "van-card": "/miniprogram_npm/@vant/weapp/card/index",
     "van-button": "/miniprogram_npm/@vant/weapp/button/index",
     "van-skeleton": "/miniprogram_npm/@vant/weapp/skeleton/index",
     "van-toast": "/miniprogram_npm/@vant/weapp/toast/index"

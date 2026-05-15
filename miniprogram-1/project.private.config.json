@@ -3,11 +3,18 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/order-list/order-list",
-          "pathName": "pages/order-list/order-list",
+          "name": "pages/register/register",
+          "pathName": "pages/register/register",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/order-list/order-list",
+          "pathName": "pages/order-list/order-list",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "pages/my/my",
@@ -38,13 +45,6 @@
           "scene": null
         },
         {
-          "name": "pages/cart/cart",
-          "pathName": "pages/cart/cart",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
-        },
-        {
           "name": "pages/index/index",
           "pathName": "pages/index/index",
           "query": "",
@@ -55,7 +55,7 @@
     }
   },
   "setting": {
-    "urlCheck": false,
+    "urlCheck": true,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,

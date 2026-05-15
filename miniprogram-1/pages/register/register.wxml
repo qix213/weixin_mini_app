@@ -11,120 +11,141 @@
       <view class="input-item">
         <label class="input-label">会员ID</label>
         <view class="input-content disabled-content">{{memberId}}</view>
-        <view class="refresh-btn" bindtap="refreshMemberId"><text class="icon">🔄</text> 刷新</view>
+        <view class="refresh-btn" bindtap="refreshMemberId">刷新</view>
       </view>
 
       <view class="input-item">
         <label class="input-label">昵称</label>
-        <input class="input-content" placeholder="请设置昵称" placeholder-class="ph-style" bindinput="handleNicknameInput" value="{{nickname}}" type="text" />
+        <input class="input-content" type="nickname" placeholder="请输入或获取微信昵称" placeholder-class="ph-style" bindinput="handleNicknameInput" bindblur="handleNicknameInput" value="{{nickname}}" />
       </view>
 
-      <view class="input-item">
-        <label class="input-label">手机号</label>
-        <input class="input-content" placeholder="请输入11位手机号" placeholder-class="ph-style" bindinput="handlePhoneInput" value="{{phone}}" type="number" />
+      <view class="input-item" bindtap="toggleDatePicker">
+        <label class="input-label">生日</label>
+        <view class="picker-content">
+          <text class="picker-text" style="{{birthDate ? '' : 'color: #94a3b8; font-weight: normal;'}}">
+            {{birthDate || '点击选择 (一年限改1次)'}}
+          </text>
+          <text class="arrow" style="transform: {{showDatePicker ? 'rotate(180deg)' : 'rotate(0)'}};">▼</text>
+        </view>
       </view>
 
-      <view class="input-item code-input-wrap">
-        <label class="input-label">验证码</label>
-        <input class="input-content code-input" placeholder="请输入6位验证码" placeholder-class="ph-style" bindinput="handleCodeInput" value="{{verifyCode}}" type="number" />
-        <button class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}" bindtap="handleGetVerifyCode" disabled="{{countDown > 0}}">
-          {{countDown > 0 ? countDown + 's后重试' : '获取验证码'}}
-        </button>
+      <view class="date-picker-panel {{showDatePicker ? 'expanded' : ''}}">
+        <view class="dp-inner">
+          <view class="dp-header">
+            <view class="dp-crumb {{dpStep === 'decade' ? 'active' : ''}}" bindtap="goToDpStep" data-step="decade">{{dpDecade || '年代'}}</view>
+            <text class="dp-sep">/</text>
+            <view class="dp-crumb {{dpStep === 'year' ? 'active' : ''}}" bindtap="goToDpStep" data-step="year">{{dpYear || '年份'}}</view>
+            <text class="dp-sep">/</text>
+            <view class="dp-crumb {{dpStep === 'month' ? 'active' : ''}}" bindtap="goToDpStep" data-step="month">{{dpMonth || '月份'}}</view>
+            <text class="dp-sep">/</text>
+            <view class="dp-crumb {{dpStep === 'day' ? 'active' : ''}}">{{dpDay || '日期'}}</view>
+          </view>
+
+          <view class="dp-body">
+            <view class="dp-grid col-3" wx:if="{{dpStep === 'decade'}}">
+              <view class="dp-btn" wx:for="{{decades}}" wx:key="*this" catchtap="selectDecade" data-val="{{item}}">{{item}}s</view>
+            </view>
+            <view class="dp-grid col-4" wx:if="{{dpStep === 'year'}}">
+              <view class="dp-btn" wx:for="{{10}}" wx:key="*this" catchtap="selectYear" data-val="{{dpDecade + item}}">{{dpDecade + item}}</view>
+            </view>
+            <view class="dp-grid col-4" wx:if="{{dpStep === 'month'}}">
+              <view class="dp-btn" wx:for="{{12}}" wx:key="*this" catchtap="selectMonth" data-val="{{item + 1}}">{{item + 1}}月</view>
+            </view>
+            <view class="dp-grid col-6" wx:if="{{dpStep === 'day'}}">
+              <view class="dp-btn" wx:for="{{days}}" wx:key="*this" catchtap="selectDay" data-val="{{item}}">{{item}}</view>
+            </view>
+          </view>
+        </view>
       </view>
 
       <view class="input-item">
         <label class="input-label">密码</label>
-        <input class="input-content" placeholder="8位以上数字+字母组合" placeholder-class="ph-style" password bindinput="handlePasswordInput" value="{{password}}" type="text" />
+        <input class="input-content" placeholder="8位以上字母+数字" placeholder-class="ph-style" password bindinput="handlePasswordInput" value="{{password}}" />
       </view>
 
       <view class="input-item">
         <label class="input-label">确认密码</label>
-        <input class="input-content" placeholder="请再次输入密码" placeholder-class="ph-style" password bindinput="handlePasswordConfirmInput" value="{{passwordConfirm}}" type="text" />
-      </view>
-
-      <view class="input-item">
-        <label class="input-label">{{activeTab === 0 ? '会员类型' : '开店类型'}}</label>
-        <picker mode="selector" range="{{activeTab === 0 ? memberTypeList : shopTypeList}}" range-key="name" bindchange="handleUserTypeChange" value="{{userTypeIndex}}">
-          <view class="picker-content">
-            <text class="picker-text">{{selectedUserType.name || (activeTab === 0 ? '蓝朋友（0元/年）' : 'MINI-studio 主理人（9800元）')}}</text>
-            <text class="arrow">▼</text>
-          </view>
-        </picker>
+        <input class="input-content" placeholder="请再次输入密码" placeholder-class="ph-style" password bindinput="handlePasswordConfirmInput" value="{{passwordConfirm}}" />
       </view>
 
       <view class="input-item">
         <label class="input-label">推荐人ID</label>
-        <input class="input-content" placeholder="请输入8位推荐人ID" placeholder-class="ph-style" bindinput="handleRecommenderIdInput" value="{{recommenderId}}" type="text" />
+        <input class="input-content" placeholder="必填，请输入上级会员ID" placeholder-class="ph-style" bindinput="handleRecommenderIdInput" value="{{recommenderId}}" maxlength="8" />
       </view>
-    </view>
-  </view>
 
-  <view class="glass-card benefit-container">
-    <view class="benefit-title">{{activeTab === 0 ? '会员权益预览' : '开店权益预览'}}</view>
-    <view class="benefit-list">
-      <block wx:for="{{currentBenefits}}" wx:key="index">
-        <view class="benefit-item"><text class="dot">·</text> {{item}}</view>
-      </block>
-      <view class="benefit-item empty-benefit" wx:if="{{currentBenefits.length === 0}}">暂无权益信息</view>
+      <view class="input-item">
+        <label class="input-label">会员星级</label>
+        <picker wx:if="{{activeTab === 0}}" mode="selector" range="{{memberTypeList}}" range-key="name" bindchange="handleUserTypeChange">
+          <view class="picker-content">
+            <text class="picker-text">{{selectedUserType.name}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+        <view wx:else class="picker-content">
+          <text class="picker-text">Ta创+</text>
+        </view>
+      </view>
+
+      <view class="shop-notice" wx:if="{{activeTab === 1}}">⚠️ 开通“Ta创+”级别需同步进行线下合同签约</view>
     </view>
   </view>
 
   <view class="action-area">
     <view class="agreement-wrap">
-      <view class="checkbox-container" bindtap="toggleAgreement">
-        <view class="checkbox {{isAgreed ? 'checked' : ''}}">
-          <text class="check-mark" wx:if="{{isAgreed}}">✓</text>
-        </view>
-        <text class="agree-text">我已阅读并同意</text>
+      <view class="checkbox {{isAgreed ? 'checked' : ''}}" bindtap="toggleAgreement">
+        <text class="check-mark" wx:if="{{isAgreed}}">✓</text>
       </view>
-      <text class="link-text" catchtap="openAgreement">《用户充值须知》</text>
+      <view class="text-group">
+        <text class="agree-text" bindtap="toggleAgreement">我已阅读并同意</text>
+        <text class="link-text" bindtap="openAgreement">《用户充值须知》</text>
+      </view>
     </view>
-
-    <button class="register-btn" bindtap="handleRegister">提交注册</button>
+    
+    <button class="register-btn" open-type="getPhoneNumber" bindgetphonenumber="handleRegisterWithPhone">授权手机号并注册</button>
   </view>
 
   <view class="modal-mask" wx:if="{{showAgreement}}" bindtap="closeAgreement">
-    <view class="modal-content glass-card" catchtap="preventBubbling">
+    <view class="modal-content" catchtap="preventBubbling">
       <view class="modal-header">用户充值须知</view>
-      
-      <scroll-view scroll-y="true" class="modal-body">
-        <view class="p">尊敬的用户，欢迎您使用充值服务。在使用充值功能前，请您仔细阅读并充分理解本须知的所有内容。您点击“同意”或“立即充值”按钮后，即视为您已阅读、理解并同意接受本须知的约束。</view>
-        
-        <view class="h3">一、 服务说明</view>
-        <view class="p">1. 虚拟货币/服务：本平台提供的充值服务是指通过法定货币购买本平台特定的虚拟货币或直接开通会员/订阅服务。虚拟货币/服务仅限在本平台内使用，不可逆向兑换为法定货币，不可进行转账、赠与（除非平台另有规定）。</view>
-        <view class="p">2. 充值渠道：用户可通过本平台官方提供的支付渠道（如微信、支付宝、银行卡等）进行充值。请务必使用本人名下或合法授权的支付账户进行操作。</view>
-        <view class="p">3. 充值发票：如需开具发票，请在充值后30天内联系客服申请，逾期将无法开具。</view>
-        <view class="p">4. 关于限时活动：若用户参与首充双倍、限时赠送等福利活动，则参与活动赠送的虚拟货币/道具不参与退款，且在用户违规时平台有权收回。</view>
-        
-        <view class="h3">二、 充值规则</view>
-        <view class="p">1. 价格标识：所有充值项目的价格以本平台页面实时展示为准。平台有权根据业务发展、市场环境等因素调整充值价格及比例，调整将在页面公布后实时生效。</view>
-        <view class="p">2. 到账时间：通常情况下，充值成功后金额/权益会即时到账，请您仔细核对无误后确认付款，错付自行承担责任。若因网络延迟、系统维护、第三方支付通道故障等原因导致到账延迟，请您耐心等待或及时联系客服处理，请勿重复下单充值。</view>
-        <view class="p">3. 充值记录：您可以通过“个人中心/我的账户”查询详细的充值记录及余额。</view>
-        <view class="p">4. 充值赠送金额、优惠券、福利积分，仅限正价消费抵扣，不可折现、不可退换，有使用有效期以公示为准。</view>
-        <view class="p">5. 会员储值权益仅限本人使用，严禁倒卖、套现，否则平台有权冻结违规账户、取消其会员权益。</view>
-        <view class="p">6. 充值后商品/服务如遇调价，平台不补差价、不退还差额，以用户消费当日规则为准。</view>
+      <scroll-view scroll-y class="modal-body">
+        <text class="agreement-text">尊敬的用户，欢迎您使用充值服务。在使用充值功能前，请您仔细阅读并充分理解本须知的所有内容。您点击“同意”或“立即充值”按钮后，即视为您已阅读、理解并同意接受本须知的约束。
 
-        <view class="h3">三、 风险提示与责任限制</view>
-        <view class="p">1. 官方渠道：本平台严禁任何形式的第三方代充、低价折扣充值等行为。因通过非官方渠道充值导致的账号封禁、资金被骗、信息泄露等损失，由用户自行承担，本平台不提供任何形式的赔偿或补偿。</view>
-        <view class="p">2. 账号安全：充值即视为账号所有者行为。请妥善保管好您的账号、密码及支付验证信息。因账号被盗、他人冒用或误操作导致的充值损失，由用户自行负责。</view>
-        <view class="p">3. 未成年人：</view>
-        <view class="p sub-p">（1）若您是未成年人，请在监护人同意并指导下进行充值，并合理控制消费金额。</view>
-        <view class="p sub-p">（2）监护人应妥善保管支付密码，避免未成年人未经许可擅自充值。</view>
-        <view class="p sub-p">（3）若发生未成年人误充值，请监护人及时联系客服申请，平台将根据国家相关法律法规进行处理。</view>
+一、 服务说明
+1. 虚拟货币/服务：本平台提供的充值服务是指通过法定货币购买本平台特定的虚拟货币或直接开通会员/订阅服务。虚拟货币/服务仅限在本平台内使用，不可逆向兑换为法定货币，不可进行转账、赠与（除非平台另有规定）。
+2. 充值渠道：用户可通过本平台官方提供的支付渠道（如微信、支付宝、银行卡等）进行充值。请务必使用本人名下或合法授权的支付账户进行操作。
+3. 充值发票：如需开具发票，请在充值后30天内联系客服申请，逾期将无法开具。
+4. 关于限时活动：若用户参与首充双倍、限时赠送等福利活动，则参与活动赠送的虚拟货币/道具不参与退款，且在用户违规时平台有权收回。
 
-        <view class="h3">四、 退款与争议处理</view>
-        <view class="p">1. 原则上不予退款：鉴于虚拟商品/服务的特殊性，充值一旦成功，除法律规定或本须知另有约定外，原则上不予退款、退货、兑换现金。</view>
-        <view class="p">2. 特殊情形：若因技术原因导致充值未到账，经客服核实后，将进行补发或原路退款。若因平台停止运营，未消耗的虚拟货币将按照国家相关法律规定进行退换。</view>
-        <view class="p">3. 争议处理：如您对充值有异议，请在充值发生后7个工作日内通过客服渠道反馈并提供相关截图、交易单号等信息，逾期视为您认可充值结果。</view>
+二、 充值规则
+1. 价格标识：所有充值项目的价格以本平台页面实时展示为准。平台有权根据业务发展、市场环境等因素调整充值价格及比例，调整将在页面公布后实时生效。
+2. 到账时间：通常情况下，充值成功后金额/权益会即时到账，请您仔细核对无误后确认付款，错付自行承担责任。若因网络延迟、系统维护、第三方支付通道故障等原因导致到账延迟，请您耐心等待或及时联系客服处理，请勿重复下单充值。
+3. 充值记录：您可以通过“个人中心/我的账户”查询详细的充值记录及余额。
+4. 充值赠送金额、优惠券、福利积分，仅限正价消费抵扣，不可折现、不可退换，有使用有效期以公示为准。
+5. 会员储值权益仅限本人使用，严禁倒卖、套现，否则平台有权冻结违规账户、取消其会员权益。
+6. 充值后商品/服务如遇调价，平台不补差价、不退还差额，以用户消费当日规则为准。
 
-        <view class="h3">五、 其他</view>
-        <view class="p">1. 本须知的解释权归青岛蓝色奇肌生物科技有限公司所有。公司有权根据法律法规变化或业务需要对本须知进行修订，修订后的内容将以弹窗、公告等形式通知用户。</view>
-        <view class="p">2. 如果您对本须知有任何疑问，请通过以下官方渠道联系客服：在线联系或邮箱联系171715742@qq.com。</view>
+三、 风险提示与责任限制
+1. 官方渠道：本平台严禁任何形式的第三方代充、低价折扣充值等行为。因通过非官方渠道充值导致的账号封禁、资金被骗、信息泄露等损失，由用户自行承担，本平台不提供任何形式的赔偿或补偿。
+2. 账号安全：充值即视为账号所有者行为。请妥善保管好您的账号、密码及支付验证信息。因账号被盗、他人冒用或误操作导致的充值损失，由用户自行负责。
+3. 未成年人：
+（1）若您是未成年人，请在监护人同意并指导下进行充值，并合理控制消费金额。
+（2）监护人应妥善保管支付密码，避免未成年人未经许可擅自充值。
+（3）若发生未成年人误充值，请监护人及时联系客服申请，平台将根据国家相关法律法规进行处理。
+
+四、 退款与争议处理
+1. 原则上不予退款：鉴于虚拟商品/服务的特殊性，充值一旦成功，除法律规定或本须知另有约定外，原则上不予退款、退货、兑换现金。
+2. 特殊情形：若因技术原因导致充值未到账，经客服核实后，将进行补发或原路退款。若因平台停止运营，未消耗的虚拟货币将按照国家相关法律规定进行退换。
+3. 争议处理：如您对充值有异议，请在充值发生后 7个工作日内通过客服渠道反馈并提供相关截图、交易单号等信息，逾期视为您认可充值结果。
+
+五、 其他
+1. 本须知的解释权归青岛蓝色奇肌生物科技有限公司所有。公司有权根据法律法规变化或业务需要对本须知进行修订，修订后的内容将以弹窗、公告等形式通知用户。
+2. 如果您对本须知有任何疑问，请通过官方渠道联系客服。
+        </text>
       </scroll-view>
-      
       <view class="modal-footer">
-        <button class="modal-btn" bindtap="closeAgreement">我已经阅读并了解</button>
+        <button class="agree-btn" bindtap="closeAgreement">我已经阅读并了解</button>
       </view>
     </view>
   </view>
+
 </view>

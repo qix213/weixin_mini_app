@@ -6,58 +6,20 @@
     <view class="login-subtitle">Connect to the Future</view>
   </view>
 
-  <view class="glass-card form-box">
+  <view class="glass-card action-box">
     
-    <view class="input-item">
-      <view class="input-icon">👤</view>
-      <input 
-        class="input-content" 
-        placeholder="请输入你的昵称" 
-        placeholder-class="ph-style"
-        bindinput="handleNicknameInput" 
-        value="{{nickname}}"
-      />
-    </view>
-
-    <view class="input-item">
-      <view class="input-icon">🔒</view>
-      <input 
-        class="input-content" 
-        placeholder="8位以上数字+字母组合" 
-        placeholder-class="ph-style"
-        password
-        bindinput="handlePasswordInput"
-        value="{{password}}"
-      />
-    </view>
-
-    <view class="input-item code-wrap">
-      <view class="input-icon">🛡️</view>
-      <input 
-        class="input-content" 
-        placeholder="6位验证码" 
-        placeholder-class="ph-style"
-        bindinput="handleCodeInput"
-        value="{{verifyCode}}"
-        type="number"
-      />
-      <button 
-        class="get-code-btn {{countDown > 0 ? 'btn-disabled' : ''}}"
-        bindtap="handleGetVerifyCode"
-        disabled="{{countDown > 0}}"
-      >
-        {{countDown > 0 ? countDown + 's' : '获取验证码'}}
-      </button>
-    </view>
-
-  </view>
-
-  <view class="action-area">
-    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+    <button 
+      class="login-btn" 
+      open-type="getPhoneNumber" 
+      bindgetphonenumber="handleWechatLogin"
+    >
+      微信手机号快捷登录
+    </button>
     
     <view class="to-register-wrap">
       <text class="normal-text">探索新视界？</text>
       <text class="register-btn" bindtap="goToRegister">立即注册</text>
     </view>
+    
   </view>
 </view>

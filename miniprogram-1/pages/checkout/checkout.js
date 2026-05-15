@@ -32,29 +32,38 @@ Page({
     });
   },
 
-  isPointGoods(item) {
-    const app = getApp();
-    const goodsId = item.goods_id || item.id;
-    const cacheIsPoint = app.getGoodsPointCache(goodsId);
-    const isForcePointGoods = item.price > 0; 
-    
-    if (cacheIsPoint !== undefined) {
-      return cacheIsPoint || isForcePointGoods;
-    }
+isPointGoods(item) {
+  const app = getApp();
+  const goodsId = item.goods_id || item.id;
+  
+  // 1. 从全局变量或本地存储中安全读取缓存对象
+  let cacheObj = app.globalData.goodsPointCache;
+  if (!cacheObj) {
+    cacheObj = wx.getStorageSync('goodsPointCache') || {};
+    app.globalData.goodsPointCache = cacheObj;
+  }
+  
+  // 2. 获取当前商品的积分标识
+  const cacheIsPoint = cacheObj[goodsId];
+  const isForcePointGoods = item.price > 0; 
+  
+  if (cacheIsPoint !== undefined) {
+    return cacheIsPoint || isForcePointGoods;
+  }
 
-    const pointField = item.can_point_exchange || item.is_point_goods || item.is_exchange || item.exchangeable || false;
-    const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
-    
-    let isPoint = false;
-    if (typeof pointField === 'string') {
-      isPoint = pointField.toLowerCase() === 'true' || pointField === '1';
-    } else if (typeof pointField === 'number') {
-      isPoint = pointField === 1;
-    } else {
-      isPoint = !!pointField;
-    }
-    return isPoint || isForcePointGoods;
-  },
+  const pointField = item.can_point_exchange || item.is_point_goods || item.is_exchange || item.exchangeable || false;
+  const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
+  
+  let isPoint = false;
+  if (typeof pointField === 'string') {
+    isPoint = pointField.toLowerCase() === 'true' || pointField === '1';
+  } else if (typeof pointField === 'number') {
+    isPoint = pointField === 1;
+  } else {
+    isPoint = !!pointField;
+  }
+  return isPoint || isForcePointGoods;
+},
 
   calcPointPrice(price) {
     const priceStr = (price || '0').toString().replace(/[^0-9.]/g, '');

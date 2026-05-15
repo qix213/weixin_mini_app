@@ -2,15 +2,14 @@
   <view class="dynamic-bg"></view>
 
   <view class="user-info-card">
-    <block wx:if="{{isLogin && memberInfo.nickname}}">
+    <block wx:if="{{isLogin}}">
       <view class="avatar-area">
         <image class="avatar" src="/images/bg/bg.png" mode="aspectFill"></image>
         <view class="user-base-info">
-          <view class="nickname">{{memberInfo.nickname}}</view>
+          <view class="nickname">{{memberInfo.nickname || '蓝朋友'}}</view>
           <view class="member-id">会员ID：{{memberInfo.member_id}}</view>
         </view>
       </view>
-      <view class="member-card-btn" bindtap="goToMemberCenter">会员权益</view>
     </block>
     <block wx:else>
       <view class="unlogin-area">
@@ -21,14 +20,14 @@
 
   <view class="vip-board" wx:if="{{isLogin}}">
     <view class="vip-header">
-      <view class="vip-title">{{memberInfo.user_type_text || '蓝朋友'}}</view>
+      <view class="vip-title">{{memberInfo.user_type_text || '蓝朋友0星'}}</view>
     </view>
     <view class="vip-sub">
       <view class="vip-expire">会籍有效期：{{memberInfo.expire_time_text}}</view>
       <view class="vip-upgrade" wx:if="{{memberInfo.nextLevelDiff > 0}}">
         还需充值{{memberInfo.nextLevelDiff}}元升级为{{memberInfo.nextLevelName}}
       </view>
-      <view class="vip-upgrade max-level" wx:else>尊贵的顶级会员，您已享最高权益</view>
+      <view class="vip-upgrade max-level" wx:else>尊贵的满星会员，您已享最高权益</view>
     </view>
 
     <view class="vip-progress">
@@ -37,6 +36,7 @@
         <view class="node-icon-wrap">
           <view class="line-left" wx:if="{{index !== 0}}" style="background: {{ memberInfo.user_type >= item.value ? '#0ea5e9' : '#e2e8f0' }}"></view>
           <view class="line-right" wx:if="{{index !== levelConfig.length - 1}}" style="background: {{ memberInfo.user_type > item.value ? '#0ea5e9' : '#e2e8f0' }}"></view>
+          
           <view class="star-bg">
             <van-icon name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#0ea5e9' : '#cbd5e1' }}" size="40rpx" />
           </view>
@@ -61,6 +61,12 @@
   </view>
 
   <view class="function-list">
+    <view class="function-item" bindtap="goToMemberCenter">
+      <view class="function-icon">👑</view>
+      <view class="function-name">会员权益</view>
+      <view class="function-arrow">→</view>
+    </view>
+
     <view class="function-item" bindtap="{{isLogin ? 'goToAddressManage' : 'goToLogin'}}">
       <view class="function-icon">📍</view>
       <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">地址管理</view>
@@ -68,7 +74,7 @@
     </view>
     <view class="function-item" bindtap="goToInvoiceManage">
       <view class="function-icon">📄</view>
-      <view class="function-name">订单状态</view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">订单状态</view>
       <view class="function-arrow">→</view>
     </view>
     <view class="function-item" bindtap="{{isLogin ? 'goToAIChat' : 'goToLogin'}}">

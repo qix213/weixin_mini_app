@@ -16,112 +16,68 @@ Page({
   },
 
   onLoad() {
-    // 1. 初始化时先同步基础状态
+    // 1. 初始化时同步基础状态
     this.syncGlobalUserState();
     
-    // 2. 根据状态加载对应数据
-    if (this.data.isAdminMember) {
-      this.fetchStarGoods().finally(() => {
-        this.setData({ loading: false });
-      });
-    } else {
-      this.loadHomeData().finally(() => {
-        this.setData({ loading: false });
-      });
-    }
+    // 2. 加载首页数据
+    this.loadHomeData().finally(() => {
+      this.setData({ loading: false });
+    });
   },
 
-  // 页面显示时触发
   onShow() {
     this.syncGlobalUserState();
-    // 关键优化：如果已登录，主动去后台拉取最新的会员信息（包含nickname）
+    // 如果已登录，拉取最新会员信息同步 nickname
     if (this.data.isLogin) {
       this.getMemberInfo();
     }
   },
 
-  // 基础同步：从全局或缓存读取状态
+  // 基础状态同步
   syncGlobalUserState() {
-    const cacheIsLogin = app.globalData.isLogin || wx.getStorageSync('isLogin') || false;
-    let currentMemberInfo = app.globalData.memberInfo;
+    const isLogin = app.globalData.isLogin;
+    const memberInfo = app.globalData.memberInfo || wx.getStorageSync('memberInfo') || {};
+    const userType = Number(memberInfo.user_type || 0);
     
-    if (!currentMemberInfo || Object.keys(currentMemberInfo).length === 0) {
-      currentMemberInfo = wx.getStorageSync('memberInfo') || {};
-    }
-
-    const userType = Number(currentMemberInfo.user_type || 0);
-    const isAdminMember = cacheIsLogin && [4, 5].includes(userType);
-
     this.setData({
-      isLogin: cacheIsLogin,
-      userInfo: currentMemberInfo,
-      memberInfo: currentMemberInfo,
-      isAdminMember: isAdminMember
+      isLogin: isLogin,
+      userInfo: memberInfo,
+      memberInfo: memberInfo,
+      isAdminMember: isLogin && [4, 5].includes(userType)
     });
   },
 
-  // ========== 新增：核心优化，直接请求会员信息 ==========
+  // ========== 核心优化：使用封装的 app.request ==========
+
+  /**
+   * 拉取会员信息
+   * 自动带上 Authorization 头，无需手动拼 header
+   */
   getMemberInfo() {
-    // 兼容取请求头的方法（参考了你 mine.js 的写法）
-    const header = typeof app.getRequestHeader === 'function' 
-      ? app.getRequestHeader() 
-      : { 'Authorization': 'Bearer ' + (app.globalData.accessToken || wx.getStorageSync('accessToken')) };
+    app.request({
+      url: '/app01/member/info/', // 这里的路径会自动拼在 baseUrl 后面
+      method: 'GET'
+    }).then(res => {
+      if (res.data.code === 200) {
+        const memberInfo = res.data.data;
+        app.globalData.memberInfo = memberInfo;
+        wx.setStorageSync('memberInfo', memberInfo);
 
-    wx.request({
-      url: api.base + '/app01/member/info/', // 或者 app.globalData.baseUrl + '/app01/member/info/'
-      method: 'GET',
-      header: header,
-      success: (res) => {
-        if (res.data.code === 200) {
-          const memberInfo = res.data.data;
-          
-          // 1. 同步到全局变量
-          app.globalData.memberInfo = memberInfo;
-          // 2. 同步到本地缓存（关键！给其他页面用）
-          wx.setStorageSync('memberInfo', memberInfo);
-
-          // 3. 重新计算是否是管理员
-          const userType = Number(memberInfo.user_type || 0);
-          const isAdminMember = [4, 5].includes(userType);
-
-          // 4. 更新页面数据，渲染出 nickname
-          this.setData({
-            userInfo: memberInfo,
-            memberInfo: memberInfo,
-            isAdminMember: isAdminMember
-          });
-          
-          console.log('首页主动拉取会员信息成功：', memberInfo);
-        }
-      },
-      fail: (err) => {
-        console.error('首页拉取会员信息失败：', err);
-      }
-    });
-  },
-
-  // ========== 业务方法保持不变 ==========
-  goToOrderList() {
-    if (!this.data.isAdminMember) {
-      wx.showToast({
-        title: '暂无订单管理权限',
-        icon: 'none'
-      });
-      return;
-    }
-    wx.navigateTo({
-      url: '/pages/order-workbench/order-workbench',
-      fail: (err) => {
-        console.error('跳转订单管理工作台失败：', err);
-        wx.showToast({
-          title: '页面路径错误',
-          icon: 'none'
+        const userType = Number(memberInfo.user_type || 0);
+        this.setData({
+          userInfo: memberInfo,
+          memberInfo: memberInfo,
+          isAdminMember: [4, 5].includes(userType)
         });
+        console.log('✅ 会员信息同步成功');
       }
+    }).catch(err => {
+      console.error('❌ 会员信息同步失败：', err);
     });
   },
 
   loadHomeData() {
+    // 并行加载所有数据
     return Promise.all([
       this.fetchBannerData(), 
       this.fetchFixedImages(),
@@ -129,108 +85,90 @@ Page({
     ]);
   },
 
+  /**
+   * 获取明星产品
+   */
   fetchStarGoods() {
-    return new Promise((resolve) => {
-      wx.request({
-        url: api.base + '/app01/goods/',
-        method: 'GET',
-        header: {
-          'Content-Type': 'application/json'
-        },
-        success: (res) => {
-          let starGoods = [];
-          if (res.data && res.data.code === 200 && res.data.data && Array.isArray(res.data.data.results)) {
-            const allGoods = res.data.data.results;
-            const filteredStarGoods = allGoods.filter(item => item.is_star === true);
-            starGoods = filteredStarGoods.map(item => ({
-              id: item.id,
-              name: item.name,
-              image: item.image_url?.startsWith('https') ? item.image_url : `${api.base}${item.image_url || ''}`,
-              price: item.member_price || item.price,
-              original_price: item.original_price
-            }));
-          }
-          this.setData({ star_goods: starGoods });
-          resolve();
-        },
-        fail: (error) => {
-          console.error('所有商品获取失败：', error);
-          this.setData({ star_goods: [] });
-          resolve();
-        }
-      });
+    return app.request({
+      url: '/app01/goods/',
+      method: 'GET'
+    }).then(res => {
+      if (res.data && res.data.code === 200) {
+        const allGoods = res.data.data.results || [];
+        const starGoods = allGoods.filter(item => item.is_star).map(item => ({
+          id: item.id,
+          name: item.name,
+          // 🌟 这里的 api.base 必须确保是 https://www.lansik2026.com
+          image: item.image_url?.startsWith('http') ? item.image_url : `${app.globalData.baseUrl}${item.image_url || ''}`,
+          price: item.member_price || item.price,
+          original_price: item.original_price
+        }));
+        this.setData({ star_goods: starGoods });
+      }
+    }).catch(err => {
+      console.error('❌ 获取明星产品失败：', err);
     });
+  },
+
+  /**
+   * 获取轮播图及公告
+   */
+  fetchBannerData() {
+    return app.request({
+      url: api.banner
+    }).then(res => {
+      const resData = res.data;
+      console.log('🐞 轮播图接口返回原始数据：', resData);
+
+      if (resData.code === 100) {
+        // 🌟 核心修改点：这里要取 resData.banner.results
+        const bannerArray = resData.banner?.results || (Array.isArray(resData.banner) ? resData.banner : []);
+        
+        this.setData({ 
+          banner_list: bannerArray, 
+          notice: resData.notice?.title || this.data.notice,
+          content: resData.notice?.content || ''
+        });
+        
+        console.log('✅ 轮播图列表已更新为数组:', bannerArray);
+      }
+    }).catch(err => {
+      console.error('❌ 获取轮播图失败：', err);
+    });
+  },
+  /**
+   * 获取首页宣传图
+   */
+  fetchFixedImages() {
+    return app.request({
+      url: '/app01/index_annonce/'
+    }).then(res => {
+      if (res.data && res.data.code === 200) {
+        const rawImages = res.data.fixed_images || [];
+        const fixedImages = rawImages.map(item => ({
+          img: item?.img_url?.startsWith('http') ? item.img_url : `${app.globalData.baseUrl}${item?.img_url || item?.img || ''}`,
+          id: item?.id || '',
+          title: item?.title || ''
+        }));
+        this.setData({ fixed_images: fixedImages });
+      }
+    }).catch(err => {
+      console.error('❌ 获取固定图失败：', err);
+    });
+  },
+
+  // ========== 路由跳转保持不变 ==========
+  goToOrderList() {
+    if (!this.data.isAdminMember) {
+      wx.showToast({ title: '暂无订单管理权限', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/order-workbench/order-workbench' });
   },
 
   goToGoodsDetail(event) {
     const goodsId = event.currentTarget.dataset.goodsid;
-    if (!goodsId) {
-      wx.showToast({ title: '商品ID不存在', icon: 'none' });
-      return;
-    }
-    wx.navigateTo({
-      url: `/pages/mall/detail?goods_id=${goodsId}`
-    });
-  },
-
-  fetchBannerData() {
-    return new Promise((resolve) => {
-      wx.request({
-        url: api.banner,
-        method: 'GET',
-        header: { 'Content-Type': 'application/json' },
-        success: (res) => {
-          let bannerList = this.data.banner_list;
-          let notice = this.data.notice;
-          let content = this.data.content;
-
-          const resCode = res.data?.code;
-          const resBanner = res.data?.banner || {};
-          const resNotice = res.data?.notice || {};
-
-          if (resCode === 200 || res.data?.banner) {
-            bannerList = resBanner.results || resBanner || bannerList;
-            notice = resNotice?.title || notice;
-            content = resNotice?.content || content;
-          }
-
-          bannerList = Array.isArray(bannerList) ? bannerList : this.data.banner_list;
-          this.setData({ banner_list: bannerList, notice, content });
-          resolve();
-        },
-        fail: (error) => {
-          console.error('轮播图获取失败：', error);
-          resolve();
-        }
-      });
-    });
-  },
-
-  fetchFixedImages() {
-    return new Promise((resolve) => {
-      wx.request({
-        url: api.base + '/app01/index_annonce/',
-        method: 'GET',
-        header: { 'Content-Type': 'application/json' },
-        success: (res) => {
-          let fixedImages = [];
-          if (res.data && res.data.code === 200) {
-            const rawImages = res.data.fixed_images || [];
-            fixedImages = rawImages.map(item => ({
-              img: item?.img_url?.startsWith('https') ? item.img_url : `${api.base}${item?.img_url || item?.img || ''}`,
-              id: item?.id || '',
-              title: item?.title || ''
-            }));
-          }
-          this.setData({ fixed_images: fixedImages });
-          resolve();
-        },
-        fail: (error) => {
-          this.setData({ fixed_images: [] });
-          resolve();
-        }
-      });
-    });
+    if (goodsId) wx.navigateTo({ url: `/pages/mall/detail?goods_id=${goodsId}` });
   },
 
   handleClick01(event) {
@@ -238,11 +176,6 @@ Page({
     if (imgId) console.log('点击固定图片：', imgId);
   },
 
-  goToLogin() {
-    wx.navigateTo({ url: '/pages/login/login' });
-  },
-
-  goToRegister() {
-    wx.navigateTo({ url: '/pages/register/register' });
-  }
+  goToLogin() { wx.navigateTo({ url: '/pages/login/login' }); },
+  goToRegister() { wx.navigateTo({ url: '/pages/register/register' }); }
 });

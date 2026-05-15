@@ -105,35 +105,29 @@ Page({
     return isPoint || hasPointPrice;
   },
 
-  // 【核心修复】addToCart方法：修正积分标识获取方式，避免goodsInfo undefined
-// mall.js - 修正 addToCart 方法
+// 【核心修复】addToCart方法：移除不存在的函数调用，直接更新缓存
 addToCart(e) {
   const goodsId = e.currentTarget.dataset.id;
   const goodsName = e.currentTarget.dataset.name;
   const { cartList, goodsList } = this.data;
   const num = cartList[goodsId] || 1;
 
-  // 【关键修复】正确找到当前商品，并获取积分标识
+  // 正确找到当前商品，并获取积分标识
   const currentGoods = goodsList.find(item => item.id === goodsId) || {};
-  // 确认商品的积分标识字段（比如后端返回的是 can_point_exchange: true）
   const isPointGoods = currentGoods.can_point_exchange === true || currentGoods.is_point_goods === true;
   
-  // 强制打印日志，确认积分标识是否正确
-  console.log('列表页加入购物车：', {
-    goodsId,
-    goodsName,
-    currentGoods, // 查看商品完整数据
-    isPointGoods  // 确认是否为 true
-  });
-
-  // 缓存积分标识（此时才会正确缓存为 true）
-  app.setGoodsPointCache(goodsId, isPointGoods);
+  // 🌟 核心修复：直接操作 globalData 和 Storage，替代原本不存在的 app.setGoodsPointCache 方法
+  if (!app.globalData.goodsPointCache) {
+    app.globalData.goodsPointCache = {};
+  }
+  app.globalData.goodsPointCache[goodsId] = isPointGoods;
+  wx.setStorageSync('goodsPointCache', app.globalData.goodsPointCache);
 
   // 原有逻辑（不变）
   const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
   if (!token) {
     wx.showToast({
-      title: `登录后可同步【${goodsName}】到购物车（已本地缓存）`,
+      title: `登录后可同步【${goodsName}】到购物车`,
       icon: 'none',
       duration: 2000
     });
@@ -148,6 +142,8 @@ addToCart(e) {
   wx.setStorageSync('cartList', cartList);
 
   wx.showLoading({ title: '加入购物车...', mask: true });
+  
+  // 这里的 request 假设你在 app.js 中已经封装好了
   app.request({
     url: '/app01/cart/add/',
     method: 'POST',
