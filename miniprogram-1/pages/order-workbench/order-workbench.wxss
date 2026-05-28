@@ -166,3 +166,45 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-state { padding-top: 250rpx; display: flex; flex-direction: column; align-items: center; }
 .empty-icon { font-size: 100rpx; margin-bottom: 30rpx; opacity: 0.5; }
+
+/* ================= 蓝色调平铺工作台 ================= */
+.action-bar {
+  display: flex;
+  gap: 12rpx; /* 按钮间隙 */
+  padding-top: 20rpx;
+  margin-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+  width: 100%;
+}
+
+.action-btn {
+  flex: 1; /* 关键：所有按钮平分宽度，实现平铺 */
+  margin: 0 !important;
+  font-size: 24rpx !important;
+  padding: 16rpx 0 !important; /* 增加上下点击区域 */
+  border-radius: 8rpx;
+  background-color: #f0f7ff; /* 基础浅蓝底 */
+  color: #007aff; /* 基础蓝色文字 */
+  line-height: 1.4;
+  font-weight: 500;
+  border: 1rpx solid #007aff;
+}
+
+/* 主色调按钮 (预约下单) */
+.action-btn.primary {
+  background-color: #007aff;
+  color: #fff;
+  border: none;
+}
+
+/* 取消按钮 (使用蓝色描边风格，保持整洁) */
+.action-btn.danger {
+  color: #ff3b30; /* 取消依然保留红色提醒，避免误操作 */
+  border-color: #ff3b30;
+  background-color: #fff;
+}
+
+/* 按钮点击反馈 */
+.action-btn:active {
+  opacity: 0.8;
+}

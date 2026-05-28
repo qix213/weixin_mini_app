@@ -41,6 +41,7 @@ App({
     const that = this;
     const baseUrl = that.globalData.baseUrl;
     
+    
     // 🌟 路径拼接优化逻辑：
     // 1. 如果传入的是完整路径(http开头)，直接用
     // 2. 如果是相对路径，处理斜杠确保拼接后只有一个斜杠，如：https://domain.com/app01/...

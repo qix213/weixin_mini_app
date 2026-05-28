@@ -21,8 +21,11 @@
         <text>{{item.name}}</text>
         <text class="phone">{{item.phone}}</text>
       </view>
+      
+      <!-- 🔥 核心修复：完整显示 省+市+区+详细地址，永不丢失 -->
       <view class="address-row">
-        {{item.address}} {{item.detail}}
+        <!-- 优先显示单独的省市区，兼容新旧数据 -->
+        {{item.province}} {{item.city}} {{item.district}} {{item.detail}}
       </view>
 
       <!-- 操作按钮 -->
@@ -35,7 +38,6 @@
         >
           编辑
         </button>
-        <!-- 核心修复：第42行 style 语法错误 -->
         <button 
           size="mini" 
           bindtap="setDefaultAddress"

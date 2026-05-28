@@ -1,0 +1,63 @@
+<view class="page-container">
+  <!-- 加载状态 -->
+  <view class="loading-box" wx:if="{{loading}}">
+    <text>加载订单信息中...</text>
+  </view>
+
+  <!-- 表单主体 -->
+  <view class="form-box" wx:else>
+    <!-- 订单号展示 -->
+    <view class="order-info">
+      <text>订单号：{{order_sn}}</text>
+    </view>
+
+    <!-- 寄件人信息 -->
+    <view class="card">
+      <view class="card-title">寄件人信息</view>
+      <view class="form-item">
+        <text class="label">姓名</text>
+        <input class="input" value="{{sender.name}}" bindinput="inputSenderName" placeholder="请输入寄件人姓名" />
+      </view>
+      <view class="form-item">
+        <text class="label">电话</text>
+        <input class="input" value="{{sender.phone}}" bindinput="inputSenderPhone" placeholder="请输入寄件人电话" />
+      </view>
+      <view class="form-item">
+        <text class="label">地区</text>
+        <picker mode="region" bindchange="changeSenderRegion">
+          <view class="region-picker">{{senderRegionText}}</view>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">详细地址</text>
+        <textarea class="textarea" value="{{senderDetailAddr}}" bindinput="inputSenderDetail" placeholder="请输入详细地址"></textarea>
+      </view>
+    </view>
+
+    <!-- 收件人信息 -->
+    <view class="card">
+      <view class="card-title">收件人信息</view>
+      <view class="form-item">
+        <text class="label">姓名</text>
+        <input class="input" value="{{receiver.name}}" bindinput="inputReceiverName" placeholder="请输入收件人姓名" />
+      </view>
+      <view class="form-item">
+        <text class="label">电话</text>
+        <input class="input" value="{{receiver.phone}}" bindinput="inputReceiverPhone" placeholder="请输入收件人电话" />
+      </view>
+      <view class="form-item">
+        <text class="label">地区</text>
+        <picker mode="region" bindchange="changeReceiverRegion">
+          <view class="region-picker">{{receiverRegionText}}</view>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="label">详细地址</text>
+        <textarea class="textarea" value="{{receiverDetailAddr}}" bindinput="inputReceiverDetail" placeholder="请输入详细地址"></textarea>
+      </view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <button class="submit-btn" bindtap="submit" loading="{{loadingBtn}}" type="primary">确认修改地址</button>
+  </view>
+</view>

@@ -1,0 +1,117 @@
+page {
+  background-color: #F4F7F9;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  padding-bottom: 60rpx;
+}
+
+/* ================== 加载动画 ================== */
+.loading-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 80vh; color: #8A9CA5; font-size: 28rpx;
+}
+.spinner {
+  width: 64rpx; height: 64rpx; border: 6rpx solid #E0F0F5; border-top-color: #00A0B0;
+  border-radius: 50%; animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; margin-bottom: 24rpx;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ================== 地图舱 ================== */
+.map-container {
+  width: 100%; height: 50vh; position: relative; z-index: 1;
+}
+.track-map { width: 100%; height: 100%; }
+.map-mask {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 120rpx;
+  background: linear-gradient(to bottom, rgba(244, 247, 249, 0), rgba(244, 247, 249, 1)); pointer-events: none;
+}
+.no-map-header {
+  height: 200rpx; background: linear-gradient(135deg, #00CFD6, #00A0B0);
+  color: #FFF; display: flex; align-items: center; justify-content: center;
+  font-size: 32rpx; border-bottom-left-radius: 40rpx; border-bottom-right-radius: 40rpx;
+}
+
+/* ================== 通用卡片 ================== */
+.card {
+  background: #FFFFFF; border-radius: 30rpx; margin: 0 32rpx 32rpx 32rpx;
+  padding: 32rpx; box-shadow: 0 10rpx 30rpx rgba(0, 115, 130, 0.05);
+  position: relative; z-index: 10;
+}
+.overlap-map { margin-top: -120rpx; }
+
+/* ================== 路线总览卡片 ================== */
+.route-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 30rpx;
+}
+.brand-tag {
+  background: #E0F5F7; color: #00A0B0; font-size: 24rpx;
+  padding: 8rpx 20rpx; border-radius: 12rpx; font-weight: 600;
+}
+.status-text { font-size: 32rpx; font-weight: bold; color: #1C2B33; }
+
+.route-path-box {
+  display: flex; align-items: center; justify-content: space-between; padding-top: 10rpx;
+}
+.city-box { display: flex; flex-direction: column; width: 180rpx; }
+.text-right { text-align: right; }
+.city-name {
+  font-size: 34rpx; font-weight: bold; color: #1C2B33; margin-bottom: 6rpx;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.city-label { font-size: 24rpx; color: #8A9CA5; }
+
+.path-line { flex: 1; position: relative; margin: 0 20rpx; height: 40rpx; }
+.line-dashed {
+  position: absolute; top: 50%; left: 0; width: 100%; height: 2rpx;
+  border-top: 4rpx dashed #C4E8EB; transform: translateY(-50%);
+}
+.car-icon {
+  position: absolute;
+  top: -16rpx;
+  font-size: 40rpx;
+  background-color: #FFF;
+  padding: 0 10rpx;
+  z-index: 2;
+  /* 动画保持不变 */
+  animation: carMove 2.5s infinite ease-in-out alternate;
+}
+
+/* 核心修复：在动画的 transform 中加入 scaleX(-1) 实现水平翻转 */
+@keyframes carMove {
+  0% { 
+    left: 20%; 
+    transform: translateX(-50%) scaleX(-1); 
+  }
+  100% { 
+    left: 80%; 
+    transform: translateX(-50%) scaleX(-1); 
+  }
+}
+
+/* ================== 时间线卡片 ================== */
+.timeline-header { font-size: 30rpx; font-weight: bold; color: #1C2B33; margin-bottom: 40rpx; }
+.empty-tip { text-align: center; color: #8A9CA5; padding: 40rpx 0; font-size: 28rpx; }
+
+.timeline-item { display: flex; align-items: stretch; min-height: 120rpx; }
+.axis { width: 60rpx; display: flex; flex-direction: column; align-items: center; margin-right: 20rpx; }
+.dot { width: 16rpx; height: 16rpx; background-color: #D3E0E5; border-radius: 50%; margin-top: 12rpx; position: relative; z-index: 2; }
+.dot.active {
+  width: 24rpx; height: 24rpx; background: linear-gradient(135deg, #00CFD6, #00A0B0);
+  box-shadow: 0 4rpx 10rpx rgba(0, 160, 176, 0.4); margin-top: 8rpx;
+}
+.pulse {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 56rpx; height: 56rpx; background-color: rgba(0, 207, 214, 0.25); border-radius: 50%;
+  animation: radarPulse 2s infinite cubic-bezier(0.2, 0, 0.4, 1); z-index: -1;
+}
+@keyframes radarPulse { 0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
+.line { width: 2rpx; flex: 1; background-color: #EBF0F2; margin-top: -6rpx; margin-bottom: -12rpx; }
+
+.content { flex: 1; padding-bottom: 40rpx; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.status-name { font-size: 28rpx; font-weight: bold; color: #5B6D75; }
+.time { font-size: 24rpx; color: #A4B4BC; }
+.desc { font-size: 26rpx; color: #5B6D75; line-height: 1.5; }
+
+.active-content .status-name { color: #00A0B0; }
+.active-content .desc { color: #1C2B33; font-weight: 500; }
+.active-content .time { color: #00A0B0; opacity: 0.8; }

@@ -31,15 +31,24 @@ Page({
       const app = getApp();
       const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
   
+      // ✅ 强制定义参数，打印前端传参（关键调试）
+      const requestData = { 
+        current_level: this.data.currentLevel,
+        sync_logistics: 1  // 强制写死1
+      };
+      console.log("【前端传参】sync_logistics =", requestData.sync_logistics); // 打印验证
+  
       wx.request({
         url: `${app.globalData.baseUrl}/app01/member/sub-consume/`,
-        method: 'GET',
+        method: "GET",
         header: header,
-        data: { current_level: this.data.currentLevel },
+        data: requestData, // 用强制定义的参数
         success: (res) => {
           if (res.data?.code === 200) {
             let allOrders = [];
             const rawOrderData = res.data.data || [];
+            
+            console.log("✅ 后端传回【已同步物流】的订单列表：", rawOrderData);
   
             rawOrderData.forEach((memberItem) => {
               const memberNickname = memberItem.member_info?.nickname || '未知会员';
@@ -51,16 +60,15 @@ Page({
               });
             });
   
-            // 这里的 filteredOrders 是初始过滤（排除未付款）
             const validOrders = allOrders.filter(o => o.status !== 0);
-  
-            // 🔥 关键点：物流信息获取后的二次清洗
+            
             this.fetchExpressList(validOrders).then(() => {
-              
-              // 对所有订单进行状态二次校对
               const cleanedOrders = validOrders.map(order => {
+                if (order.status === 4) {
+                  order.statusKey = 'cancelled';
+                  return order;
+                }
                 const logisStatus = order.latestExpress?.logisticsStatusName || '';
-                // 只要物流包含“签收”或“已完成”，强制把 Tab 分类改为 completed
                 if (logisStatus.indexOf('签收') !== -1 || logisStatus.indexOf('完成') !== -1) {
                   order.statusKey = 'completed';
                 }
@@ -116,14 +124,9 @@ Page({
 
             expressList.forEach((express) => {
               const orderSn = express.order_sn || '';
-              if (!orderSn) {
-                return;
-              }
+              if (!orderSn) return;
 
-              if (!expressMap[orderSn]) {
-                expressMap[orderSn] = [];
-              }
-
+              if (!expressMap[orderSn]) expressMap[orderSn] = [];
               const formattedExpress = {
                 logisticsNo: express.logistics_no || '未知运单号',
                 logisticsCompany: express.logistics_company || '未知物流公司',
@@ -142,18 +145,12 @@ Page({
               order.latestExpress = order.expressList[0] || {};
             });
           } else {
-            orders.forEach(order => {
-              order.expressList = [];
-              order.latestExpress = {};
-            });
+            orders.forEach(order => { order.expressList = []; order.latestExpress = {}; });
           }
           resolve();
         },
         fail: (err) => {
-          orders.forEach(order => {
-            order.expressList = [];
-            order.latestExpress = {};
-          });
+          orders.forEach(order => { order.expressList = []; order.latestExpress = {}; });
           resolve();
         }
       });
@@ -164,14 +161,16 @@ Page({
     const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
     let status = this.safeToNumber(order.status || 0);
     
-    // 获取物流状态名称（用于精准分类）
-    const logisticsStatus = order.latest_express?.logistics_status_name || '';
-    
-    let statusKey = this.getStatusKeyByCode(status);
-    
-    // 🔥 核心修正：如果物流显示“已签收”，强制分类到“已完成”
-    if (logisticsStatus.indexOf('已签收') !== -1 || logisticsStatus === '已完成') {
-      statusKey = 'completed';
+    // ✅ 核心修复：优先判断已取消状态，禁止被物流状态覆盖
+    let statusKey;
+    if (status === 4) {
+      statusKey = 'cancelled';
+    } else {
+      statusKey = this.getStatusKeyByCode(status);
+      const logisticsStatus = order.latest_express?.logistics_status_name || '';
+      if (logisticsStatus.indexOf('已签收') !== -1 || logisticsStatus === '已完成') {
+        statusKey = 'completed';
+      }
     }
 
     return {
@@ -179,8 +178,8 @@ Page({
       orderSn: orderSn,
       status: status,
       statusName: order.status_name || this.data.statusMap[status],
-      statusKey: statusKey, // 使用修正后的 key
-      totalPrice: this.safeToNumber(order.total_price || 0).toFixed(2), // 统一保留两位小数
+      statusKey: statusKey,
+      totalPrice: this.safeToNumber(order.total_price || 0).toFixed(2),
       createTime: order.create_time || '未知时间',
       expressList: [],
       latestExpress: {},
@@ -218,7 +217,6 @@ Page({
     this.setData({ filteredOrders: list });
   },
 
-  // 新增：物流轨迹展开/收起方法（修复点击无反应）
   toggleTrackExpand(e) {
     const index = e.currentTarget.dataset.index;
     let list = [...this.data.filteredOrders];
@@ -228,18 +226,12 @@ Page({
 
   safeToNumber(v) {
     const n = parseFloat(v); 
-    const result = isNaN(n)?0:n;
-    return result;
+    return isNaN(n) ? 0 : n;
   },
 
   formatDate(str) {
     if(!str) return '未知时间';
-    try {
-      const formatted = str.replace(' ','T');
-      return formatted;
-    }catch(e){
-      return str;
-    }
+    try { return str.replace(' ','T'); } catch(e){ return str; }
   },
 
   onPullDownRefresh() {
@@ -247,5 +239,22 @@ Page({
     this.fetchOrderList().finally(()=>{
       wx.stopPullDownRefresh();
     });
+  },
+
+  goToPreOrder(e) {
+    const orderSn = e.currentTarget.dataset.sn;
+    wx.navigateTo({ url: `/pages/order-workbench/preOrder?order_sn=${orderSn}` });
+  },
+  goToModifyOrder(e) {
+    const orderSn = e.currentTarget.dataset.sn;
+    wx.navigateTo({ url: `/pages/order-workbench/modify?order_sn=${orderSn}` });
+  },
+  goToCancelOrder(e) {
+    const orderSn = e.currentTarget.dataset.sn;
+    wx.navigateTo({ url: `/pages/order-workbench/cancel?order_sn=${orderSn}` });
+  },
+  goToLogistics(e) {
+    const orderSn = e.currentTarget.dataset.sn;
+    wx.navigateTo({ url: `/pages/order-workbench/logistics?order_sn=${orderSn}` });
   }
 });

@@ -1,62 +1,174 @@
-/* 表单容器 */
-.form-box {
-  padding: 20rpx;
-  background-color: #fff;
+/* 全局背景色：极浅的青灰 */
+page {
+  background-color: #F4F7F9;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  padding-bottom: 180rpx; 
+}
+
+.container {
+  padding: 24rpx;
+}
+
+/* ================== 智能解析舱 ================== */
+.smart-parse-box {
+  background: linear-gradient(145deg, #FFFFFF, #F8FCFD);
+  border-radius: 24rpx;
+  padding: 24rpx 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 160, 176, 0.04);
+}
+
+.smart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20rpx;
 }
 
-/* 表单行 */
-.row {
+.smart-header .title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #00A0B0;
   display: flex;
-  margin-bottom: 30rpx;
   align-items: center;
 }
+.smart-header .title::before {
+  content: "";
+  display: inline-block;
+  width: 8rpx;
+  height: 28rpx;
+  background: #00CFD6;
+  border-radius: 4rpx;
+  margin-right: 12rpx;
+}
 
-.row text {
-  width: 120rpx;
+.smart-header .clear-btn {
+  font-size: 24rpx;
+  color: #8A9CA5;
+}
+
+.smart-textarea {
+  width: 100%;
+  height: 140rpx;
   font-size: 28rpx;
-  color: #333;
-}
-
-/* 输入框/选择器样式 */
-.row input, .row .picker-text, .row textarea {
-  flex: 1;
-  padding: 15rpx;
-  border: 1rpx solid #eee;
-  border-radius: 8rpx;
-  font-size: 26rpx;
-  color: #333;
-}
-
-.row textarea {
-  min-height: 120rpx;
-  align-self: flex-start;
-  line-height: 1.4;
-  padding: 15rpx;
-}
-
-/* 选择器文本 */
-.row .picker-text {
-  color: #666;
-  background-color: #f9f9f9;
-}
-
-/* 保存按钮容器 */
-.save-btn-wrap {
+  color: #1C2B33;
+  line-height: 1.5;
+  background: #F4F7F9;
+  border-radius: 16rpx;
   padding: 20rpx;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
 }
 
-/* 保存按钮 */
-.save-btn {
-  background: #1E88E5;
-  color: #fff;
-  border-radius: 8rpx;
-  height: 80rpx;
-  line-height: 80rpx;
+.parse-btn {
+  background-color: #E0F5F7;
+  color: #00A0B0;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 40rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  transition: all 0.3s;
+}
+.parse-btn.active {
+  background: linear-gradient(135deg, #00CFD6, #00A0B0);
+  color: #FFFFFF;
+  box-shadow: 0 6rpx 16rpx rgba(0, 160, 176, 0.2);
+}
+.parse-btn::after { border: none; }
+
+/* ================== 表单卡片 ================== */
+.form-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 0 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
+  margin-bottom: 24rpx;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  min-height: 100rpx;
+  position: relative;
+}
+.input-group.align-top { align-items: flex-start; padding: 24rpx 0; }
+
+.label {
+  width: 140rpx;
+  font-size: 28rpx;
+  color: #5B6D75;
+  flex-shrink: 0;
+}
+.label.push-down { margin-top: 6rpx; }
+
+.input-control {
+  flex: 1;
   font-size: 30rpx;
-  border: none;
+  color: #1C2B33;
+  height: 100%;
+}
+.picker-control {
+  flex: 1;
+  font-size: 30rpx;
+  color: #B0C4CC;
+}
+.picker-control.has-value { color: #1C2B33; }
+
+.textarea-control {
+  flex: 1;
+  font-size: 30rpx;
+  color: #1C2B33;
+  min-height: 140rpx;
+  line-height: 1.5;
 }
 
-.save-btn::after {
-  border: none;
+.placeholder-style { color: #B0C4CC; }
+
+.arrow-icon {
+  font-family: consolas;
+  color: #B0C4CC;
+  font-size: 30rpx;
+  margin-left: 10rpx;
 }
+
+.divider {
+  height: 1rpx;
+  background-color: #F0F4F5;
+  margin-left: 140rpx; /* 只留白右侧，保持左侧视觉连贯 */
+}
+
+/* ================== 开关卡片 ================== */
+.switch-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 110rpx;
+  padding: 0 32rpx;
+}
+.switch-card .label { width: auto; color: #1C2B33; font-weight: 500; }
+
+/* ================== 底部操作栏 ================== */
+.bottom-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 40rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #00CFD6 0%, #0096A6 100%);
+  color: #FFF;
+  border-radius: 50rpx;
+  height: 90rpx;
+  line-height: 90rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 20rpx rgba(0, 160, 176, 0.25);
+}
+.submit-btn::after { border: none; }

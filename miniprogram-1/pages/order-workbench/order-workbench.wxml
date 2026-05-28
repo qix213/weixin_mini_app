@@ -48,8 +48,9 @@
               <text class="sn-label">订单号</text>
               <text class="sn-num">{{item.orderSn}}</text>
             </view>
-            <view class="status-tag {{statusFormatter.getClass(item.latestExpress.logisticsStatusName)}}">
-              {{item.latestExpress.logisticsStatusName || '待发货'}}
+            <!-- ============== 【核心修复】优先显示订单状态，已取消订单正常显示 ============== -->
+            <view class="status-tag {{statusFormatter.getClass(item.statusName)}}">
+              {{item.statusName}}
             </view>
           </view>
           
@@ -67,42 +68,6 @@
         </view>
 
         <view class="order-content {{item.expanded ? 'show' : ''}}">
-          <view class="detail-section">
-            <view class="section-head">
-              <view class="title-dot"></view>
-              <text>物流详情</text>
-            </view>
-            
-            <view class="express-preview" wx:if="{{item.expressList.length > 0}}">
-              <view class="express-info">
-                <text class="company">{{item.latestExpress.logisticsCompany}}</text>
-                <text class="waybill">{{item.latestExpress.logisticsNo}}</text>
-              </view>
-              <view class="timeline">
-                <view class="timeline-item active">
-                  <view class="dot"></view>
-                  <view class="content">
-                    <text class="txt">{{item.latestExpress.acceptAddress}}</text>
-                    <text class="time">{{item.latestExpress.logisticsStatusName}}</text>
-                  </view>
-                </view>
-                <block wx:if="{{item.trackExpanded}}">
-                  <view class="timeline-item" wx:for="{{item.expressList}}" wx:for-item="track" wx:key="logisticsTime" wx:if="{{index > 0}}">
-                    <view class="dot"></view>
-                    <view class="content">
-                      <text class="txt">{{track.acceptAddress}}</text>
-                      <text class="time">{{track.logisticsTime}}</text>
-                    </view>
-                  </view>
-                </block>
-              </view>
-              <view class="more-btn" catchtap="toggleTrackExpand" data-index="{{idx}}" wx:if="{{item.expressList.length > 1}}">
-                {{item.trackExpanded ? '收起轨迹 ▲' : '查看完整轨迹 ▼'}}
-              </view>
-            </view>
-            <view class="no-data" wx:else>暂无物流更新数据</view>
-          </view>
-
           <view class="detail-section">
             <view class="section-head">
               <view class="title-dot"></view>
@@ -124,6 +89,19 @@
               </view>
             </view>
           </view>
+          <view class="action-bar">
+  <button class="action-btn primary" wx:if="{{item.status === 1}}" 
+          catchtap="goToPreOrder" data-sn="{{item.orderSn}}">预约下单</button>
+  
+  <button class="action-btn" wx:if="{{item.status === 1}}" 
+          catchtap="goToModifyOrder" data-sn="{{item.orderSn}}">修改订单</button>
+  
+  <button class="action-btn danger" wx:if="{{item.status === 1}}" 
+          catchtap="goToCancelOrder" data-sn="{{item.orderSn}}">取消订单</button>
+  
+  <button class="action-btn" wx:if="{{item.status > 0}}" 
+          catchtap="goToLogistics" data-sn="{{item.orderSn}}">物流查询</button>
+</view>
         </view>
       </view>
     </view>
