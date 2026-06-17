@@ -1,227 +1,155 @@
-/* ================= 全局与背景 ================= */
-page {
-  background: #f0f9ff;
-  min-height: 100vh;
-}
-
+/* ================== 基础设置 ================== */
 .video-play-page {
-  position: relative;
   min-height: 100vh;
-  padding-bottom: 60rpx;
-}
-
-.dynamic-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
-}
-
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ================= 视频容器 ================= */
-.video-container {
+  background-color: #FAF8F5; /* 奶油可可白底色 */
   position: relative;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+.content-wrapper {
+  padding: 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+/* ================== 视频区域 ================== */
+.video-container {
   width: 100%;
-  height: 420rpx;
-  background: #000;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.2);
-  z-index: 10;
+  border-radius: 20rpx;
+  overflow: hidden;
+  position: relative;
+  background-color: #F8F9F5;
+  box-shadow: 0 12rpx 32rpx rgba(148, 164, 140, 0.12); /* 柔和的高级弥散阴影 */
+  border: 1px solid rgba(148, 164, 140, 0.08);
 }
 
 .video-player {
   width: 100%;
-  height: 100%;
+  height: 450rpx;
+  display: block;
 }
 
+/* 居中自定义播放按钮 */
 .custom-play-btn {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
+  width: 100rpx;
+  height: 100rpx;
+  background: rgba(44, 51, 39, 0.4); /* 深绿色调低透明度，比纯黑更高级 */
   border-radius: 50%;
-  padding: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.custom-play-btn:active {
+  transform: translate(-50%, -50%) scale(0.9);
 }
 
 .play-svg {
-  width: 120rpx;
-  height: 120rpx;
-  filter: brightness(0) invert(1);
+  width: 50rpx;
+  height: 50rpx;
+  filter: invert(100%); /* 纯白图标 */
 }
 
-/* ================= 通用毛玻璃卡片 ================= */
+/* ================== 白卡浮雕信息卡片 ================== */
 .glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
-  margin: 30rpx 24rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20rpx;
   padding: 40rpx 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(148, 164, 140, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 
-/* ================= 视频信息区 ================= */
 .video-title {
-  font-size: 36rpx;
-  font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 20rpx;
-  line-height: 1.4;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #2C3327; /* 深森林绿主文本 */
+  line-height: 1.5;
+  letter-spacing: 1rpx;
 }
 
 .video-meta {
   display: flex;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
+  gap: 40rpx;
+  font-size: 24rpx;
+  color: #8A8E88; /* 莫兰迪灰 */
 }
 
 .meta-tag {
-  background: rgba(224, 242, 254, 0.8);
-  color: #0284c7;
-  padding: 8rpx 20rpx;
-  border-radius: 12rpx;
-  font-size: 24rpx;
-  font-weight: 600;
-}
-
-.level-info {
   display: flex;
   align-items: center;
-  background: rgba(248, 250, 252, 0.6);
-  border-radius: 20rpx;
-  padding: 24rpx;
-  border: 1rpx solid rgba(226, 232, 240, 0.8);
+  gap: 8rpx;
 }
 
-.level-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.icon {
+  font-size: 22rpx;
+  color: #94A48C;
 }
 
-.level-divider {
-  width: 2rpx;
-  height: 60rpx;
-  background: rgba(14, 165, 233, 0.2);
-}
-
-.level-item .label {
-  font-size: 24rpx;
-  color: #64748b;
-  margin-bottom: 8rpx;
-}
-
-.level-item .value {
-  font-size: 30rpx;
-  font-weight: 800;
-  color: #334155;
-}
-
-.level-item.require .value {
-  color: #0ea5e9; /* 强调要求等级 */
-}
-
-/* ================= 底部功能按钮区 ================= */
+/* ================== 按钮组 ================== */
 .func-btns {
-  padding: 0 24rpx;
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 24rpx;
+  margin-top: 20rpx;
 }
 
 .func-btn {
   width: 100% !important;
-  height: 90rpx;
-  border-radius: 45rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 30rpx;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  transition: all 0.3s;
+}
+
+.func-btn::after {
   border: none;
-  transition: all 0.2s;
 }
 
-.func-btn:active { transform: scale(0.98); }
-
+/* 莫兰迪绿主按钮 */
 .primary-btn {
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
-  color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.3);
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.25);
 }
 
-.warning-btn {
-  background: linear-gradient(135deg, #f59e0b, #ea580c);
-  color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.3);
+.primary-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15);
 }
 
-.cancel-btn {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  color: #64748b;
-  border: 2rpx solid rgba(255, 255, 255, 0.9);
+/* 浅色辅助按钮 */
+.secondary-btn {
+  background: rgba(148, 164, 140, 0.08);
+  color: #7A8B72;
+  border: 1px solid rgba(148, 164, 140, 0.15);
 }
 
-/* ================= 无权限拦截页 ================= */
-.no-permission {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 80vh;
+.secondary-btn:active {
+  background: rgba(148, 164, 140, 0.15);
 }
 
-.forbidden-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 80rpx 40rpx;
-  width: 80%;
-}
-
-.lock-icon {
-  font-size: 80rpx;
-  margin-bottom: 30rpx;
-}
-
-.forbidden-text {
-  font-size: 34rpx;
-  font-weight: bold;
-  color: #1e293b;
-  margin-bottom: 20rpx;
-}
-
-.forbidden-desc {
+/* 幽灵返回按钮 */
+.ghost-btn {
+  background: transparent;
+  color: #A0A49D;
   font-size: 28rpx;
-  color: #64748b;
-  margin-bottom: 50rpx;
-}
-
-.forbidden-desc .highlight {
-  color: #0ea5e9;
-  font-weight: bold;
-}
-
-.back-btn {
-  width: 80% !important;
-  height: 80rpx;
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-  color: #fff;
-  border-radius: 40rpx;
-  font-size: 28rpx;
-  box-shadow: 0 6rpx 15rpx rgba(14, 165, 233, 0.3);
+  font-weight: 500;
 }

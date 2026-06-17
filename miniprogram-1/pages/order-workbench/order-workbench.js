@@ -21,8 +21,15 @@ Page({
       activeTabName: this.data.orderStatusTabs[0].name,
       currentLevel: options.currentLevel || 0
     });
-    this.fetchOrderList().then(() => {
-    }).catch(err => {
+    // onLoad 里就不调用获取列表了，交给 onShow 去做，防止请求两次
+  },
+  onShow() {
+    if (!this.data.loading) {
+      this.setData({ loading: true });
+    }
+    
+    this.fetchOrderList().catch(err => {
+      console.error("刷新列表失败:", err);
     });
   },
 
@@ -31,25 +38,21 @@ Page({
       const app = getApp();
       const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
   
-      // ✅ 强制定义参数，打印前端传参（关键调试）
       const requestData = { 
         current_level: this.data.currentLevel,
         sync_logistics: 1  // 强制写死1
       };
-      console.log("【前端传参】sync_logistics =", requestData.sync_logistics); // 打印验证
   
       wx.request({
         url: `${app.globalData.baseUrl}/app01/member/sub-consume/`,
         method: "GET",
         header: header,
-        data: requestData, // 用强制定义的参数
+        data: requestData,
         success: (res) => {
           if (res.data?.code === 200) {
             let allOrders = [];
             const rawOrderData = res.data.data || [];
             
-            console.log("✅ 后端传回【已同步物流】的订单列表：", rawOrderData);
-  
             rawOrderData.forEach((memberItem) => {
               const memberNickname = memberItem.member_info?.nickname || '未知会员';
               const memberOrders = memberItem.orders || [];
@@ -64,14 +67,33 @@ Page({
             
             this.fetchExpressList(validOrders).then(() => {
               const cleanedOrders = validOrders.map(order => {
-                if (order.status === 4) {
+                // 现在前端 100% 信任后端传来的 currentStatus！
+                let currentStatus = Number(order.status);
+                const hasLogistics = order.expressList && order.expressList.length > 0;
+                
+                // 1. 确定 Tab 分类
+                if (currentStatus === 4) {
                   order.statusKey = 'cancelled';
-                  return order;
+                } else {
+                  order.statusKey = this.getStatusKeyByCode(currentStatus);
                 }
-                const logisStatus = order.latestExpress?.logisticsStatusName || '';
-                if (logisStatus.indexOf('签收') !== -1 || logisStatus.indexOf('完成') !== -1) {
-                  order.statusKey = 'completed';
-                }
+
+                // =========================================================
+                // 🌟 2. 按钮显隐终极逻辑 (精准判断，绝不冲突)
+                // =========================================================
+                
+                // 【预约下单】：仅在后端说是待发货 (1)，且完全没有物流单号时显示
+                order.showPreOrderBtn = (currentStatus === 1 && !hasLogistics);
+                
+                // 【等待揽收】：后端说是待发货 (1)，但已经有单号了 (预约成功，等小哥上门)
+                order.showWaitCollectBtn = (currentStatus === 1 && hasLogistics);
+                
+                order.showModifyBtn = (currentStatus === 1);
+                order.showCancelBtn = (currentStatus === 1);
+                
+                // 【物流查询】：只要状态是已发货(2)及以上，或者虽然待发货但已经有了运单号，都可以查
+                order.showLogisticsBtn = (currentStatus > 1 || hasLogistics);
+
                 return order;
               });
   
@@ -159,9 +181,11 @@ Page({
 
   formatOrderData(order, memberNickname) {
     const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
-    let status = this.safeToNumber(order.status || 0);
     
-    // ✅ 核心修复：优先判断已取消状态，禁止被物流状态覆盖
+    // 🌟 核心还原：因为是 sub-consume 接口，确实就是传的 status，而不是 status_code！
+    let status = this.safeToNumber(order.status || 0); 
+    
+    // 优先判断已取消状态，禁止被物流状态覆盖
     let statusKey;
     if (status === 4) {
       statusKey = 'cancelled';
@@ -243,6 +267,17 @@ Page({
 
   goToPreOrder(e) {
     const orderSn = e.currentTarget.dataset.sn;
+    // 1. 查找到当前点击的订单数据
+    const order = this.data.allOrders.find(o => o.orderSn === orderSn);
+    // 2. 状态拦截：只有 "待发货" (status === 1) 的订单才能预约下单
+    if (order && order.status !== 1) {
+      wx.showToast({ 
+        title: '该订单已处理，无法重复预约', 
+        icon: 'none' 
+      });
+      return;
+    }
+    // 3. 状态通过，正常跳转
     wx.navigateTo({ url: `/pages/order-workbench/preOrder?order_sn=${orderSn}` });
   },
   goToModifyOrder(e) {

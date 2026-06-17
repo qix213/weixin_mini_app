@@ -54,15 +54,25 @@
             </block>
           </view>
 
-          <button 
-            wx:if="{{item.status === '待付款'}}"
-            class="pay-btn"
-            catchtap="goToPay"
-            data-orderid="{{item.order_id}}" 
-            data-ordersn="{{item.order_sn}}"
-            data-totalprice="{{item.total_price}}"
-            data-actualpayprice="{{item.actual_pay_price}}" 
-          >去支付</button>
+          <view class="btn-group">
+            <button 
+              wx:if="{{item.status === '待付款'}}"
+              class="pay-btn"
+              catchtap="goToPay"
+              data-orderid="{{item.order_id}}" 
+              data-ordersn="{{item.order_sn}}"
+              data-totalprice="{{item.total_price}}"
+              data-actualpayprice="{{item.actual_pay_price}}" 
+            >去支付</button>
+
+            <button 
+              wx:if="{{item.status !== '待付款' && item.status !== '已取消' && item.status !== '已关闭'}}"
+              class="logistics-btn"
+              catchtap="goToLogistics"
+              data-ordersn="{{item.order_sn}}"
+            >查看物流</button>
+          </view>
+
         </view>
       </view>
 

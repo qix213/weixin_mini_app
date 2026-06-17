@@ -1,93 +1,89 @@
 <view class="mall-container">
-  <view class="dynamic-bg"></view>
-
+  
   <view class="search-header">
     <view class="search-box">
-      <van-icon name="search" color="#0ea5e9" size="36rpx" />
+      <van-icon name="search" color="#94A48C" size="36rpx" />
       <input 
         class="search-input"
         value="{{searchValue}}"
-        placeholder="搜索商品或关键词"
+        placeholder="探索臻享好物"
         placeholder-class="search-placeholder"
         bindinput="onSearchChange"  
         bindconfirm="onSearch"     
       />
-      <view class="search-action-btn" bindtap="onSearch">搜索</view>
     </view>
   </view>
 
-  <van-grid column-num="4" border="{{false}}" class="category-grid" wx:if="{{categories.length > 0}}">
-    <van-grid-item 
-      wx:for="{{categories}}" 
-      wx:key="id"
-      icon="{{item.icon || 'apps-o'}}" 
-      text="{{item.name}}"
-      bind:click="chooseCategory"
-      data-id="{{item.id}}"
-      class="{{selectedCategoryId == item.id ? 'active' : ''}}"
-    />
-  </van-grid>
-
-  <view class="goods-list-wrap">
+  <view class="main-content">
     
-    <view class="skeleton-wrap" wx:if="{{loading}}">
-      <van-skeleton title row="3" class="skeleton-item" />
-      <van-skeleton title row="3" class="skeleton-item" />
-    </view>
-    
-    <view class="goods-grid" wx:else>
-      <view class="goods-card" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
-        
-        <view class="img-wrap">
-          <image class="goods-img" src="{{item.image_url}}" mode="aspectFill" lazy-load="true"></image>
-        </view>
-
-        <view class="goods-info">
-          <text class="goods-name">{{item.name}}</text>
-          <text class="goods-desc" wx:if="{{item.brief_intro}}">{{item.brief_intro}}</text>
-          
-          <view class="price-row">
-            <block wx:if="{{item.isPointGoods}}">
-              <view class="point-badge">
-                <text class="price-val">{{item.pointPrice}}</text>
-                <text class="price-unit">积分</text>
-              </view>
-            </block>
-            <block wx:else>
-              <view class="price-badge">
-                <text class="price-unit">¥</text>
-                <text class="price-val">{{item.member_price}}</text>
-                <text class="origin-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
-              </view>
-            </block>
-          </view>
-          
-          <view class="action-footer">
-            <text class="stock-text">库存 {{item.stock}}</text>
-            
-            <view class="action-controls">
-              <view class="custom-stepper">
-                <view class="step-btn {{item.cartNum <= 1 ? 'disabled' : ''}}" catchtap="minusNum" data-id="{{item.id}}">-</view>
-                <input class="step-input" type="number" value="{{item.cartNum || 1}}" bindinput="changeNum" data-id="{{item.id}}" catchtap="noop" />
-                <view class="step-btn" catchtap="plusNum" data-id="{{item.id}}">+</view>
-              </view>
-              
-              <view class="add-cart-btn" catchtap="addToCart" data-id="{{item.id}}" data-name="{{item.name}}">
-                <van-icon name="shopping-cart-o" size="32rpx" />
-              </view>
-            </view>
-          </view>
-        </view>
-
+    <scroll-view class="sidebar" scroll-y enhanced show-scrollbar="{{false}}">
+      <view 
+        class="category-item {{selectedCategoryId === item.id ? 'active' : ''}}"
+        wx:for="{{categories}}" 
+        wx:key="id"
+        bindtap="chooseCategory" 
+        data-id="{{item.id}}"
+      >
+        <van-icon name="{{item.icon || 'apps-o'}}" size="44rpx" class="category-icon" />
+        <text class="category-name">{{item.name}}</text>
+        <view class="active-indicator" wx:if="{{selectedCategoryId === item.id}}"></view>
       </view>
-    </view>
+    </scroll-view>
 
-    <view class="empty-state" wx:if="{{!loading && goodsList.length === 0}}">
-      <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
-      <text class="empty-text">暂时没有找到相关商品哦</text>
-    </view>
+    <scroll-view class="goods-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      
+      <view class="skeleton-wrap" wx:if="{{loading}}">
+        <van-skeleton title row="3" custom-class="sk-item" />
+        <van-skeleton title row="3" custom-class="sk-item" />
+      </view>
+      
+      <view class="goods-grid" wx:else>
+        <view class="goods-card" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
+          
+          <view class="img-wrap">
+            <image class="goods-img" src="{{item.image_url}}" mode="aspectFill" lazy-load></image>
+            <view class="point-badge-corner" wx:if="{{item.isPointGoods && item.pointPrice > 0}}">积分兑换</view>
+          </view>
+          
+          <view class="goods-info">
+            <text class="goods-name">{{item.name}}</text>
+            
+            <view class="price-container">
+              <block wx:if="{{item.isPointGoods && item.pointPrice > 0}}">
+                <view class="price-row main-price-row">
+                  <text class="price-label">兑换需：</text>
+                  <text class="price-val">{{item.pointPrice}} 积分</text>
+                </view>
+              </block>
+
+              <block wx:else>
+                <view class="price-row main-price-row">
+                  <text class="price-label">{{item.mainPriceLabel}}</text>
+                  <text class="price-val">¥{{item.mainPriceValue}}</text>
+                </view>
+                
+                <view class="price-row sub-price-row" wx:if="{{item.mainPriceValue !== item.subPriceValue}}">
+                  <text class="price-label">{{item.subPriceLabel}}</text>
+                  <text class="price-val strikethrough">¥{{item.subPriceValue}}</text>
+                </view>
+              </block>
+            </view>
+
+            <view class="explore-btn">
+              <text>查看详情</text>
+            </view>
+
+          </view>
+        </view>
+      </view>
+
+      <view class="empty-state" wx:if="{{!loading && goodsList.length === 0}}">
+        <van-icon name="shopping-cart-o" size="80rpx" color="#cbd5e1" />
+        <text class="empty-text">该系列暂无商品</text>
+      </view>
+      
+      <view class="bottom-spacer"></view>
+    </scroll-view>
 
   </view>
-
-  <van-toast id="van-toast" />
 </view>

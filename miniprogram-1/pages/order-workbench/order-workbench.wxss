@@ -1,5 +1,5 @@
 .container {
-  background-color: #f4f6f9;
+  background-color: #F8F9F7; /* 🔥 替换为带有极弱暖绿灰调的高级背景色 */
   min-height: 100vh;
 }
 
@@ -10,44 +10,44 @@
   z-index: 100;
   background: #fff;
   width: 100%;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+  box-shadow: 0 4rpx 20rpx rgba(148, 164, 140, 0.06); /* 阴影带微弱的品牌色环境光 */
 }
 
 .tab-scroll {
   width: 100%;
-  white-space: nowrap; /* 🔥 关键：禁止换行，配合横向滚动 */
+  white-space: nowrap; 
   background: #fff;
 }
 
 .tab-list {
-  display: flex; /* 🔥 关键：弹性布局 */
-  flex-direction: row; /* 🔥 关键：横向排列 */
+  display: flex; 
+  flex-direction: row; 
   padding: 0 20rpx;
-  height: 90rpx; /* 固定高度 */
+  height: 90rpx; 
   align-items: center;
 }
 
 .tab-item {
   position: relative;
-  display: inline-flex; /* 改为 inline-flex */
+  display: inline-flex; 
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0 30rpx;
   height: 100%;
-  flex-shrink: 0; /* 🔥 关键：防止被挤压 */
-  transition: all 0.3s;
+  flex-shrink: 0; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更顺滑的过渡动画 */
 }
 
 .tab-text {
   font-size: 28rpx;
-  color: #666;
-  font-weight: 500;
+  color: #8A8E88; /* 偏灰绿的未选中态文字 */
+  font-weight: 400; /* 轻奢风不宜太粗 */
 }
 
 .tab-item.active .tab-text {
-  color: #1989fa;
-  font-weight: 800; /* 选中时加粗 */
+  color: #94A48C; /* 🔥 品牌轻奢绿 */
+  font-weight: 600; /* 去掉粗犷的800，用600显得更精致 */
   font-size: 30rpx;
 }
 
@@ -56,14 +56,14 @@
   position: absolute;
   bottom: 0;
   width: 0;
-  height: 6rpx;
-  background: #1989fa;
+  height: 4rpx; /* 稍微改细，显得秀气 */
+  background: #94A48C; 
   border-radius: 4rpx;
-  transition: width 0.3s;
+  transition: width 0.3s ease;
 }
 
 .tab-item.active .tab-line {
-  width: 40rpx; /* 选中后显示的宽度 */
+  width: 32rpx; /* 缩短下划线宽度，提升留白的高级感 */
 }
 
 /* 订单卡片：高对比度 */
@@ -72,7 +72,7 @@
   background: #ffffff;
   border-radius: 20rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.04);
+  box-shadow: 0 10rpx 30rpx rgba(148, 164, 140, 0.08); /* 柔和的高级感阴影 */
   overflow: hidden;
 }
 
@@ -89,122 +89,126 @@
   white-space: nowrap;
   overflow: hidden;
 }
-.sn-label { font-size: 24rpx; color: #666; margin-right: 10rpx; }
+.sn-label { font-size: 24rpx; color: #8A8E88; margin-right: 12rpx; }
 .sn-num { 
-  font-size: 28rpx; 
-  color: #111; 
-  font-weight: bold; 
+  font-size: 26rpx; 
+  color: #2C3327; /* 极深的品牌色代替纯黑 */
+  font-weight: 600; 
   font-family: "Courier New", Courier, monospace;
 }
 
+/* 🔥 状态标签：全面低饱和化改造 🔥 */
 .status-tag {
-  font-size: 24rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 8rpx;
-  font-weight: bold;
+  font-size: 22rpx; /* 字体稍微调小显精致 */
+  padding: 8rpx 16rpx;
+  border-radius: 6rpx; /* 缩小圆角显干练 */
+  font-weight: 500;
 }
-.status-pending { background: #fff7e8; color: #ff976a; }
-.status-transit { background: #ecf5ff; color: #1989fa; }
-.status-delivering { background: #e8fffb; color: #00bcd4; }
-.status-success { background: #f0f9eb; color: #07c160; }
-.status-error { background: #fef0f0; color: #ee0a24; }
+.status-pending { background: #F8F5EE; color: #BFA57A; } /* 香槟金（待发货） */
+.status-transit { background: #F4F6F2; color: #94A48C; } /* 品牌轻奢绿（运送中） */
+.status-delivering { background: #EBF0E9; color: #7A8F70; } /* 稍深的绿（派送中） */
+.status-success { background: #E6EDE4; color: #68805D; } /* 沉稳绿（已完成） */
+.status-error { background: #F9EFEF; color: #B5736B; } /* 柔和玫瑰红（已取消/异常） */
 
 .header-sub {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1rpx solid #f8f8f8;
+  border-top: 1px solid #F2F4F0; /* 极细的浅色分割线 */
   padding-top: 20rpx;
 }
 .order-info-left { display: flex; flex-direction: column; }
-.order-time { font-size: 28rpx; color: #444; font-weight: 500; }
-.member-tag { font-size: 22rpx; color: #1989fa; margin-top: 6rpx; }
+.order-time { font-size: 26rpx; color: #6B7067; font-weight: 400; }
+.member-tag { font-size: 22rpx; color: #94A48C; margin-top: 6rpx; }
 
-/* 价格数字：调小到 36rpx，更加协调 */
+/* 价格数字 */
 .price-box { display: flex; align-items: baseline; }
-.currency { font-size: 26rpx; color: #1989fa; font-weight: bold; }
+.currency { font-size: 24rpx; color: #2C3327; font-weight: 500; margin-right: 4rpx; }
 .amount { 
   font-size: 36rpx; 
-  color: #1989fa; 
-  font-weight: 800; 
-  font-family: Arial, sans-serif; 
+  color: #2C3327; /* 数字用深墨绿色，比纯品牌色更大气 */
+  font-weight: 600; 
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
 }
-.arrow-icon { margin-left: 12rpx; color: #333; font-size: 24rpx; font-weight: bold; }
+.arrow-icon { margin-left: 12rpx; color: #94A48C; font-size: 20rpx; transition: transform 0.3s; }
+.arrow-up { transform: rotate(180deg); }
 
-/* 详情区：加深背景 */
+/* 详情区 */
 .order-content {
   max-height: 0;
   overflow: hidden;
-  transition: all 0.3s;
-  background: #fafafa;
+  transition: max-height 0.4s ease-in-out;
+  background: #FCFDFB; /* 极浅的背景色区分层级 */
 }
 .order-content.show { max-height: 2500rpx; padding-bottom: 30rpx; }
 .detail-section { padding: 30rpx 30rpx 0; }
 .section-head {
   display: flex; align-items: center;
-  font-size: 30rpx; color: #000; font-weight: bold;
+  font-size: 28rpx; color: #2C3327; font-weight: 600;
   margin-bottom: 24rpx;
 }
-.title-dot { width: 8rpx; height: 26rpx; background: #1989fa; margin-right: 12rpx; border-radius: 4rpx; }
+.title-dot { width: 6rpx; height: 24rpx; background: #94A48C; margin-right: 12rpx; border-radius: 4rpx; }
 
-/* 物流详情：文字调深 */
-.timeline-item .txt { font-size: 28rpx; color: #222; line-height: 1.6; }
-.timeline-item .time { font-size: 24rpx; color: #666; margin-top: 8rpx; }
-.more-btn { text-align: center; color: #1989fa; font-size: 26rpx; padding: 24rpx 0; font-weight: bold; }
-
-/* 商品明细：加大商品名 */
-.goods-table { background: #fff; border-radius: 16rpx; padding: 24rpx; }
-.goods-row { display: flex; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f2f3f5; }
-.goods-row.head { font-size: 24rpx; color: #888; }
-.col-n { flex: 3; font-size: 30rpx; color: #111; font-weight: bold; }
-.col-s { flex: 2; display: flex; flex-direction: column; align-items: center; font-size: 26rpx; color: #444; }
-.col-p { flex: 1.5; text-align: right; font-size: 28rpx; color: #000; font-weight: bold; }
+/* 商品明细 */
+.goods-table { background: #fff; border-radius: 12rpx; padding: 24rpx; border: 1px solid #F2F4F0; }
+.goods-row { display: flex; align-items: center; padding: 20rpx 0; border-bottom: 1px dashed #F2F4F0; }
+.goods-row:last-child { border-bottom: none; padding-bottom: 0; }
+.goods-row.head { font-size: 24rpx; color: #8A8E88; border-bottom: 1px solid #F2F4F0; padding-top: 0;}
+.col-n { flex: 3; font-size: 28rpx; color: #2C3327; font-weight: 500; }
+.col-s { flex: 2; display: flex; flex-direction: column; align-items: center; font-size: 26rpx; color: #6B7067; }
+.col-p { flex: 1.5; text-align: right; font-size: 28rpx; color: #2C3327; font-weight: 600; }
+.g-price { font-family: 'Helvetica Neue', Helvetica, sans-serif; }
+.g-num { color: #8A8E88; margin-top: 4rpx; font-size: 24rpx; }
 
 /* 辅助样式 */
 .loading-box { padding-top: 300rpx; display: flex; flex-direction: column; align-items: center; }
-.spinner { width: 40rpx; height: 40rpx; border: 4rpx solid #ddd; border-top-color: #1989fa; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20rpx; }
+.spinner { width: 40rpx; height: 40rpx; border: 4rpx solid #EAECEA; border-top-color: #94A48C; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20rpx; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-state { padding-top: 250rpx; display: flex; flex-direction: column; align-items: center; }
-.empty-icon { font-size: 100rpx; margin-bottom: 30rpx; opacity: 0.5; }
+.empty-icon { font-size: 100rpx; margin-bottom: 30rpx; opacity: 0.3; filter: grayscale(100%); }
+.empty-state text { color: #8A8E88; font-size: 28rpx; }
 
-/* ================= 蓝色调平铺工作台 ================= */
+/* ================= 高级感工作台按钮 ================= */
 .action-bar {
   display: flex;
-  gap: 12rpx; /* 按钮间隙 */
-  padding-top: 20rpx;
-  margin-top: 20rpx;
-  border-top: 1rpx solid #f0f0f0;
+  gap: 16rpx; /* 稍微拉开间距，增加透气感 */
+  padding-top: 24rpx;
+  margin-top: 24rpx;
+  border-top: 1px solid #F2F4F0;
   width: 100%;
 }
 
 .action-btn {
-  flex: 1; /* 关键：所有按钮平分宽度，实现平铺 */
+  flex: 1; 
   margin: 0 !important;
   font-size: 24rpx !important;
-  padding: 16rpx 0 !important; /* 增加上下点击区域 */
+  padding: 16rpx 0 !important; 
   border-radius: 8rpx;
-  background-color: #f0f7ff; /* 基础浅蓝底 */
-  color: #007aff; /* 基础蓝色文字 */
+  background-color: #F4F6F2; /* 品牌色的极浅背景 */
+  color: #7A8F70; /* 略深一点的品牌绿，保证可读性 */
   line-height: 1.4;
   font-weight: 500;
-  border: 1rpx solid #007aff;
+  border: 1px solid transparent; /* 移除廉价的强描边，用纯净底色代替 */
+  transition: all 0.2s ease;
 }
 
 /* 主色调按钮 (预约下单) */
 .action-btn.primary {
-  background-color: #007aff;
+  background-color: #94A48C;
   color: #fff;
   border: none;
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.3); /* 主按钮加一点呼吸感阴影 */
 }
 
-/* 取消按钮 (使用蓝色描边风格，保持整洁) */
+/* 取消按钮 (使用莫兰迪色系中的柔和豆沙红/玫瑰红) */
 .action-btn.danger {
-  color: #ff3b30; /* 取消依然保留红色提醒，避免误操作 */
-  border-color: #ff3b30;
-  background-color: #fff;
+  color: #B5736B; 
+  background-color: #F9EFEF;
+  border-color: transparent;
 }
 
 /* 按钮点击反馈 */
 .action-btn:active {
-  opacity: 0.8;
+  transform: scale(0.97); /* 按压微缩放，比单纯的透明度改变更显高级 */
+  opacity: 0.9;
 }

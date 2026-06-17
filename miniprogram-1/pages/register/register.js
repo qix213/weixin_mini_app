@@ -8,7 +8,7 @@ Page({
     password: '',        
     passwordConfirm: '', 
     activeTab: 0,        
-    
+    avatarUrl: '',
     // 🌟 伸缩式生日选择器状态
     birthDate: '',       
     showDatePicker: false,
@@ -32,13 +32,12 @@ Page({
       { value: 4, name: '蓝朋友 3星', amount: 9800 }
     ],
     shopTypeList: [
-      { value: 5, name: 'Ta创+', amount: 59800 }
+      { value: 5, name: 'Ta创+', amount: 39800 }
     ],
     userTypeIndex: 0,    
     selectedUserType: {}, 
     
-    // 🌟 推荐人ID（现为必填项）
-    recommenderId: '',    
+    recommenderId: 'LANSIK26',
     
     isAgreed: false,       
     showAgreement: false   
@@ -47,6 +46,11 @@ Page({
   onLoad(options) {
     this.generateMemberId();
     this.setData({ selectedUserType: this.data.memberTypeList[0] });
+  },
+
+  onChooseAvatar(e) {
+    const { avatarUrl } = e.detail;
+    this.setData({ avatarUrl });
   },
 
   toggleDatePicker() {
@@ -135,6 +139,7 @@ Page({
     if (!isAgreed) { wx.showToast({ title: '请先阅读并勾选《用户充值须知》', icon: 'none' }); return; }
 
     // 2. 基础表单严校验
+    if (!this.data.avatarUrl) { wx.showToast({ title: '请点击顶部设置头像', icon: 'none' }); return; } // 🌟 拦截未设置头像
     if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
     if (!birthDate) { wx.showToast({ title: '请选择出生日期', icon: 'none' }); return; }
     
@@ -173,6 +178,7 @@ Page({
           const registerData = {
             memberId: memberId,
             nickname: nickname,
+            avatarUrl: this.data.avatarUrl,
             password: password,
             password_confirm: passwordConfirm,
             user_type: selectedUserType.value,

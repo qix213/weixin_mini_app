@@ -1,3 +1,6 @@
 {
-  "usingComponents": {}
+  "usingComponents": {},
+  "navigationBarTitleText": "Hello 蓝朋友 欢迎来到蓝色奇肌",
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "black"
 }

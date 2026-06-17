@@ -140,23 +140,19 @@ Page({
               const isPointsExchange = this.isPointGoods(orderItem);
               const exchangePoints = parseInt(order.point_summary?.point_deduct || 0);
 
-              // 💥 修复版核心倒计时计算逻辑
               let expireTimeMs = 0;
-              let isExpired = false; // 超时标记
+              let isExpired = false; 
 
               if (order.status === '待付款') {
                 const timeStr = order.create_time || order.add_time || order.created_at || '';
                 if (timeStr) {
-                  // 1. 原汁原味解析，完美保留时区 (如带 T 或 Z 的时间)
                   let parsedTime = new Date(timeStr).getTime();
-                  // 2. 如果解析失败，说明是 iOS 遇到纯本地时间字符串，进行降级转换
                   if (isNaN(parsedTime)) {
                     parsedTime = new Date(timeStr.replace(/-/g, '/')).getTime();
                   }
 
                   if (!isNaN(parsedTime) && parsedTime > 0) {
                     expireTimeMs = parsedTime + 15 * 60 * 1000;
-                    // 【防闪烁核心】：如果拉取回来时就已经超时，直接做标记
                     if (now >= expireTimeMs) {
                       isExpired = true;
                     }
@@ -164,7 +160,6 @@ Page({
                 }
               }
 
-              // 如果已超时，直接返回 null 踢掉它
               if (isExpired) return null; 
 
               return {
@@ -176,7 +171,7 @@ Page({
                 expireTimeMs: expireTimeMs,
                 countdownText: '' 
               };
-            }).filter(o => o !== null); // ⚡️ 渲染前直接把过期订单过滤掉！
+            }).filter(o => o !== null); 
           
             const finalOrders = isRefresh ? processedOrders : [...this.data.orderList, ...processedOrders];
             
@@ -185,7 +180,7 @@ Page({
               hasMore: finalOrders.length < total,
               page: page + 1
             }, () => {
-              this.startCountdown(); // 页面渲染完了，再安心重启倒计时
+              this.startCountdown(); 
             });
           
             if (finalOrders.length === 0) {
@@ -216,7 +211,6 @@ Page({
     });
   },
 
-  // ========== 💥 核心：倒计时管理器 ==========
   startCountdown() {
     this.clearCountdown();
     this.timer = setInterval(() => {
@@ -228,11 +222,9 @@ Page({
         if (order.status === '待付款' && order.expireTimeMs > 0) {
           const remain = order.expireTimeMs - now;
           if (remain <= 0) {
-            // 时间到了，从屏幕上剔除
             needRemove = true;
             return null; 
           } else {
-            // 计算分秒
             const mins = Math.floor(remain / 1000 / 60).toString().padStart(2, '0');
             const secs = Math.floor((remain / 1000) % 60).toString().padStart(2, '0');
             const newText = `${mins}:${secs}`;
@@ -246,7 +238,6 @@ Page({
       });
 
       if (needRemove) {
-        // 过滤掉超时的订单 (自动删除)
         const filteredList = updatedList.filter(o => o !== null);
         this.setData({ orderList: filteredList });
       } else if (hasChanges) {
@@ -285,5 +276,18 @@ Page({
     const order = e.currentTarget.dataset.order;
     if (!order) return;
     this.goToOrderDetail({ currentTarget: { dataset: { orderid: order.order_id } } });
+  },
+
+  // ========== 🔥 新增：跳转物流详情页 ==========
+  goToLogistics(e) {
+    const orderSn = e.currentTarget.dataset.ordersn;
+    if (!orderSn) {
+      wx.showToast({ title: '物流单号异常', icon: 'none' });
+      return;
+    }
+    // 假设你的物流页面路径为 /pages/logistics/logistics （如有不同请自行修改路径）
+    wx.navigateTo({ 
+      url: `/pages/order-workbench/logistics?order_sn=${orderSn}` 
+    });
   }
 });

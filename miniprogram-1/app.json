@@ -6,7 +6,8 @@
     "pages/index/index",
     "pages/order-list/order-list",
     "pages/my/my",
-    "pages/my/benefits",    
+    "pages/my/benefits",   
+    "pages/my/update", 
     "pages/coupun/coupun",
     "pages/pay/pay",
     "pages/login/login",
@@ -15,6 +16,7 @@
     "pages/order-workbench/modify",
     "pages/order-workbench/cancel",
     "pages/order-workbench/logistics",
+    "pages/user-workbench/user-workbench",    
     "pages/sub-member-consume/sub-member-consume",
     "pages/homess/homess",
     "pages/register/register",
@@ -28,15 +30,20 @@
     "pages/address/address",
     "pages/addressAdd/addressAdd"
   ],
+  "__usePrivacyCheck__": true,
   "window": {
     "navigationBarTitleText": "蓝色奇迹",
-    "navigationBarBackgroundColor": "#0000FF",
+    "navigationBarBackgroundColor": "#FAF8F5", 
+    "navigationBarTextStyle": "black",
     "enablePullDownRefresh": true,
-    "backgroundColor": "#00FFFF",
+    "backgroundColor": "#FAF8F5",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "selectedColor": "#b4282d",
+    "color": "#A3A3A3",
+    "selectedColor": "#94A48C",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
     "position": "bottom",
     "list": [
       {
@@ -47,7 +54,7 @@
       },
       {
         "pagePath": "pages/mall/mall",
-        "text": "小商场",
+        "text": "商城",
         "iconPath": "images/icont/mall.png",
         "selectedIconPath": "images/icont/mall_select.png"
       },

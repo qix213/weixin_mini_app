@@ -1,54 +1,43 @@
-/* 让页面占满整个屏幕 */
-page {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
 .welcome-container {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   position: relative;
 }
 
-/* 背景图铺满全屏 */
+/* 🌟 核心修复 1：将背景图降级到负一层，绝对不可能再挡住任何东西 */
 .bg-img {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1; /* 垫在最底层 */
+  z-index: -1;
+  /* 图片未加载出来前，显示与设计稿底色一致的奶油色 */
+  background-color: #FAF8F5; 
 }
 
-/* 高级感：半透明毛玻璃胶囊按钮 */
+/* 🌟 核心修复 2：去掉复杂的 calc 计算，直接用 120rpx 的安全高度 */
 .skip-btn {
   position: absolute;
-  /* 距离顶部的高度，加上安全区，适配刘海屏 */
-  top: calc(80rpx + env(safe-area-inset-top)); 
+  top: 120rpx; 
   right: 40rpx;
-  z-index: 10;
+  z-index: 999; 
   
-  /* 毛玻璃视觉效果 */
-  padding: 10rpx 32rpx;
-  background-color: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(10px); /* 磨砂虚化背景 */
-  -webkit-backdrop-filter: blur(10px);
-  border: 1rpx solid rgba(255, 255, 255, 0.3);
+  /* 增加了一点背景不透明度，防止背景图片太亮导致文字看不清 */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   
-  /* 字体与边角 */
-  border-radius: 100rpx; /* 胶囊圆角 */
-  color: #FFFFFF;
+  /* 稍微加深了莫兰迪绿的颜色，提升对比度 */
+  color: #7A8B72; 
   font-size: 26rpx;
-  font-weight: 500;
-  letter-spacing: 2rpx;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-weight: bold;
+  padding: 12rpx 32rpx;
+  border-radius: 40rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
-/* 按钮点击时的交互反馈 */
 .skip-btn:active {
-  background-color: rgba(0, 0, 0, 0.4);
+  transform: scale(0.95);
+  background: #FFFFFF;
 }

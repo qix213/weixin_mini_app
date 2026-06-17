@@ -4,8 +4,8 @@
   <view class="banner-header">
     <view class="banner-text">
       <text class="greeting">欢迎来到蓝色奇肌</text>
-      <text class="welcome">Skin Simple Treat Anytime</text>
-      <text class="welcome-sub">精简护肤 · 随时悦享</text>
+      <text class="welcome">肌肤有别 · 养护有方 · 定格仙女肌</text>
+      <text class="welcome-sub">Unique Skin · Tailored Care · Timeless Glow</text>
     </view>
 
     <view class="header-right">
@@ -13,7 +13,7 @@
       
       <view class="user-status-capsule" wx:if="{{isLogin}}">
         <text class="status-dot"></text>
-        <text class="welcome-text">Hi, {{userInfo.nickname || '用户'}}</text>
+        <text class="welcome-text">Hello, {{userInfo.nickname || '用户'}}</text>
       </view>
       <view class="login-register-btn-group" wx:else>
         <view class="glass-btn primary" bindtap="goToLogin">登录</view>
@@ -25,22 +25,27 @@
 
 <view class="admin-content" wx:if="{{isAdminMember}}">
   
-  <view class="glass-card admin-dashboard-card" bindtap="{{isLogin ? 'goToOrderList' : 'goToLogin'}}">
-    <view class="dashboard-left">
-      <view class="dashboard-icon-wrap">
-        <text class="dashboard-icon">📊</text>
-      </view>
-      <view class="dashboard-info">
-        <text class="dashboard-title">订单管理工作台</text>
-        <text class="dashboard-desc">处理与查看全盘订单数据</text>
-      </view>
+  <view class="section-title-wrap">
+    <text class="section-title tech-gradient-text">创+专属工作台</text>
+  </view>
+
+  <view class="dashboard-grid">
+    <view class="glass-card dash-card" bindtap="goToOrderList">
+      <view class="dash-icon-box">📊</view>
+      <text class="dash-title">订单管理</text>
+      <text class="dash-desc">全盘订单数据追踪</text>
     </view>
-    <view class="dashboard-arrow">进入 <text class="arrow-icon">→</text></view>
+    
+    <view class="glass-card dash-card" bindtap="goToUserWorkbench">
+      <view class="dash-icon-box">👥</view>
+      <text class="dash-title">用户管理</text>
+      <text class="dash-desc">AI测肤档案与数据</text>
+    </view>
   </view>
 
   <view class="admin-table-section" wx:if="{{star_goods.length > 0}}">
-    <view class="section-title-wrap">
-      <text class="section-title">明星家居产品汇总</text>
+    <view class="section-title-wrap" style="margin-top: 40rpx;">
+      <text class="section-title">明星家居产品总览</text>
     </view>
     
     <view class="glass-card product-table-card">
@@ -76,9 +81,9 @@
   
   <view class="notice-bar-wrap" wx:if="{{notice || content}}">
     <view class="glass-card notice-bar">
-      <text class="notice-icon">🔔</text>
+      <text class="notice-icon">✨</text>
       <view class="notice-marquee">
-        <text class="notice-text">最新活动：{{notice}} {{content}}</text>
+        <text class="notice-text">{{notice}} {{content}}</text>
       </view>
     </view>
   </view>
@@ -89,11 +94,10 @@
         <image class="swiper-img" src="{{item.img}}" mode="aspectFill" />
       </swiper-item>
     </swiper>
-    <view class="swiper-shadow"></view>
   </view>
 
   <view class="section-title-wrap">
-    <text class="section-title">明星家居产品</text>
+    <text class="section-title tech-gradient-text">明星家居产品</text>
   </view>
   
   <view class="star-goods-wrap" wx:if="{{star_goods.length > 0}}">
@@ -116,4 +120,30 @@
     </view>
   </view>
 
+</view>
+
+<view class="ai-popup-mask {{showAiPopup ? 'show' : ''}}" bindtap="closeAiPopup" catchtouchmove="preventTouchMove">
+  <view class="ai-popup-box {{showAiPopup ? 'show' : ''}}" catchtap="preventTouchMove">
+    
+    <view class="popup-bg-glow"></view>
+
+    <view class="popup-content">
+      <view class="avatar-container">
+        <view class="ai-avatar-placeholder">
+          <image class="ai-avatar-img" src="/images/bg/AI蓝博士头像.jpg" mode="aspectFit" />
+        </view>
+        <view class="avatar-ring"></view>
+        <view class="avatar-ring delay"></view>
+      </view>
+
+      <view class="popup-title">欢迎体验AI蓝博士</view>
+      <view class="popup-desc">您的专属护肤私教已准备好为您测试！</view>
+
+      <view class="popup-btns">
+        <button class="popup-btn cancel-btn" bindtap="closeAiPopup">稍后体验</button>
+        <button class="popup-btn confirm-btn" bindtap="toAiChat">立即体验</button>
+      </view>
+    </view>
+    
+  </view>
 </view>

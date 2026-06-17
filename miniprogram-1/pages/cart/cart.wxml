@@ -9,7 +9,6 @@
 
   <view class="cart-list" wx:if="{{cartList.length > 0}}">
     <view class="glass-card cart-item" wx:for="{{cartList}}" wx:key="id">
-      
       <view class="item-main">
         <image class="goods-img" src="{{item.goods.image_url}}" mode="aspectFill"></image>
         <view class="goods-info">
@@ -38,11 +37,9 @@
         
         <view class="action-wrap">
           <view class="stepper-glass">
-            <view class="btn-minus {{item.num <= 1 ? 'disabled' : ''}}" 
-                  bindtap="changeNum" data-id="{{item.id}}" data-type="minus">-</view>
+            <view class="btn-minus {{item.num <= 1 ? 'disabled' : ''}}" bindtap="changeNum" data-id="{{item.id}}" data-type="minus">-</view>
             <input type="number" value="{{item.num}}" disabled class="num-input" />
-            <view class="btn-plus {{item.num >= item.goods.stock ? 'disabled' : ''}}" 
-                  bindtap="changeNum" data-id="{{item.id}}" data-type="plus">+</view>
+            <view class="btn-plus {{item.num >= item.goods.stock ? 'disabled' : ''}}" bindtap="changeNum" data-id="{{item.id}}" data-type="plus">+</view>
           </view>
           
           <view class="delete-btn" bindtap="deleteCart" data-id="{{item.id}}">
@@ -50,7 +47,6 @@
           </view>
         </view>
       </view>
-      
     </view>
   </view>
 
@@ -67,12 +63,21 @@
     <view class="total-info">
       <text class="label">合计：</text>
       <view class="pay-amount">
-        <block wx:if="{{isAllPointGoods}}">
-          <text class="val">{{totalAll}}</text> <text class="unit">积分</text>
+        
+        <block wx:if="{{totalPointPrice > 0 && totalCashPrice > '0.00'}}">
+          <text class="val point-color">{{totalPointPrice}} 积分</text>
+          <text class="plus-sign"> + </text>
+          <text class="unit">¥</text><text class="val">{{totalCashPrice}}</text>
         </block>
+        
+        <block wx:elif="{{totalPointPrice > 0}}">
+          <text class="val">{{totalPointPrice}}</text> <text class="unit">积分</text>
+        </block>
+        
         <block wx:else>
-          <text class="unit">¥</text><text class="val">{{totalAll}}</text>
+          <text class="unit">¥</text><text class="val">{{totalCashPrice}}</text>
         </block>
+
       </view>
     </view>
     <button class="submit-btn" bindtap="toCheckout">去结算</button>

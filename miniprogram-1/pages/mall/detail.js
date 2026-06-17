@@ -13,7 +13,11 @@ Page({
     isPlayingVideo: false, 
     
     isPointGoods: false,
-    pointPrice: 0
+    pointPrice: 0,
+
+    // --- 弹窗控制 ---
+    showPopup: false,
+    actionType: '' // 'cart' | 'buy'
   },
 
   onLoad(options) {
@@ -42,11 +46,9 @@ Page({
     return isPoint || hasPointPrice;
   },
 
-  // 🚀 核心修复：极致健壮的 URL 格式化工具 (使用全局域名)
   formatUrl(url) {
     if (!url) return '';
     let fixedUrl = url.replace('//media/', '/media/');
-    // 确保使用 HTTPS 全局域名
     const baseUrl = app.globalData.baseUrl;
     
     if (!fixedUrl.startsWith('http')) {
@@ -55,25 +57,21 @@ Page({
     return fixedUrl;
   },
 
-  // 🌟 使用 app.request 替代原生的 wx.request
   getGoodsDetail() {
     const { goodsId } = this.data;
 
     app.request({
-      url: `/app01/goods/${goodsId}/`, // 相对路径即可，app.request会自动补全域名
+      url: `/app01/goods/${goodsId}/`, 
       method: 'GET'
     }).then(res => {
-      console.log('商品详情完整返回数据：', res.data);
       if (res.data.code === 200) {
         let goodsData = res.data.data;
         let mediaList = [];
 
-        // 1. 处理主图
         if (goodsData.image_url) {
           mediaList.push({ type: 0, url: this.formatUrl(goodsData.image_url) });
         }
 
-        // 2. 处理多图/视频数组
         if (goodsData.images && goodsData.images.length > 0) {
           const sortedImages = goodsData.images.sort((a, b) => a.order - b.order);
           sortedImages.forEach(item => {
@@ -87,13 +85,11 @@ Page({
           });
         }
 
-        // 去重处理
         const uniqueMediaList = Array.from(new Set(mediaList.map(a => a.url)))
           .map(url => {
             return mediaList.find(a => a.url === url)
           });
 
-        // 3. 计算积分
         const isPointGoods = this.isPointGoods(goodsData);
         let pointPrice = 0;
         if (isPointGoods) {
@@ -114,7 +110,6 @@ Page({
         this.setData({ loading: false });
       }
     }).catch(err => {
-      console.error('详情请求失败：', err);
       Toast.fail('网络异常');
       this.setData({ loading: false });
     });
@@ -161,6 +156,20 @@ Page({
 
   imageLoadError(e) { console.error('图片加载失败，URL：', e.currentTarget.dataset.src); },
 
+  // ================= 弹窗与数量控件逻辑 =================
+  openPopup(e) {
+    const action = e.currentTarget.dataset.action; // 'cart' 或 'buy'
+    this.setData({ 
+      showPopup: true,
+      actionType: action,
+      cartNum: 1 // 每次打开重置为1
+    });
+  },
+
+  closePopup() {
+    this.setData({ showPopup: false });
+  },
+
   minusNum() { if (this.data.cartNum > 1) this.setData({ cartNum: this.data.cartNum - 1 }); },
   plusNum() { this.setData({ cartNum: this.data.cartNum + 1 }); },
   changeNum(e) {
@@ -168,10 +177,17 @@ Page({
     this.setData({ cartNum: num < 1 ? 1 : num });
   },
 
-  // 🌟 使用 app.request 统一处理 Token 和域名
-  addToCart() {
+  onConfirmAction() {
+    if (this.data.actionType === 'cart') {
+      this.executeAddToCart();
+    } else {
+      this.executeBuyNow();
+    }
+  },
+
+  executeAddToCart() {
     const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
-    if (!goodsDetail.id) return Toast.fail('商品信息异常');
+    this.closePopup();
 
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     if (!token) {
@@ -197,9 +213,9 @@ Page({
     });
   },
 
-  buyNow() {
+  executeBuyNow() {
     const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
-    if (!goodsDetail.id) return Toast.fail('商品信息异常');
+    this.closePopup();
 
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     if (!token) return Toast('请先登录后结算');

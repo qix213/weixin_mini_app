@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "AI蓝博士",
   "navigationBarBackButtonHidden": false,  
-  "usingComponents": {}
+  "usingComponents": {},
+  "backgroundColor": "#94A48C"
 }

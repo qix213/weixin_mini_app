@@ -1,12 +1,10 @@
 {
   "usingComponents": {
     "van-icon": "@vant/weapp/icon/index",  
-    "van-grid": "@vant/weapp/grid/index",
-    "van-grid-item": "@vant/weapp/grid-item/index",
     "van-skeleton": "@vant/weapp/skeleton/index",
     "van-toast": "@vant/weapp/toast/index"
   },
-  "navigationBarTitleText": "SSTA 小商场",
+  "navigationBarTitleText": "商城",
   "enablePullDownRefresh": true,
   "backgroundColor": "#f5f5f5"
 }

@@ -1,0 +1,36 @@
+<view class="upgrade-container">
+  <view class="dynamic-bg"></view>
+
+  <view class="header-card glass-card">
+    <view class="title">当前会籍</view>
+    <view class="current-level">{{currentLevelName}}</view>
+    <view class="subtitle">选择下方会籍，立即解锁更高阶的财富与美业特权。</view>
+  </view>
+
+  <view class="level-list">
+    <view class="level-card glass-card {{selectedLevelId === item.id ? 'active' : ''}}" 
+          wx:for="{{availableLevels}}" wx:key="id" 
+          bindtap="selectLevel" data-id="{{item.id}}" data-price="{{item.price}}">
+      
+      <view class="card-left">
+        <view class="level-name">{{item.name}} <text class="recommend" wx:if="{{index===0}}">推荐</text></view>
+        <view class="level-desc">{{item.desc}}</view>
+      </view>
+      
+      <view class="card-right">
+        <view class="price"><text class="unit">￥</text>{{item.price}}</view>
+        <view class="radio-circle">
+          <view class="inner-dot" wx:if="{{selectedLevelId === item.id}}"></view>
+        </view>
+      </view>
+
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <view class="total-info">
+      需支付：<text class="unit">￥</text><text class="val">{{selectedAmount}}</text>
+    </view>
+    <button class="pay-btn" bindtap="submitUpgrade">立即升级</button>
+  </view>
+</view>

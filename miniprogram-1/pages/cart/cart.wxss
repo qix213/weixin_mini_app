@@ -1,6 +1,6 @@
 /* ================= 全局与背景 ================= */
 page {
-  background: #f0f9ff;
+  background: #FAF8F5; /* 奶油可可白 */
   min-height: 100vh;
 }
 
@@ -9,45 +9,43 @@ page {
   padding-top: 46px; 
   min-height: 100vh;
   box-sizing: border-box;
-  /* ⚡️ 修改这里：从 140rpx 提高到 180rpx，防止最后一件商品被增高的底栏挡住 */
+  /* ⚡️ 完美防遮挡底部留白 */
   padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  font-family: 'DIN Alternate', -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 覆盖 Vant NavBar 背景使其透明 */
+/* 覆盖 Vant NavBar 背景使其透明 (如果使用了 NavBar) */
 .nav-glass {
   background-color: transparent !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
-.nav-glass .van-nav-bar__title { color: #1e293b !important; font-weight: 800 !important; }
+.nav-glass .van-nav-bar__title { 
+  color: #222222 !important; 
+  font-weight: bold !important; 
+  letter-spacing: 2rpx;
+}
 
+/* 科技感莫兰迪环境光晕 */
 .dynamic-bg {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 600rpx;
   z-index: -1;
-  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
-}
-
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  background: linear-gradient(180deg, rgba(148, 164, 140, 0.12) 0%, rgba(250, 248, 245, 0) 100%);
+  pointer-events: none;
 }
 
 /* ================= 通用毛玻璃卡片 ================= */
 .glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.06); /* 主色调极淡光晕 */
 }
 
 .skeleton-wrap { padding: 40rpx 30rpx; margin: 30rpx 24rpx; }
@@ -72,7 +70,7 @@ page {
 .item-main {
   display: flex;
   margin-bottom: 30rpx;
-  border-bottom: 2rpx dashed rgba(14, 165, 233, 0.15);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03); /* 极简分割线代替原有的虚线 */
   padding-bottom: 30rpx;
 }
 
@@ -81,8 +79,8 @@ page {
   height: 160rpx;
   border-radius: 20rpx;
   margin-right: 24rpx;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+  background: #F8F9FA;
+  border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .goods-info {
@@ -92,9 +90,9 @@ page {
 }
 
 .goods-name {
-  font-size: 30rpx;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #222222;
   line-height: 1.4;
   margin-bottom: 12rpx;
   display: -webkit-box;
@@ -110,17 +108,19 @@ page {
   margin-bottom: auto;
 }
 
+/* 标签样式 (莫兰迪绿) */
 .point-tag {
-  background: rgba(224, 242, 254, 0.8);
-  color: #0284c7;
-  padding: 4rpx 12rpx;
+  background: rgba(148, 164, 140, 0.08);
+  color: #94A48C;
+  padding: 4rpx 16rpx;
   border-radius: 8rpx;
   font-size: 22rpx;
-  border: 1rpx solid rgba(56, 189, 248, 0.3);
+  font-weight: 500;
+  border: 1px solid rgba(148, 164, 140, 0.15);
 }
 
 .goods-stock {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #94a3b8;
 }
 
@@ -128,8 +128,8 @@ page {
   margin-top: 10rpx;
 }
 
-.goods-price .unit { font-size: 24rpx; color: #1e293b; font-weight: bold; }
-.goods-price .val { font-size: 36rpx; color: #1e293b; font-weight: 900; font-family: 'DIN Alternate', sans-serif;}
+.goods-price .unit { font-size: 24rpx; color: #222222; font-weight: bold; }
+.goods-price .val { font-size: 36rpx; color: #222222; font-weight: bold; font-family: 'DIN Alternate', sans-serif;}
 
 /* --- 下半部分：操作与小计 --- */
 .item-footer {
@@ -139,15 +139,15 @@ page {
 }
 
 .sub-total {
-  font-size: 26rpx;
-  color: #64748b;
+  font-size: 24rpx;
+  color: #666666;
   font-weight: 500;
 }
 
 .sub-total .highlight {
-  color: #0ea5e9;
+  color: #94A48C; /* 莫兰迪绿高亮 */
   font-size: 32rpx;
-  font-weight: 900;
+  font-weight: bold;
   font-family: 'DIN Alternate', sans-serif;
 }
 
@@ -157,60 +157,62 @@ page {
   gap: 20rpx;
 }
 
-/* 玻璃胶囊步进器 (完美复刻商城风格) */
+/* 玻璃胶囊步进器 (完美贴合轻奢科技感) */
 .stepper-glass {
   display: flex;
   align-items: center;
-  background: rgba(241, 245, 249, 0.6);
-  border: 2rpx solid rgba(226, 232, 240, 1);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 16rpx;
   overflow: hidden;
-  height: 60rpx;
+  height: 56rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.02);
 }
 
 .btn-minus, .btn-plus {
-  width: 60rpx;
-  height: 60rpx;
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  color: #475569;
-  background: rgba(255, 255, 255, 0.5);
+  font-size: 30rpx;
+  color: #666666;
+  background: transparent;
   transition: all 0.2s;
 }
 
-.btn-minus:active, .btn-plus:active { background: rgba(226, 232, 240, 0.8); }
+.btn-minus:active, .btn-plus:active { background: rgba(148, 164, 140, 0.1); color: #94A48C; }
 .btn-minus.disabled, .btn-plus.disabled { color: #cbd5e1; background: transparent; }
 
 .num-input {
-  width: 70rpx;
-  height: 60rpx;
+  width: 60rpx;
+  height: 56rpx;
   text-align: center;
   font-size: 26rpx;
   font-weight: 600;
-  color: #1e293b;
-  border-left: 2rpx solid rgba(226, 232, 240, 0.6);
-  border-right: 2rpx solid rgba(226, 232, 240, 0.6);
+  color: #222222;
+  border-left: 1px solid rgba(0, 0, 0, 0.03);
+  border-right: 1px solid rgba(0, 0, 0, 0.03);
+  background: rgba(250, 248, 245, 0.5); /* 稍微深一点的奶油白衬托输入框 */
 }
 
-/* 柔和的科技感删除按钮 */
+/* 柔和的科技感删除按钮 (脏粉色，高级警戒色) */
 .delete-btn {
-  height: 60rpx;
+  height: 56rpx;
   padding: 0 20rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(244, 63, 94, 0.08); /* 极淡的粉红色背景 */
-  color: #f43f5e;
-  font-size: 24rpx;
-  font-weight: bold;
+  background: rgba(196, 155, 155, 0.08); 
+  color: #C49B9B;
+  font-size: 22rpx;
+  font-weight: 600;
   border-radius: 16rpx;
-  border: 1rpx solid rgba(244, 63, 94, 0.2);
+  border: 1px solid rgba(196, 155, 155, 0.15);
   transition: all 0.2s;
 }
 
-.delete-btn:active { background: rgba(244, 63, 94, 0.15); transform: scale(0.95); }
+.delete-btn:active { background: rgba(196, 155, 155, 0.15); transform: scale(0.95); }
 .delete-btn .icon { font-size: 24rpx; margin-right: 6rpx; }
 
 /* ================= 底部结算悬浮栏 ================= */
@@ -219,45 +221,44 @@ page {
   bottom: 0;
   left: 0;
   right: 0;
-  /* ⚡️ 修改这里：从 120rpx 拔高到 150rpx (你可以根据喜好在 140-160 之间微调) */
   height: 150rpx;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(250, 248, 245, 0.85); /* 奶油可可白的高斯模糊 */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1rpx solid rgba(255, 255, 255, 1);
+  border-top: 1px solid rgba(0, 0, 0, 0.02);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 30rpx;
-  box-shadow: 0 -4rpx 20rpx rgba(0,0,0,0.05);
-  /* env(safe-area-inset-bottom) 会自动适配 iPhone 底部的那条黑线 */
+  padding: 0 40rpx; /* 两侧留出更多呼吸感 */
+  box-shadow: 0 -4rpx 30rpx rgba(148, 164, 140, 0.05); /* 主色极弱阴影 */
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 100;
 }
 
 .total-info { display: flex; align-items: baseline; }
-.total-info .label { font-size: 28rpx; color: #64748b; font-weight: 500;}
+.total-info .label { font-size: 26rpx; color: #666666; font-weight: 500;}
 
-.pay-amount .unit { color: #0ea5e9; font-size: 28rpx; margin-left: 8rpx; font-weight: bold; }
-.pay-amount .val { color: #0ea5e9; font-size: 46rpx; font-weight: 900; font-family: 'DIN Alternate', sans-serif;}
+.pay-amount .unit { color: #94A48C; font-size: 28rpx; margin-left: 12rpx; font-weight: bold; }
+.pay-amount .val { color: #94A48C; font-size: 44rpx; font-weight: bold; font-family: 'DIN Alternate', sans-serif;}
 
 .submit-btn {
-  width: 280rpx !important;
+  width: 260rpx !important;
   height: 84rpx;
-  background: linear-gradient(135deg, #0ea5e9, #2563eb);
-  color: #fff;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
   border-radius: 42rpx;
-  font-size: 32rpx;
-  font-weight: 800;
+  font-size: 30rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.4);
+  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.25);
   margin: 0;
   transition: transform 0.2s;
 }
 
-.submit-btn:active { transform: scale(0.96); }
+.submit-btn:active { transform: scale(0.96); box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.15); }
 
 /* ================= 空状态页 (悬浮感) ================= */
 .empty-state {
@@ -280,39 +281,57 @@ page {
 
 .empty-icon { font-size: 100rpx; z-index: 2; opacity: 0.8; }
 
-/* 底部呼吸发光环 */
+/* 底部呼吸发光环 (主色调) */
 .glow-ring {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(14, 165, 233, 0.1);
-  box-shadow: 0 0 40rpx rgba(14, 165, 233, 0.2);
+  background: rgba(148, 164, 140, 0.1);
+  box-shadow: 0 0 40rpx rgba(148, 164, 140, 0.2);
   animation: pulse 3s infinite alternate;
 }
 
 @keyframes pulse {
   0% { transform: scale(0.8); opacity: 0.5; }
-  100% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1.1); opacity: 1; }
 }
 
 .empty-text {
-  font-size: 28rpx;
-  color: #64748b;
+  font-size: 26rpx;
+  color: #94a3b8;
+  letter-spacing: 2rpx;
   margin-bottom: 50rpx;
   font-weight: 500;
 }
 
 .empty-btn {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
-  color: #0ea5e9;
-  border: 2rpx solid #0ea5e9;
+  color: #94A48C;
+  border: 1px solid rgba(148, 164, 140, 0.4);
   border-radius: 40rpx;
   padding: 0 60rpx;
-  height: 80rpx;
+  height: 76rpx;
   line-height: 76rpx;
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: bold;
-  box-shadow: 0 8rpx 20rpx rgba(14, 165, 233, 0.15);
+  letter-spacing: 2rpx;
+  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.08);
+}
+.empty-btn:active { transform: scale(0.96); }
+
+/* 底部合并总计栏的积分数字高亮 */
+.pay-amount .point-color {
+  color: #94A48C; /* 统一的高级莫兰迪绿 */
+  font-weight: 600;
+  font-size: 32rpx;
+}
+
+/* 拼接用的加号加深 */
+.pay-amount .plus-sign {
+  color: #6B7067;
+  font-size: 26rpx;
+  margin: 0 8rpx;
+  font-weight: bold;
 }

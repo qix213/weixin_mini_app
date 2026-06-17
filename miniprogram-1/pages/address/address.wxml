@@ -1,63 +1,40 @@
 <view class="address-container">
-  <!-- 新增地址按钮 -->
+  
   <view class="add-btn" bindtap="goToAddAddress">
     <text>+ 添加新地址</text>
   </view>
 
-  <!-- 地址列表 -->
   <view class="address-list" wx:if="{{addressList.length > 0}}">
     <view 
       class="address-item" 
       wx:for="{{addressList}}" 
       wx:key="id"
     >
-      <!-- 默认地址标签 -->
       <view class="default-tag" wx:if="{{item.is_default}}">
         默认
       </view>
 
-      <!-- 地址信息 -->
       <view class="info-row">
         <text>{{item.name}}</text>
         <text class="phone">{{item.phone}}</text>
       </view>
       
-      <!-- 🔥 核心修复：完整显示 省+市+区+详细地址，永不丢失 -->
       <view class="address-row">
-        <!-- 优先显示单独的省市区，兼容新旧数据 -->
         {{item.province}} {{item.city}} {{item.district}} {{item.detail}}
       </view>
 
-      <!-- 操作按钮 -->
       <view class="btn-group">
-        <button 
-          size="mini" 
-          bindtap="goToEditAddress"
-          data-addressid="{{item.id}}"
-          style="color: #1E88E5; border: 1rpx solid #1E88E5; background: #fff;"
-        >
+        <button class="action-btn" bindtap="goToEditAddress" data-addressid="{{item.id}}">
           编辑
         </button>
-        <button 
-          size="mini" 
-          bindtap="setDefaultAddress"
-          data-addressid="{{item.id}}"
-          style="{{item.is_default ? 'color: #999; border: 1rpx solid #999; background: #fff;' : 'color: #1E88E5; border: 1rpx solid #1E88E5; background: #fff;'}}"
-          disabled="{{item.is_default}}"
-        >
+        <button class="action-btn {{item.is_default ? 'btn-disabled' : ''}}" bindtap="setDefaultAddress" data-addressid="{{item.id}}" disabled="{{item.is_default}}">
           {{item.is_default ? '已默认' : '设为默认'}}
         </button>
-        <button 
-          size="mini" 
-          bindtap="deleteAddress"
-          data-addressid="{{item.id}}"
-          style="color: #f00; border: 1rpx solid #f00; background: #fff;"
-        >
+        <button class="action-btn btn-delete" bindtap="deleteAddress" data-addressid="{{item.id}}">
           删除
         </button>
       </view>
 
-      <!-- 选择地址按钮 -->
       <button 
         class="select-btn"
         bindtap="selectAddress"
@@ -68,7 +45,6 @@
     </view>
   </view>
 
-  <!-- 空地址提示 -->
   <view class="empty-tip" wx:else>
     <text>暂无收货地址，点击添加</text>
   </view>

@@ -8,6 +8,14 @@
     </view>
 
     <view class="form-list">
+      
+      <view class="avatar-register-box">
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="avatar-img" src="{{avatarUrl || '/images/bg/avator.webp'}}" mode="aspectFit"></image>
+          <view class="avatar-tip">点击设置头像</view>
+        </button>
+      </view>
+
       <view class="input-item">
         <label class="input-label">会员ID</label>
         <view class="input-content disabled-content">{{memberId}}</view>

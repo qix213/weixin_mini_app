@@ -115,24 +115,32 @@ Page({
     });
   },
 
-  getMemberInfo() {
-    const app = getApp();
-    const header = app.getRequestHeader();
+getMemberInfo() {
+  const app = getApp();
+  const header = app.getRequestHeader();
 
-    wx.showLoading({ title: '加载会员信息...', mask: true });
-    wx.request({
-      url: app.globalData.baseUrl + '/app01/member/info/',
-      method: 'GET',
-      header: header,
-      success: (res) => {
-        wx.hideLoading();
-        if (res.data.code === 200) {
-          const memberInfo = res.data.data;
+  wx.showLoading({ title: '加载会员信息...', mask: true });
+  wx.request({
+    url: app.globalData.baseUrl + '/app01/member/info/',
+    method: 'GET',
+    header: header,
+    success: (res) => {
+      wx.hideLoading();
+      if (res.data.code === 200) {
+        const memberInfo = res.data.data;
 
-          const currentType = memberInfo.user_type || 1;
-          const actualStars = Math.max(0, currentType - 1);
-          memberInfo.starsArray = Array.from({ length: actualStars }, (v, i) => i);
+        const currentType = memberInfo.user_type || 1;
+        const actualStars = Math.max(0, currentType - 1);
+        memberInfo.starsArray = Array.from({ length: actualStars }, (v, i) => i);
 
+        // 🌟 核心修复：优先取后端计算好的精准到期字段 expire_time 
+        let expireDateStr = memberInfo.expire_time || memberInfo.expire_time_text;
+        
+        if (expireDateStr) {
+          // 截取前10位(YYYY-MM-DD)，兼容带时区的完整时间戳字符串
+          memberInfo.expire_time_text = expireDateStr.substring(0, 10);
+        } else {
+          // 兜底降级旧逻辑
           const joinDateStr = memberInfo.date_joined || memberInfo.create_time; 
           if (joinDateStr) {
             const safeDateStr = joinDateStr.substring(0, 10).replace(/-/g, '/');
@@ -145,37 +153,92 @@ Page({
           } else {
             memberInfo.expire_time_text = '永久有效'; 
           }
-
-          const levelCosts = { 1: 0, 2: 980, 3: 3980, 4: 9800 };
-          const levelNames = { 1: '蓝朋友0星', 2: '蓝朋友1星', 3: '蓝朋友2星', 4: '蓝朋友3星' };
-
-          if (currentType < 4) {
-            memberInfo.nextLevelDiff = levelCosts[currentType + 1] - levelCosts[currentType];
-            memberInfo.nextLevelName = levelNames[currentType + 1];
-          } else {
-            memberInfo.nextLevelDiff = 0; 
-          }
-          
-          memberInfo.user_type_text = levelNames[currentType] || '蓝朋友0星';
-
-          app.globalData.memberInfo = memberInfo; 
-          
-          this.setData({
-            memberInfo: memberInfo,
-            points: memberInfo.points || 0,
-            isLogin: true
-          });
-        } else {
-          wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
         }
-      },
-      fail: (err) => {
-        wx.hideLoading();
-        wx.showToast({ title: '加载会员信息失败', icon: 'none' });
-        this.setData({ points: 0 });
+
+        // 会员差额与会籍文本配置（同步支持5级：Ta创+）
+        const levelCosts = { 1: 0, 2: 980, 3: 3980, 4: 9800, 5: 39800 };
+        const levelNames = { 1: '蓝朋友0星', 2: '蓝朋友1星', 3: '蓝朋友2星', 4: '蓝朋友3星', 5: 'Ta创+' };
+
+        if (currentType < 5) {
+          // memberInfo.nextLevelDiff = levelCosts[currentType + 1] - levelCosts[currentType];
+          memberInfo.nextLevelDiff = levelCosts[currentType + 1] ;        
+          memberInfo.nextLevelName = levelNames[currentType + 1];
+        } else {
+          memberInfo.nextLevelDiff = 0; 
+        }
+        
+        memberInfo.user_type_text = levelNames[currentType] || '蓝朋友0星';
+
+        app.globalData.memberInfo = memberInfo; 
+        
+        this.setData({
+          memberInfo: memberInfo,
+          points: memberInfo.points || 0,
+          isLogin: true
+        });
+      } else {
+        wx.showToast({ title: res.data.msg || '加载会员信息失败', icon: 'none' });
       }
-    });
-  },
+    }
+  });
+},
+
+// 🌟 新增：处理微信头像授权与上传
+onChooseAvatar(e) {
+  const { avatarUrl } = e.detail; // 这是微信给你的临时图片路径
+  console.log('获取到微信头像临时路径：', avatarUrl);
+
+  const app = getApp();
+  const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+
+  if (!token) {
+    wx.showToast({ title: '登录状态已失效，请重新登录', icon: 'none' });
+    return;
+  }
+
+  wx.showLoading({ title: '正在保存头像...' });
+
+  // 调用后端的上传接口 (你需要在 Django 里写一个接收文件的接口)
+  wx.uploadFile({
+    url: app.globalData.baseUrl + '/app01/member/upload_avatar/', // ⚠️ 替换为你真实的后端接口路径
+    filePath: avatarUrl,
+    name: 'file', // Django 后端通过 request.FILES.get('file') 来获取
+    header: {
+      'Authorization': `Bearer ${token}`
+    },
+    success: (res) => {
+      wx.hideLoading();
+      try {
+        // wx.uploadFile 返回的 data 是字符串，需要手动 parse
+        const data = JSON.parse(res.data);
+        if (data.code === 200) {
+          wx.showToast({ title: '头像更新成功', icon: 'success' });
+          
+          // 🌟 局部刷新前端页面，立刻显示新头像
+          // 假设后端返回的数据格式是 { data: { avatar_url: 'https://...' } }
+          this.setData({
+            'memberInfo.avatar_url': data.data.avatar_url
+          });
+          
+          // 同步更新全局变量
+          app.globalData.memberInfo.avatar_url = data.data.avatar_url;
+          wx.setStorageSync('memberInfo', app.globalData.memberInfo);
+
+        } else {
+          wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
+        }
+      } catch (err) {
+        console.error('解析后端返回数据失败：', err);
+        wx.showToast({ title: '服务器响应异常', icon: 'none' });
+      }
+    },
+    fail: (err) => {
+      wx.hideLoading();
+      console.error('上传头像请求失败：', err);
+      wx.showToast({ title: '网络异常，上传失败', icon: 'none' });
+    }
+  });
+},
 
   getValidCouponCount() {
     const app = getApp();
@@ -195,8 +258,9 @@ Page({
             let expireTime = coupon.end_time || coupon.expire_time;
             if (!expireTime) return true; 
             if (typeof expireTime === 'string') {
-              expireTime = new Date(expireTime).getTime();
+              expireTime = expireTime.replace(/-/g, '/');
             }
+            expireTime = new Date(expireTime).getTime();
             return isUnused && (expireTime > now);
           });
           this.setData({ couponCount: validCoupons.length });
@@ -234,5 +298,9 @@ Page({
   goToAIChat() {
     if (!this.checkLogin('/pages/my/my?action=aiChat')) return;
     wx.navigateTo({ url: '/pages/ai-chat/ai-chat' });
+  },
+  goToUpgrade() {
+    if (!this.checkLogin('/pages/my/update')) return;
+    wx.navigateTo({ url: '/pages/my/update' });
   },
 });

@@ -1,106 +1,180 @@
-/* 地址容器 */
-.address-container {
-  padding: 20rpx;
-  background-color: #f9f9f9;
-  min-height: 100vh;
+/* ================= 全局底色配置 ================= */
+page {
+  background-color: #FAF8F5; /* 奶油可可白 */
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-/* 新增按钮 */
-.add-btn {
-  border: 2rpx dashed #1E88E5;
-  border-radius: 8rpx;
+/* 地址容器 */
+.address-container {
   padding: 30rpx;
+  background-color: #FAF8F5;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ================= 新增按钮 (轻奢虚线框) ================= */
+.add-btn {
+  border: 2rpx dashed rgba(148, 164, 140, 0.5); /* 主色调半透明虚线 */
+  background: rgba(255, 255, 255, 0.6); 
+  backdrop-filter: blur(10px);
+  border-radius: 24rpx;
+  padding: 36rpx;
   text-align: center;
-  margin-bottom: 30rpx;
-  background-color: #fff;
+  margin-bottom: 40rpx;
+  transition: all 0.2s ease;
+}
+
+.add-btn:active {
+  transform: scale(0.98);
+  background: rgba(148, 164, 140, 0.05);
 }
 
 .add-btn text {
-  color: #1E88E5;
+  color: #94A48C;
   font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
 }
 
-/* 地址列表 */
-.address-list {
-  margin-bottom: 20rpx;
-}
-
-/* 地址项 */
+/* ================= 地址项 (拟态毛玻璃卡片) ================= */
 .address-item {
-  border: 1rpx solid #eee;
-  border-radius: 8rpx;
-  padding: 20rpx;
-  margin-bottom: 20rpx;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.06); /* 主调极淡光晕 */
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx 30rpx; 
+  margin-bottom: 30rpx;
   position: relative;
-  background-color: #fff;
+  overflow: hidden; 
+  transition: transform 0.2s ease;
 }
 
-/* 默认标签 */
-.address-item .default-tag {
+.address-item:active {
+  transform: scale(0.99);
+}
+
+/* 默认标签 (主色调渐变) */
+.default-tag {
   position: absolute;
   top: 0;
   right: 0;
-  background: #1E88E5;
-  color: #fff;
-  font-size: 24rpx;
-  padding: 5rpx 15rpx;
-  border-bottom-left-radius: 8rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  font-size: 20rpx;
+  font-weight: 500;
+  padding: 8rpx 20rpx;
+  border-radius: 0 24rpx 0 24rpx; 
+  letter-spacing: 2rpx;
+  box-shadow: -4rpx 4rpx 12rpx rgba(148, 164, 140, 0.2);
 }
 
-/* 地址信息 */
-.address-item .info-row {
-  margin-bottom: 10rpx;
+/* 地址信息排版 */
+.info-row {
+  margin-bottom: 16rpx;
+  display: flex;
+  align-items: baseline;
 }
 
-.address-item .info-row text {
-  font-size: 28rpx;
+.info-row text {
+  font-size: 32rpx;
+  color: #222222;
   font-weight: bold;
+  letter-spacing: 1rpx;
 }
 
-.address-item .info-row text.phone {
-  font-size: 26rpx;
+.info-row text.phone {
+  font-size: 28rpx;
+  color: #666666;
   margin-left: 20rpx;
-  font-weight: normal;
+  font-weight: 500;
+  font-family: 'DIN Alternate', -apple-system, sans-serif;
 }
 
-.address-item .address-row {
+.address-row {
   font-size: 26rpx;
-  color: #666;
-  margin-bottom: 20rpx;
-  line-height: 1.4;
+  color: #666666;
+  margin-bottom: 30rpx;
+  line-height: 1.6;
 }
 
-/* 操作按钮组 */
-.address-item .btn-group {
+/* ================= 操作小按钮组 ================= */
+.btn-group {
   display: flex;
   justify-content: flex-end;
   gap: 20rpx;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03); 
 }
 
-.address-item .btn-group button {
-  font-size: 24rpx;
-  padding: 0 15rpx;
+/* 默认小按钮（编辑/设为默认） */
+.action-btn {
+  margin: 0 !important;
+  background: rgba(148, 164, 140, 0.08);
+  color: #94A48C;
+  font-size: 22rpx;
+  padding: 0 24rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  border-radius: 25rpx;
+  font-weight: 500;
+  border: 1px solid rgba(148, 164, 140, 0.15) !important;
 }
 
-/* 选择地址按钮 */
-.address-item .select-btn {
+.action-btn::after { display: none; }
+.action-btn:active { background: rgba(148, 164, 140, 0.15); }
+
+/* 禁用状态（已默认） */
+.btn-disabled {
+  background: rgba(0, 0, 0, 0.02) !important;
+  color: #A3A3A3 !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 删除按钮（高级脏粉色，温和提示删除） */
+.btn-delete {
+  background: rgba(196, 155, 155, 0.08);
+  color: #C49B9B;
+  border: 1px solid rgba(196, 155, 155, 0.2) !important;
+}
+.btn-delete:active {
+  background: rgba(196, 155, 155, 0.15);
+}
+
+/* ================= 底部主操作按钮 (渐变胶囊) ================= */
+.select-btn {
   width: 100%;
-  background: #f5f5f5;
-  color: #333;
-  border-radius: 8rpx;
-  height: 70rpx;
-  line-height: 70rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  border-radius: 40rpx; 
+  height: 80rpx;
+  line-height: 80rpx;
   font-size: 28rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.25);
+  transition: all 0.2s ease;
 }
 
-/* 空地址提示 */
+.select-btn::after { display: none; }
+.select-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.15);
+}
+
+/* ================= 空状态 ================= */
 .empty-tip {
-  text-align: center;
-  padding: 100rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
 }
 
 .empty-tip text {
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: #94a3b8;
+  letter-spacing: 2rpx;
 }

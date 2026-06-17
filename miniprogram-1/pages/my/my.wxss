@@ -1,62 +1,40 @@
 /* pages/mine/mine.wxss */
 page {
-  background: #f0f9ff;
+  background: #FAF8F5; /* 奶油可可白 */
   min-height: 100vh;
+  color: #2C3327;
 }
 
 .mine-container {
   position: relative;
   min-height: 100vh;
-  padding-bottom: 60rpx;
+  padding-bottom: 40rpx;
   box-sizing: border-box;
 }
 
-/* 动态流光背景 (与AI页面一致) */
-.dynamic-bg {
-  position: fixed;
+.lux-bg {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 340rpx; 
+  background: linear-gradient(180deg, #EAECEA 0%, #FAF8F5 100%);
   z-index: -1;
-  background: linear-gradient(-45deg, #e0f2fe, #ffffff, #bae6fd, #f8fafc);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
 }
 
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ========== 会员信息卡片 (深邃科技蓝 + 玻璃反光) ========== */
+/* ========== 会员信息卡片 ========== */
 .user-info-card {
   position: relative;
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  background: linear-gradient(135deg, #94A48C, #7A8B72);
   color: #fff;
-  margin: 30rpx 20rpx;
-  padding: 40rpx 30rpx;
-  border-radius: 40rpx;
+  margin: 16rpx 30rpx 20rpx; /* 🔽 收紧：外边距减小 */
+  padding: 32rpx 30rpx;      /* 🔽 收紧：内边距减小 */
+  border-radius: 28rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  min-height: 180rpx;
-  box-shadow: 0 15rpx 35rpx rgba(2, 132, 199, 0.3);
+  min-height: 140rpx;        /* 🔽 收紧：最小高度降低 */
+  box-shadow: 0 16rpx 32rpx rgba(148, 164, 140, 0.25);
   overflow: hidden;
-}
-
-/* 卡片内部的流光反光层 */
-.user-info-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
-  transform: rotate(30deg);
-  pointer-events: none;
 }
 
 .avatar-area {
@@ -67,90 +45,254 @@ page {
 }
 
 .avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 60rpx;
-  border: 4rpx solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 0 20rpx rgba(255, 255, 255, 0.4);
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+}
+/* 清除微信 button 的默认样式，使其变成一个纯净的点击容器 */
+.avatar-btn {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  width: 110rpx;
+  height: 110rpx;
+  border-radius: 50%;
+  line-height: 1; /* 防止图片偏位 */
+  overflow: hidden;
 }
 
+.avatar-btn::after {
+  display: none; /* 去掉微信默认的恶心灰边框 */
+}
+
+/* 原有的 avatar 样式保持不变，但宽度高度设为 100% 填满按钮 */
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box; /* 确保边框不会撑破按钮 */
+}
 .user-base-info {
-  margin-left: 30rpx;
+  margin-left: 28rpx;
 }
 
 .nickname {
-  font-size: 38rpx;
-  font-weight: 800;
-  margin-bottom: 10rpx;
-  text-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
-}
-
-.member-type, .member-id {
-  font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 6rpx;
-  font-weight: 300;
-}
-
-/* 卡片内按钮 (磨砂玻璃质感) */
-.member-card-btn {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 2rpx solid rgba(255, 255, 255, 0.4);
-  color: #fff;
-  padding: 18rpx 32rpx;
-  border-radius: 40rpx;
-  font-size: 26rpx;
+  font-size: 36rpx;
   font-weight: bold;
-  z-index: 1;
-  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.1);
+  letter-spacing: 2rpx;
+  margin-bottom: 8rpx;
+}
+
+.member-id {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 300;
 }
 
 .unlogin-area {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
   z-index: 1;
 }
 
 .unlogin-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  padding: 24rpx 70rpx;
+  padding: 20rpx 70rpx;
   border-radius: 50rpx;
-  font-size: 32rpx;
-  font-weight: 800;
-  box-shadow: 0 10rpx 20rpx rgba(0,0,0,0.1);
+  font-size: 28rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
 }
 
-/* ========== 共用白透毛玻璃面板 ========== */
+/* ========== 通用玻璃面板 ========== */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  margin: 0 20rpx 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08); /* 极度柔和的天蓝阴影 */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 28rpx;
+  margin: 0 30rpx 20rpx; /* 🔽 收紧：面板间底部距离从 24 降到 20 */
+  padding: 28rpx 30rpx;  /* 🔽 收紧：通用内边距从 36 降到 28 */
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.05); 
+  border: 1px solid rgba(148, 164, 140, 0.1);
 }
 
-/* 积分+优惠券 */
+/* ================= 🌟 VIP 星级面板深度视觉排版 ================= */
+.vip-board {
+  display: flex;
+  flex-direction: column;
+  padding: 22rpx 30rpx !important; /* 🔽 收紧：进一步缩减 VIP 面板上下边距 */
+}
+
+/* 1. 会籍基本状态栏 */
+.vip-meta-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12rpx; /* 🔽 收紧：底部留白缩减到 12rpx */
+  border-bottom: 1px solid rgba(148, 164, 140, 0.08); /* 极细分隔线 */
+}
+
+.vip-expire-box {
+  display: flex;
+  align-items: center;
+}
+
+.expire-label {
+  font-size: 24rpx;
+  color: #8A8E88;
+}
+
+.expire-date-val {
+  font-size: 26rpx;
+  color: #2C3327;
+  font-weight: 600;
+  font-family: 'DIN Alternate', sans-serif; 
+}
+
+.vip-identity-tag {
+  font-size: 22rpx;
+  color: #94A48C;
+  background: rgba(148, 164, 140, 0.08);
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-weight: 600;
+}
+
+/* 2. 升级晋升交互区 */
+.vip-upgrade-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0; /* 🔽 收紧：上下边距进一步缩减到 16rpx */
+}
+.upgrade-left-tip {
+  display: flex;
+  flex-direction: column;
+}
+
+.tip-prefix {
+  font-size: 20rpx;
+  color: #94A48C;
+  text-transform: uppercase;
+  letter-spacing: 1rpx;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.tip-desc {
+  font-size: 24rpx;
+  color: #6B7067;
+}
+
+.tip-money {
+  color: #2C3327;
+  font-weight: bold;
+  font-size: 28rpx;
+  font-family: 'DIN Alternate', sans-serif;
+  margin-left: 6rpx;
+}
+
+.tip-max-status {
+  font-size: 26rpx;
+  color: #94A48C;
+  font-weight: 600;
+}
+
+/* 高显性轻奢级胶囊升级大按钮 */
+.btn-upgrade-luxury {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30rpx;
+  height: 56rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%); 
+  border-radius: 28rpx;
+  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.3); 
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.btn-upgrade-luxury .btn-text {
+  font-size: 22rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  margin-right: 6rpx;
+}
+
+.btn-upgrade-luxury .btn-arrow-icon {
+  margin-top: 2rpx;
+}
+
+.btn-upgrade-luxury:active {
+  transform: scale(0.95) translateY(2rpx);
+  box-shadow: 0 2rpx 6rpx rgba(148, 164, 140, 0.15);
+}
+
+/* 3. 星级进度排版 */
+.vip-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F8F9F5;
+  padding: 20rpx; /* 🔽 收紧：背景框内边距 */
+  border-radius: 16rpx;
+  margin-top: 6rpx; /* 🔽 收紧：与上方按钮的间距 */
+}
+
+.node-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.node-cost {
+  display: flex;
+  align-items: baseline; 
+  font-size: 26rpx; 
+  font-family: 'DIN Alternate', -apple-system, sans-serif;
+  font-weight: bold;
+  margin-bottom: 12rpx;
+}
+
+.node-cost .rmb {
+  font-size: 18rpx; 
+  font-weight: 500;
+  margin-right: 4rpx;
+}
+
+.node-stars {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 10rpx; 
+}
+
+/* 🌟 重叠星星的核心样式 */
+.overlap-star {
+  margin-left: -16rpx; 
+  position: relative;
+  transition: all 0.3s;
+}
+
+.overlap-star:nth-child(1) { z-index: 4; }
+.overlap-star:nth-child(2) { z-index: 3; }
+.overlap-star:nth-child(3) { z-index: 2; }
+.overlap-star:nth-child(4) { z-index: 1; }
+
+/* ========== 资产数据 ========== */
 .asset-container {
   display: flex;
   align-items: center;
-  padding: 30rpx 0;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  margin: 0 20rpx 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  padding: 24rpx 0; /* 🔽 收紧：资产数据块上下间距由 30 降为 24 */
 }
 
 .asset-item {
@@ -159,273 +301,170 @@ page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.asset-item:active {
-  transform: scale(0.95);
-  opacity: 0.8;
 }
 
 .asset-divider {
   width: 2rpx;
-  height: 60rpx;
-  background-color: rgba(14, 165, 233, 0.2); /* 淡淡的蓝线分隔 */
+  height: 50rpx; /* 🔽 收紧：分割线高度微微缩减 */
+  background-color: rgba(148, 164, 140, 0.1);
 }
 
 .asset-title {
-  font-size: 26rpx;
-  color: #64748b;
-  margin-bottom: 12rpx;
-  font-weight: 500;
+  font-size: 24rpx;
+  color: #8A8E88;
+  margin-bottom: 8rpx; /* 🔽 收紧：标题和数字的距离 */
 }
 
 .asset-value {
-  font-size: 40rpx;
-  font-weight: 800;
-  color: #0ea5e9; /* 亮天蓝字 */
+  font-size: 42rpx;
+  font-weight: bold;
+  font-family: 'DIN Alternate', sans-serif;
+  color: #2C3327;
 }
 
 .asset-value-gray {
-  color: #94a3b8 !important;
-  font-weight: 500 !important;
+  color: #cbd5e1;
 }
 
-/* 会员到期时间 */
-.vip-expire-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 35rpx 40rpx;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  margin: 0 20rpx 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
-}
-
-.vip-expire-title {
-  font-size: 28rpx;
-  color: #334155;
-  font-weight: 600;
-}
-
-.vip-expire-value {
-  font-size: 28rpx;
-  color: #0ea5e9;
-  font-weight: 800;
-}
-
-/* ========== 功能列表 ========== */
+/* ========== 常用功能列表 ========== */
 .function-list {
-  padding: 10rpx 20rpx;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 2rpx solid rgba(255, 255, 255, 1);
-  border-radius: 30rpx;
-  margin: 0 20rpx 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(14, 165, 233, 0.08);
+  padding: 10rpx 30rpx;
 }
 
 .function-item {
   display: flex;
   align-items: center;
-  padding: 35rpx 20rpx;
-  border-bottom: 2rpx solid rgba(14, 165, 233, 0.08);
-  transition: background 0.2s;
+  padding: 26rpx 0; /* 🔽 收紧：列表条目的上下高度由 32 降到 26 */
+  border-bottom: 1px solid rgba(148, 164, 140, 0.08);
 }
 
 .function-item:last-child {
   border-bottom: none;
 }
 
-.function-item:active {
-  background: rgba(240, 249, 255, 0.5);
-  border-radius: 20rpx;
-}
-
-/* 图标包裹层：增加高科技微光底色 */
 .function-icon {
-  width: 64rpx;
-  height: 64rpx;
-  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-  border-radius: 18rpx;
+  width: 52rpx;
+  height: 52rpx;
+  background: rgba(148, 164, 140, 0.08);
+  border-radius: 14rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  margin-right: 25rpx;
-  box-shadow: 0 4rpx 10rpx rgba(14, 165, 233, 0.15);
+  font-size: 28rpx;
+  margin-right: 20rpx; /* 🔽 收紧：图标和文字的间距 */
 }
 
 .function-name {
   flex: 1;
-  font-size: 30rpx;
-  color: #334155;
-  font-weight: 600;
+  font-size: 28rpx;
+  color: #2C3327;
+  font-weight: 500;
 }
 
 .function-arrow {
   font-size: 28rpx;
-  color: #cbd5e1;
+  color: #CBD5E1;
+  font-weight: 300;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ================= 🌟 弹窗通用样式 ================= */
+.modal-mask {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  width: 100vw; 
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5); 
+  backdrop-filter: blur(8px); 
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center; 
+  justify-content: center; 
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { 
+  from { opacity: 0; transform: scale(0.95); } 
+  to { opacity: 1; transform: scale(1); } 
+}
+
+.modal-content {
+  width: 580rpx; 
+  background: #FAF8F5; 
+  border-radius: 40rpx; 
+  padding: 60rpx 50rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  box-shadow: 0 24rpx 60rpx rgba(148, 164, 140, 0.15); 
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.modal-header {
+  font-size: 36rpx;
   font-weight: bold;
-}
-
-/* ========== 二维码弹窗 (保持极简) ========== */
-.modal-qrcode-img {
-  width: 400rpx;
-  display: block;
-  margin: 0 auto;
-  border-radius: 20rpx;
-  box-shadow: 0 10rpx 20rpx rgba(0,0,0,0.1);
-}
-
-.modal-qrcode-text {
-  font-size: 26rpx;
-  color: #64748b;
-  margin-top: 30rpx;
-  display: block;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* ================= 🌟 新增：用户卡片星级与升级提示样式 ================= */
-.member-type-row {
-  display: flex;
-  align-items: center;
-  margin: 16rpx 0 10rpx; /* 上下留出呼吸感间距 */
-}
-
-/* 会员类型黑金标签 */
-.type-badge {
-  background: linear-gradient(135deg, #1e293b, #334155);
-  color: #f8fafc;
-  font-size: 22rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-  margin-right: 12rpx;
-  font-weight: bold;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
-}
-
-/* 星星容器 */
-.star-wrap {
-  display: flex;
-  gap: 4rpx; /* 星星之间的紧凑间隙 */
-}
-
-/* 升级提示语（高亮橙色，刺激消费） */
-.upgrade-tips {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(10px);
-  padding: 6rpx 18rpx;
-  border-radius: 12rpx;
-  font-size: 22rpx;
-  color: #ea580c; /* 活力亮橙色 */
-  display: inline-flex;
-  align-items: center;
-  margin-top: 6rpx;
-  border: 1rpx solid rgba(234, 88, 12, 0.15);
-}
-
-/* 满级专属提示 */
-.upgrade-tips.max-level {
-  color: #0284c7; 
-  background: rgba(14, 165, 233, 0.1);
-  border-color: rgba(14, 165, 233, 0.2);
-}
-
-/* ================= 🌟 VIP星级面板样式 ================= */
-.vip-board {
-  margin: 20rpx 30rpx;
-  background: #ffffff;
-  border-radius: 20rpx;
-  padding: 30rpx 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
-}
-.vip-header {
-  margin-bottom: 12rpx;
-  padding-left: 10rpx;
-}
-.vip-title {
-  font-size: 38rpx;
-  font-weight: 900;
-  color: #0f172a;
-  letter-spacing: 2rpx;
-}
-.vip-sub {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  color: #2C3327;
   margin-bottom: 40rpx;
-  padding: 0 10rpx;
-}
-.vip-expire {
-  font-size: 24rpx;
-  color: #64748b;
-}
-.vip-upgrade {
-  font-size: 24rpx;
-  color: #0284c7;
-  font-weight: bold;
-}
-.vip-upgrade.max-level {
-  color: #0284c7;
+  letter-spacing: 4rpx;
 }
 
-/* ======== 新版弹性进度条 (完美解决乱跑的线) ======== */
-.vip-progress {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 0;
-}
-.node-item {
-  flex: 1;
+.modal-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-.node-cost {
-  font-size: 20rpx;
-  color: #94a3b8;
-  margin-bottom: 8rpx;
-  font-family: 'DIN Alternate', sans-serif;
-}
-.node-icon-wrap {
-  position: relative;
+  margin-bottom: 60rpx;
   width: 100%;
-  height: 44rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
-.line-left, .line-right {
-  position: absolute;
-  top: 50%;
-  width: 50%;
-  height: 4rpx;
-  transform: translateY(-50%);
-  z-index: 1;
-  transition: background 0.3s ease;
-}
-.line-left { left: 0; }
-.line-right { right: 0; }
 
-.star-bg {
-  position: relative;
-  z-index: 2;
-  background: #ffffff; /* 遮挡背后的连接线 */
-  padding: 0 6rpx;
+.modal-qrcode-img {
+  width: 360rpx;
+  height: 360rpx;
+  border-radius: 24rpx; 
+  margin-bottom: 24rpx;
+  background-color: #FFFFFF;
+  padding: 10rpx; 
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.modal-qrcode-text {
+  font-size: 24rpx;
+  color: #8A8E88; 
+  letter-spacing: 2rpx;
+  font-weight: 300;
+}
+
+.agree-btn {
+  width: 100% !important;
+  height: 90rpx;
   display: flex;
   align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%); 
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  border-radius: 45rpx; 
+  margin: 0;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.3); 
+  transition: all 0.2s;
 }
-.node-name {
-  font-size: 20rpx;
-  margin-top: 8rpx;
-  text-align: center;
-  white-space: nowrap;
+
+.agree-btn::after { display: none; } 
+
+.agree-btn:active { 
+  transform: scale(0.96); 
+  box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.15);
+}
+
+/* ================= Vant 列表图标样式 ================= */
+.list-van-icon {
+  font-size: 34rpx;       /* 统一控制图标大小，如果觉得小可改为 38rpx */
+  color: #94A48C;         /* 统一的轻奢主题绿色 */
+  display: flex;          /* 保证在方块内居中不出偏差 */
+  align-items: center;
+  justify-content: center;
 }

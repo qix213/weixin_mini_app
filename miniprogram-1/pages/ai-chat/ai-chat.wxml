@@ -1,58 +1,107 @@
-<view class="chat-container">
-  <view class="dynamic-bg {{modelType === 'pro' ? 'bg-pro' : 'bg-lite'}}"></view>
+<view class="container">
+  <view class="nav-header">AI 蓝博士专家问诊</view>
 
-  <scroll-view class="msg-scroll" scroll-y="true" scroll-into-view="last-msg" enhanced="true" show-scrollbar="false">
-    <view class="msg-box" wx:for="{{messageList}}" wx:key="index">
-      
-      <view wx:if="{{item.role === 'assistant'}}" class="msg-row ai-row">
-        <view class="avatar ai-avatar {{item.modelType === 'pro' ? 'pro-avatar' : ''}}">
-          <view class="avatar-glow"></view> 🤖
+  <scroll-view 
+    class="chat-scroll" 
+    scroll-y="true" 
+    scroll-into-view="{{scrollToId}}" 
+    scroll-with-animation
+  >
+    <view class="message-list">
+      <block wx:for="{{messages}}" wx:key="id">
+        <view class="msg-row ai-row" wx:if="{{item.role === 'ai'}}" id="msg-{{index}}">
+          <view class="avatar-box">
+            <view class="ai-avatar">
+            <image class="svg-icon" src="/images/bg/AI蓝博士头像.jpg"></image>
+            </view>
+          </view>
+          <view class="bubble ai-bubble">
+            <rich-text nodes="{{item.content}}"></rich-text>
+            <view class="typing-indicator" wx:if="{{item.isTyping}}">
+              <view class="dot"></view><view class="dot"></view><view class="dot"></view>
+            </view>
+          </view>
         </view>
-        <view class="msg-content ai-content {{item.modelType === 'pro' ? 'pro-content' : ''}}">
-          <text>{{item.content}}</text>
+
+        <view class="msg-row user-row" wx:else id="msg-{{index}}">
+          <view class="bubble user-bubble">
+            <image class="preview-img" src="{{item.image}}" wx:if="{{item.image}}" mode="widthFix"></image>
+            <text>{{item.content}}</text>
+          </view>
         </view>
-      </view>
-
-      <view wx:else class="msg-row user-row">
-        <view class="msg-content user-content">{{item.content}}</view>
-        <view class="avatar user-avatar">👤</view>
-      </view>
-
+      </block>
     </view>
-    <view id="last-msg" class="scroll-anchor"></view>
   </scroll-view>
 
-  <view class="bottom-console">
+  <view class="action-panel">
     
-    <view class="model-switch-wrapper">
-      <view class="model-switch-capsule">
-        <view class="switch-slider {{modelType === 'pro' ? 'slider-right' : 'slider-left'}}"></view>
-        
-        <view class="tab {{modelType === 'lite' ? 'active-lite' : ''}}" data-type="lite" bindtap="switchModel">
-          <text class="icon">⚡</text> 本地小模型
-        </view>
-        <view class="tab {{modelType === 'pro' ? 'active-pro' : ''}}" data-type="pro" bindtap="switchModel">
-          <text class="icon">💎</text> 专业大模型
-        </view>
-      </view>
-    </view>
-
-    <view class="input-bar">
+    <!-- 🌟 全新第一步：问卷 -->
+    <view class="btn-group step-0-group" wx:if="{{currentStep === 0}}">
       <input 
-        class="input" 
-        placeholder="{{modelType === 'pro' ? '向专业大模型提问 (扣除积分)...' : '向本地小模型提问 (完全免费)...'}}" 
-        placeholder-class="placeholder-style" 
-        value="{{inputText}}" 
-        bindinput="onInput" 
-        confirm-type="send" 
-        bindconfirm="sendMessage"
-        cursor-spacing="20"
+        class="name-input" 
+        placeholder="请输入被测人姓名" 
+        bindinput="onNameInput" 
+        value="{{subjectName}}" 
       />
-      <view class="send-btn {{inputText.length > 0 ? 'active' : ''}}" bindtap="sendMessage">
-        <view class="send-btn-bg"></view>
-        <text class="iconfont">发送</text>
+      <view class="action-row">
+        <button class="action-btn primary" bindtap="startQuestionnaire">📝 填写肤质问卷</button>
+        <button class="action-btn ghost" bindtap="skipQuestionnaire">⏭️ 跳过此步</button>
       </view>
     </view>
 
+    <!-- 🌟 全新第二步：拍照 -->
+    <view class="btn-group" wx:if="{{currentStep === 1}}">
+      <view class="action-row" style="width: 100%;">
+        <button class="action-btn primary" bindtap="uploadPhoto">📸 第2步：上传面部照片</button>
+        <button class="action-btn ghost" bindtap="skipPhoto">⏭️ 跳过此步</button>
+      </view>
+    </view>
+
+    <!-- 🌟 第三步：生成报告（拦截判断） -->
+    <view class="btn-group" wx:if="{{currentStep === 2}}">
+      <!-- 若跳过了问卷，显示返回提示 -->
+      <block wx:if="{{isQuestionnaireSkipped}}">
+        <view style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <view style="font-size: 24rpx; color: #D4A39D; margin-bottom: 20rpx;">⚠️ 需先完成问卷，才能生成精准报告</view>
+          <button class="action-btn ghost" bindtap="startQuestionnaire">↩️ 返回补充问卷</button>
+        </view>
+      </block>
+      <!-- 若未跳过问卷，正常生成报告 -->
+      <block wx:else>
+        <button class="action-btn primary" bindtap="generateAnalysis">🧠 第3步：生成深度肤质报告</button>
+      </block>
+    </view>
+
+    <!-- 第四步：生成方案 -->
+    <view class="btn-group" wx:if="{{currentStep === 3}}">
+      <button class="action-btn primary" bindtap="generatePlan">📋 第4步：生成定制护肤方案</button>
+    </view>
+    
+    <view class="btn-group" wx:if="{{currentStep === 4}}">
+      <button class="action-btn ghost" bindtap="resetChat">✨ 测肤完成，开启新档案</button>
+    </view>
+  </view>
+
+  <!-- 问卷弹窗 -->
+  <view class="q-modal" wx:if="{{showQuestionnaire}}">
+    <view class="q-mask" bindtap="closeQuestionnaire"></view>
+    <view class="q-content">
+      <view class="q-progress">STEP {{currentQIndex + 1}} / {{questionnaireData.length}}</view>
+      <view class="q-title">{{questionnaireData[currentQIndex].id}}. {{questionnaireData[currentQIndex].title}}</view>
+      
+      <scroll-view scroll-y class="q-options">
+        <block wx:for="{{questionnaireData[currentQIndex].options}}" wx:key="key" wx:for-index="key" wx:for-item="val">
+          <view class="q-option {{answers[questionnaireData[currentQIndex].id] === key ? 'selected' : ''}}" 
+                bindtap="selectOption" data-key="{{key}}">
+            <text class="opt-key">{{key}}.</text> {{val}}
+          </view>
+        </block>
+      </scroll-view>
+
+      <view class="q-footer">
+        <button class="q-btn ghost" bindtap="prevQ" hidden="{{currentQIndex === 0}}">上一题</button>
+        <button class="q-btn primary" bindtap="nextQ">{{currentQIndex === questionnaireData.length - 1 ? '完成提交' : '下一题'}}</button>
+      </view>
+    </view>
   </view>
 </view>

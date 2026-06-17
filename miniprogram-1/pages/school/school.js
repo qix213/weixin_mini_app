@@ -1,44 +1,37 @@
-// 顶部获取全局App实例
 const app = getApp();
 
 Page({
   data: {
     searchValue: '',
-    categoryList: ['全部视频', '蓝朋友', '蓝明星', '护肤私教', 'MINI-studio 主理人', 'Ta创+'],
-    activeTab: 0,
-    levelMap: { 0: undefined, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },
-    videoList: [],
+    
+    // 菜单状态
+    activeMenu: 'brand',     // brand, course, exam, cert
+    isCourseExpanded: false, // 课程菜单折叠状态
+    activeSubCategory: '',  // 当前选中的课程子分类
+    
+    // 动态分类与数据
+    allVideoData: [],        // 🌟 核心：缓存所有数据，不再反复请求
+    courseCategories: [],    // 动态课程分类
+    videoList: [],           // 当前右侧显示的视频
+    
     loading: false,       
-    finished: false,      
-    page: 1,              
-    pageSize: 10,
-    userLevel: 1,
-    userLevelName: ''
+    finished: false
   },
 
   onLoad() {
-    console.log('=== 进入onLoad ===');
     if (!this.checkLoginStatus()) return;
-
-    const userInfo = wx.getStorageSync('userInfo') || {};
-    const levelNameMap = { 1: "蓝朋友", 2: "蓝明星", 3: "护肤私教", 4: "MINI-studio 主理人", 5: "Ta创+" };
-    this.setData({
-      userLevel: userInfo.user_type || 1,
-      userLevelName: userInfo.user_type_name || levelNameMap[userInfo.user_type] || ''
-    });
+    this.getVideoList();
   },
 
   onShow() {
-    console.log('=== 进入onShow，强制触发加载 ===');
-    this.onTabChange({ currentTarget: { dataset: { index: 0 } } });
+    // 页面展示时如果没数据则加载
+    if (this.data.videoList.length === 0) {
+      this.getVideoList();
+    }
   },
 
   checkLoginStatus() {
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    console.log('=== 登录态校验 ===', {
-      tokenExist: !!accessToken,
-      tokenValue: accessToken || '无'
-    });
     if (!accessToken) {
       wx.showModal({
         title: '请先登录',
@@ -51,147 +44,132 @@ Page({
     return true;
   },
 
-  onTabChange(e) {
-    const index = e.currentTarget.dataset.index;
-    console.log(`=== 切换到【${this.data.categoryList[index]}】===`);
-    this.setData({
-      activeTab: index,
-      page: 1,
-      videoList: [],
-      finished: false
-    }, () => {
-      this.getVideoList();
-    });
-  },
+// 🌟 新增：智能补全视频域名（与 play.js 保持一致）
+formatVideoUrl(url) {
+  if (!url) return '';
+  let finalUrl = url.trim().split('#')[0];
+  if (!finalUrl.startsWith('http')) {
+    if (!finalUrl.startsWith('/')) finalUrl = '/' + finalUrl;
+    finalUrl = `https://video.lansik2026.com${finalUrl}`;
+  }
+  return finalUrl;
+},
 
-  getVideoList() {
-    console.log('=== 进入getVideoList ===');
-    const { page, pageSize, activeTab } = this.data;
-    const requiredLevel = this.data.levelMap[activeTab];
-    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+// 🌟 修改：一次性获取所有视频，并在前端解析出完整的视频 URL
+getVideoList() {
+  const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+  this.setData({ loading: true });
 
-    this.setData({ loading: true });
+  wx.request({
+    url: `${app.globalData.baseUrl}/app01/video_courses/`,
+    method: 'GET',
+    header: { 'Authorization': `Bearer ${accessToken}` },
+    success: (res) => {
+      const results = res.data?.results || res.data?.data || [];
+      
+      // 动态提取分类
+      const allCats = [...new Set(results.map(v => v.category))];
+      const courseCats = allCats.filter(c => c !== '品牌溯源' && c);
 
-    const requestData = { page, page_size: pageSize };
-    if (activeTab !== 0 && requiredLevel !== undefined) {
-      requestData.required_level = requiredLevel;
+      // 🔥 核心修改：遍历数据，提前为列表页生成好视频的完整播放链接
+      const formattedResults = results.map(v => ({
+        ...v,
+        // 假设后端的序列化器里有返回 video_url 字段
+        fullVideoUrl: this.formatVideoUrl(v.video_url) 
+      }));
+
+      this.setData({
+        allVideoData: formattedResults,
+        courseCategories: courseCats,
+        loading: false
+      });
+
+      // 默认加载品牌溯源
+      this.filterVideos('品牌溯源');
+    },
+    fail: () => {
+      this.setData({ loading: false });
+      wx.showToast({ title: '加载失败', icon: 'none' });
     }
-
-    console.log('=== 发送请求 ===', {
-      url: `${app.globalData.baseUrl}/app01/video_courses/`,
-      header: { 'Authorization': `Bearer ${accessToken}` },
-      data: requestData
-    });
-
-    wx.request({
-      // 🔥 全局配置地址
-      url: `${app.globalData.baseUrl}/app01/video_courses/`,
-      method: 'GET',
-      header: {
-        'content-type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      data: requestData,
-      success: (res) => {
-        console.log('=== 后端原始返回 ===', {
-          statusCode: res.statusCode,
-          header: res.header,
-          data: res.data
-        });
-
-        const newList = res.data?.results || res.data?.data || (Array.isArray(res.data) ? res.data : []);
-        this.setData({
-          videoList: newList,
-          finished: newList.length < pageSize
-        });
-
-        wx.showToast({
-          title: newList.length > 0 ? `加载到${newList.length}条课程` : '后端返回空数据',
-          icon: 'none',
-          duration: 3000
-        });
-      },
-      fail: (err) => {
-        console.error('=== 请求失败 ===', err);
-        wx.showToast({ title: `请求失败：${err.errMsg}`, icon: 'none' });
-      },
-      complete: () => {
-        this.setData({ loading: false });
-      }
+  });
+},
+  // 🌟 2. 核心：前端过滤（不仅快，而且永远不会出现“所有分类混在一起”）
+  filterVideos(categoryName) {
+    const filtered = this.data.allVideoData.filter(v => v.category === categoryName);
+    this.setData({
+      videoList: filtered,
+      finished: true // 前端过滤后即代表已加载全部
     });
   },
 
+  // 🌟 3. 左侧主菜单点击逻辑
+  handleMainMenuClick(e) {
+    const menuId = e.currentTarget.dataset.id;
+    
+    if (menuId === 'course') {
+      const willExpand = !this.data.isCourseExpanded;
+      this.setData({ isCourseExpanded: willExpand });
+
+      // 🔥 自动加载逻辑：展开课程菜单时，如果没选子分类，自动选中第一个
+      if (willExpand && this.data.courseCategories.length > 0) {
+        this.handleSubCategoryClick({ currentTarget: { dataset: { name: this.data.courseCategories[0] } } });
+      }
+    } else if (menuId === 'brand') {
+      this.setData({ activeMenu: 'brand', isCourseExpanded: false, activeSubCategory: '' });
+      this.filterVideos('品牌溯源');
+    } else if (menuId === 'exam') {
+      wx.navigateTo({ url: '/pages/school/exam' });
+    } else if (menuId === 'cert') {
+      wx.navigateTo({ url: '/pages/school/certification' });
+    }
+  },
+
+  // 🌟 4. 子分类点击逻辑
+  handleSubCategoryClick(e) {
+    const subName = e.currentTarget.dataset.name;
+    this.setData({ activeMenu: 'course', activeSubCategory: subName });
+    this.filterVideos(subName);
+  },
+
+  // 播放视频
   toVideoPlay(e) {
     const videoId = e.currentTarget.dataset.id;
-    const videoItem = this.data.videoList.find(item => item.id === videoId);
-    if (!videoItem) {
-      wx.showToast({ title: '视频不存在', icon: 'none' });
-      return;
-    }
-
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    
     wx.request({
-      // 🔥 全局配置地址
       url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/check_permission/`,
       method: 'GET',
-      header: {
-        'content-type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
+      header: { 'Authorization': `Bearer ${accessToken}` },
       success: (res) => {
-        if (res.data?.has_permission) {
+        if (res.data?.has_permission && res.data?.video_url) {
           wx.navigateTo({
             url: `/pages/school/play?id=${videoId}&videoUrl=${encodeURIComponent(res.data.video_url)}`
           });
           this.updatePlayCount(videoId);
         } else {
-          wx.showModal({
-            title: '很抱歉',
-            content: `需要${videoItem.required_level_name}以上会员等级才能够观看`,
-            showCancel: false,
-            confirmText: '我知道了'
-          });
+          wx.showToast({ title: '获取权限失败', icon: 'none' });
         }
-      },
-      fail: (err) => {
-        console.error('权限校验失败：', err);
-        wx.showToast({ title: '校验失败，请重试', icon: 'none' });
       }
     });
   },
 
   updatePlayCount(videoId) {
-    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    const token = wx.getStorageSync('accessToken');
     wx.request({
-      // 🔥 全局配置地址
       url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/add_play_count/`,
       method: 'POST',
-      header: {
-        'content-type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      fail: (err) => {
-        console.error('播放次数更新失败：', err);
-      }
+      header: { 'Authorization': `Bearer ${token}` }
     });
   },
 
-  toCourseStudy() {
-    this.setData({ activeTab: 0, page: 1, videoList: [], finished: false });
-    this.getVideoList();
-  },
-
-  toCheckInList() { wx.navigateTo({ url: '/pages/school/check-in' }); },
-  toExam() { wx.navigateTo({ url: '/pages/school/exam' }); },
-  toCertification() { wx.navigateTo({ url: '/pages/school/certification' }); },
-
   onSearchChange(e) { this.setData({ searchValue: e.detail.value }); },
-  clearSearch() {
-    this.setData({ searchValue: '', page: 1, videoList: [], finished: false });
-    this.getVideoList();
-  },
   onSearch() {
-    this.setData({ page: 1, videoList: [], finished: false });
-    this.getVideoList();
+    const kw = this.data.searchValue.toLowerCase();
+    const filtered = this.data.allVideoData.filter(v => v.title.toLowerCase().includes(kw));
+    this.setData({ videoList: filtered });
+  },
+  clearSearch() {
+    this.setData({ searchValue: '' });
+    this.filterVideos(this.data.activeSubCategory || '品牌溯源');
   }
 });

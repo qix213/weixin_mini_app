@@ -16,24 +16,46 @@ Page({
   },
 
   onLoad() {
-    // 1. 初始化时同步基础状态
     this.syncGlobalUserState();
-    
-    // 2. 加载首页数据
     this.loadHomeData().finally(() => {
       this.setData({ loading: false });
     });
+    setTimeout(() => {
+      this.setData({ showAiPopup: true });
+    }, 1000);
   },
 
   onShow() {
     this.syncGlobalUserState();
-    // 如果已登录，拉取最新会员信息同步 nickname
     if (this.data.isLogin) {
       this.getMemberInfo();
     }
   },
+// 阻止蒙层滑动穿透到底部页面
+preventTouchMove() {
+  return;
+},
 
-  // 基础状态同步
+// 点击取消 / 蒙层关闭弹窗
+closeAiPopup() {
+  this.setData({ showAiPopup: false });
+},
+
+// 点击体验跳转
+toAiChat() {
+  this.closeAiPopup(); // 先关闭弹窗
+  
+  // 请将此处路径替换为你实际的 AI Chat 页面路径
+  wx.navigateTo({
+    url: '/pages/ai-chat/ai-chat', 
+    fail: (err) => {
+      // 兜底方案：如果 ai-chat 是在底部 tabBar 上，需要用 switchTab 跳转
+      wx.switchTab({
+        url: '/pages/ai-chat/ai-chat'
+      });
+    }
+  });
+},
   syncGlobalUserState() {
     const isLogin = app.globalData.isLogin;
     const memberInfo = app.globalData.memberInfo || wx.getStorageSync('memberInfo') || {};
@@ -47,15 +69,9 @@ Page({
     });
   },
 
-  // ========== 核心优化：使用封装的 app.request ==========
-
-  /**
-   * 拉取会员信息
-   * 自动带上 Authorization 头，无需手动拼 header
-   */
   getMemberInfo() {
     app.request({
-      url: '/app01/member/info/', // 这里的路径会自动拼在 baseUrl 后面
+      url: '/app01/member/info/',
       method: 'GET'
     }).then(res => {
       if (res.data.code === 200) {
@@ -69,7 +85,6 @@ Page({
           memberInfo: memberInfo,
           isAdminMember: [4, 5].includes(userType)
         });
-        console.log('✅ 会员信息同步成功');
       }
     }).catch(err => {
       console.error('❌ 会员信息同步失败：', err);
@@ -77,7 +92,6 @@ Page({
   },
 
   loadHomeData() {
-    // 并行加载所有数据
     return Promise.all([
       this.fetchBannerData(), 
       this.fetchFixedImages(),
@@ -85,9 +99,6 @@ Page({
     ]);
   },
 
-  /**
-   * 获取明星产品
-   */
   fetchStarGoods() {
     return app.request({
       url: '/app01/goods/',
@@ -98,47 +109,32 @@ Page({
         const starGoods = allGoods.filter(item => item.is_star).map(item => ({
           id: item.id,
           name: item.name,
-          // 🌟 这里的 api.base 必须确保是 https://www.lansik2026.com
           image: item.image_url?.startsWith('http') ? item.image_url : `${app.globalData.baseUrl}${item.image_url || ''}`,
           price: item.member_price || item.price,
           original_price: item.original_price
         }));
         this.setData({ star_goods: starGoods });
       }
-    }).catch(err => {
-      console.error('❌ 获取明星产品失败：', err);
-    });
+    }).catch(err => console.error('❌ 获取明星产品失败：', err));
   },
 
-  /**
-   * 获取轮播图及公告
-   */
   fetchBannerData() {
     return app.request({
       url: api.banner
     }).then(res => {
       const resData = res.data;
-      console.log('🐞 轮播图接口返回原始数据：', resData);
-
       if (resData.code === 100) {
-        // 🌟 核心修改点：这里要取 resData.banner.results
         const bannerArray = resData.banner?.results || (Array.isArray(resData.banner) ? resData.banner : []);
-        
         this.setData({ 
           banner_list: bannerArray, 
           notice: resData.notice?.title || this.data.notice,
-          content: resData.notice?.content || ''
+          content: resData.notice?.content || '',
+          
         });
-        
-        console.log('✅ 轮播图列表已更新为数组:', bannerArray);
       }
-    }).catch(err => {
-      console.error('❌ 获取轮播图失败：', err);
-    });
+    }).catch(err => console.error('❌ 获取轮播图失败：', err));
   },
-  /**
-   * 获取首页宣传图
-   */
+
   fetchFixedImages() {
     return app.request({
       url: '/app01/index_annonce/'
@@ -152,28 +148,24 @@ Page({
         }));
         this.setData({ fixed_images: fixedImages });
       }
-    }).catch(err => {
-      console.error('❌ 获取固定图失败：', err);
-    });
+    }).catch(err => console.error('❌ 获取固定图失败：', err));
   },
 
-  // ========== 路由跳转保持不变 ==========
+  // ========== 路由跳转 ==========
   goToOrderList() {
-    if (!this.data.isAdminMember) {
-      wx.showToast({ title: '暂无订单管理权限', icon: 'none' });
-      return;
-    }
+    if (!this.data.isAdminMember) return wx.showToast({ title: '暂无订单权限', icon: 'none' });
     wx.navigateTo({ url: '/pages/order-workbench/order-workbench' });
+  },
+
+  // 🌟 新增：跳转用户管理工作台
+  goToUserWorkbench() {
+    if (!this.data.isAdminMember) return wx.showToast({ title: '暂无用户管理权限', icon: 'none' });
+    wx.navigateTo({ url: '/pages/user-workbench/user-workbench' }); // 请确保页面路径正确
   },
 
   goToGoodsDetail(event) {
     const goodsId = event.currentTarget.dataset.goodsid;
     if (goodsId) wx.navigateTo({ url: `/pages/mall/detail?goods_id=${goodsId}` });
-  },
-
-  handleClick01(event) {
-    const imgId = event.currentTarget.dataset.id;
-    if (imgId) console.log('点击固定图片：', imgId);
   },
 
   goToLogin() { wx.navigateTo({ url: '/pages/login/login' }); },

@@ -1,21 +1,14 @@
 <view class="checkout-container">
   <view class="dynamic-bg"></view>
-
   <view class="page-header">结算页面</view>
 
   <view class="glass-card section-card">
     <view class="section-title">配送方式</view>
     <view class="delivery-options">
-      <view 
-        class="delivery-btn {{deliveryType==1 ? 'active' : ''}}" 
-        data-type="1" 
-        bindtap="switchDeliveryType">
+      <view class="delivery-btn {{deliveryType==1 ? 'active' : ''}}" data-type="1" bindtap="switchDeliveryType">
         <text class="btn-icon" wx:if="{{deliveryType==1}}">✓</text> 快递上门
       </view>
-      <view 
-        class="delivery-btn {{deliveryType==2 ? 'active' : ''}}" 
-        data-type="2" 
-        bindtap="switchDeliveryType">
+      <view class="delivery-btn {{deliveryType==2 ? 'active' : ''}}" data-type="2" bindtap="switchDeliveryType">
         <text class="btn-icon" wx:if="{{deliveryType==2}}">✓</text> 到店自取
       </view>
     </view>
@@ -38,20 +31,15 @@
     <view class="icon-wrap store-icon">🏪</view>
     <view class="location-info">
       <view class="location-title">取货门店</view>
-      <view wx:if="{{selectedStore}}" class="location-desc highlight-text">
-        {{selectedStore.name}}
-      </view>
-      <view wx:else class="location-empty">请选择取货门店</view>
+      <view wx:if="{{selectedStore}}" class="location-desc highlight-text">{{selectedStore.name}}</view>
+      <view class="location-empty" wx:else>请选择取货门店</view>
     </view>
     <view class="arrow-icon">></view>
   </view>
 
   <van-action-sheet show="{{storeShow}}" bindcancel="closeStore" title="选择取货门店" round>
     <view class="store-list">
-      <view wx:for="{{areaList}}" wx:key="id" 
-        class="store-item {{selectedStore && selectedStore.id==item.id ? 'active' : ''}}"
-        data-store="{{item}}"
-        bindtap="selectStore">
+      <view wx:for="{{areaList}}" wx:key="id" class="store-item {{selectedStore && selectedStore.id==item.id ? 'active' : ''}}" data-store="{{item}}" bindtap="selectStore">
         <text class="store-name">{{item.name}}</text>
         <text class="check-mark" wx:if="{{selectedStore && selectedStore.id==item.id}}">✓</text>
       </view>
@@ -65,78 +53,62 @@
       <image src="{{item.goods_image}}" class="goods-img" mode="aspectFill"></image>
       <view class="goods-info">
         <view class="goods-name">{{item.goods_name}}</view>
-        
         <view class="tags-row">
-          <view wx:if="{{item.isPointGoods}}" class="point-tag">积分兑换商品</view>
+          <view wx:if="{{item.isPointGoods}}" class="point-tag">积分商品</view>
           <view class="goods-num">x{{item.num}}</view>
         </view>
-
         <view class="goods-price">
-          <block wx:if="{{item.isPointGoods}}">
-            <text class="val">{{item.pointPrice}}</text> <text class="unit">积分</text>
-          </block>
-          <block wx:else>
-            <text class="unit">¥</text><text class="val">{{item.formatPrice}}</text>
-          </block>
+          <text class="unit" wx:if="{{!item.isPointGoods}}">¥</text>
+          <text class="val">{{item.showPrice}}</text>
+          <text class="unit" wx:if="{{item.isPointGoods}}" style="margin-left:6rpx;font-size:20rpx;color:#94A48C;">积分</text>
         </view>
       </view>
     </view>
   </view>
 
-  <view wx:if="{{(hasExchangeGoods || isAllPointGoods) && cartList.length>0}}" class="glass-card point-deduct-card">
-    <view class="section-title">积分抵扣</view>
-    
+  <view wx:if="{{hasExchangeGoods && cartList.length>0}}" class="glass-card point-deduct-card">
+    <view class="section-title">积分结算区</view>
     <view class="point-status-row">
-      <view class="current-points">
-        当前积分：<text class="highlight">{{userPoints}}</text>
-        <text class="sub-tip">{{isAllPointGoods ? '(积分直接抵扣)' : '(1分=0.01元)'}}</text>
-      </view>
-      <view class="max-deduct-tip">最多可抵扣：{{maxDeductPoint}} 分</view>
+      <view class="current-points">账户剩余积分：<text class="highlight">{{userPoints}}</text></view>
     </view>
     
     <view class="point-operate-row">
+      <view class="btn-action btn-clear" bindtap="clearPoint">清零</view>
       <view class="stepper-glass">
         <view class="btn-minus" bindtap="minusPoint">-</view>
-        <input 
-          class="point-input"
-          type="number" 
-          value="{{deductPoint}}" 
-          bindinput="inputPoint"
-          placeholder="0"
-        />
+        <input class="point-input" type="number" value="{{deductPoint}}" bindinput="inputPoint" placeholder="0" />
         <view class="btn-plus" bindtap="plusPoint">+</view>
       </view>
-      
-      <button 
-        bindtap="useAllPoints"
-        disabled="{{maxDeductPoint <= 0}}"
-        class="use-all-btn {{maxDeductPoint <= 0 ? 'disabled' : ''}}"
-      >用全部积分</button>
+      <view bindtap="useAllPoints" class="btn-action btn-use-all {{maxDeductPoint <= 0 ? 'disabled' : ''}}">用全部</view>
     </view>
     
     <view class="deduct-summary">
-      <block wx:if="{{isAllPointGoods}}">
-        <view class="summary-item">抵扣积分：<text class="val blue">{{deductPoint}}</text> 分</view>
-        <view class="summary-item">需现金支付：<text class="val red">¥{{actualPayMoney}}</text></view>
-      </block>
-      <block wx:else>
-        <view class="summary-item">抵扣金额：<text class="val blue">¥{{deductMoney}}</text></view>
-        <view class="summary-item">需现金支付：<text class="val red">¥{{actualPayMoney}}</text></view>
-      </block>
+      <view class="summary-item" wx:if="{{totalCashPrice > 0}}">现金商品合计：<text class="val">¥{{totalCashPrice}}</text></view>
+      <view class="summary-item">积分商品总计：<text class="val">{{totalPointPrice}} 积分</text></view>
+      <view class="summary-item">本次扣除积分：<text class="val blue">-{{deductPoint}} 积分</text></view>
+      
+      <view class="summary-item" wx:if="{{remainPointMoney > 0}}">
+        积分不足补现金：<text class="val red">+¥{{remainPointMoney}}</text>
+      </view>
+      
+      <view class="summary-item" style="border-top: 1px dashed #eee; padding-top: 10rpx; margin-top: 10rpx;">
+        最终需付现金：<text class="val red">¥{{actualPayMoney}}</text>
+      </view>
     </view>
   </view>
 
   <view wx:if="{{cartList.length>0}}" class="bottom-submit-bar">
     <view class="total-info">
-      <view class="deduct-tip">
-        {{hasExchangeGoods && deductPoint>0 ? (isAllPointGoods ? '已抵扣 '+deductPoint+' 积分' : '已抵扣 ¥'+deductMoney) : '总计'}}
-      </view>
+      <view class="deduct-tip" wx:if="{{hasExchangeGoods && deductPoint > 0}}">已选扣除 {{deductPoint}} 积分</view>
+      <view class="deduct-tip" wx:elif="{{hasExchangeGoods}}">未抵扣积分</view>
+      <view class="deduct-tip" wx:else>纯现金商品结算</view>
+      
       <view class="pay-amount">
-        需支付：<text class="unit">¥</text><text class="val">{{actualPayMoney}}</text>
+        实付：
+        <text class="val point-color" wx:if="{{hasExchangeGoods}}">{{deductPoint}} 积分 + </text>
+        <text class="unit">¥</text><text class="val">{{actualPayMoney}}</text>
       </view>
     </view>
-    
     <button class="submit-btn" bindtap="submitOrder">提交订单</button>
   </view>
-
 </view>

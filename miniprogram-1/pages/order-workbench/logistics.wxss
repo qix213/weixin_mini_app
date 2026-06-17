@@ -115,3 +115,68 @@ page {
 .active-content .status-name { color: #00A0B0; }
 .active-content .desc { color: #1C2B33; font-weight: 500; }
 .active-content .time { color: #00A0B0; opacity: 0.8; }
+
+/* ================= 预计送达时间条 ================= */
+.promise-time-box {
+  display: flex;
+  align-items: center;
+  background-color: #F4F6F2; /* 品牌色的极浅背景 */
+  margin: 16rpx 30rpx 0;
+  padding: 16rpx 24rpx;
+  border-radius: 12rpx;
+  border: 1px solid #EBF0E9;
+}
+
+.promise-icon {
+  font-size: 28rpx;
+  color: #94A48C;
+  margin-right: 12rpx;
+}
+
+.promise-label {
+  font-size: 26rpx;
+  color: #6B7067;
+  margin-right: auto; /* 把后面的时间推到最右边 */
+  font-weight: 500;
+}
+
+.promise-value {
+  font-size: 28rpx;
+  color: #2C3327; /* 极深的墨绿/黑灰，强调时间 */
+  font-weight: bold;
+  font-family: "Courier New", Courier, monospace; /* 让数字显示更工整 */
+}
+/* ================= 展开/收起按钮 ================= */
+.expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx 0 10rpx;
+  font-size: 24rpx;
+  color: #94A48C; /* 品牌高级绿 */
+  font-weight: 500;
+  transition: opacity 0.3s;
+}
+
+.expand-btn:active {
+  opacity: 0.7;
+}
+
+/* 纯 CSS 绘制的精致小箭头 */
+.expand-btn .arrow {
+  width: 10rpx;
+  height: 10rpx;
+  border-right: 2px solid #94A48C;
+  border-bottom: 2px solid #94A48C;
+  margin-left: 12rpx;
+  transition: transform 0.3s ease;
+}
+
+/* 箭头方向 */
+.expand-btn .arrow.down {
+  transform: rotate(45deg) translateY(-4rpx) translateX(-2rpx);
+}
+
+.expand-btn .arrow.up {
+  transform: rotate(-135deg) translateY(-2rpx) translateX(-4rpx);
+}

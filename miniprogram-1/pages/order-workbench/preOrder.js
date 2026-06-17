@@ -48,11 +48,20 @@ Page({
         });
 
         const receiverInfo = orderDetail.receiver_info || {};
+        
+        // 🌟 核心修复：提取 address (省市区) 与详细地址进行拼接
+        const baseAddress = receiverInfo.address || ''; 
+        // 兼容处理：详细地址可能在 detail 或 full_address 中
+        const detailAddress = receiverInfo.detail || receiverInfo.full_address || ''; 
+        
+        // 拼接成完整的省市区+详细地址，并过滤多余空格
+        const recFullAddress = `${baseAddress} ${detailAddress}`.replace(/\s+/g, ' ').trim();
+
         this.setData({
           receiver: {
             name: receiverInfo.name || '',
             mobile: receiverInfo.phone || '',
-            fullAddress: receiverInfo.full_address || ''
+            fullAddress: recFullAddress // 赋值拼接好的终极完整地址
           }
         });
 
@@ -65,7 +74,6 @@ Page({
     });
   },
 
-  // ✅ 终极修复：地址拼接，彻底杜绝 undefined
   getDefaultSenderAddress() {
     if (this.data.sender.name) return;
 
@@ -80,12 +88,14 @@ Page({
         let defaultAddr = addressList.find(item => item.is_default === true || item.is_default == 1);
 
         if (defaultAddr) {
-          // 核心修复：所有字段兜底为空字符串，无undefined
+          // 🌟 核心调试打印 2：看看后端的寄件人(地址列表)原始字段长什么样
+          console.log("🔍 [Debug] 后端返回的寄件人(defaultAddr)原始数据:", defaultAddr);
+
           const province = defaultAddr.province || '';
           const city = defaultAddr.city || '';
-          const area = defaultAddr.area || '';
+          const area = defaultAddr.district || defaultAddr.area || ''; // 兼容了district
           const detail = defaultAddr.detail || '';
-          // 拼接后过滤多余空格
+          
           const fullAddress = `${province} ${city} ${area} ${detail}`.replace(/\s+/g, ' ').trim();
 
           const sender = {
@@ -101,13 +111,65 @@ Page({
             "orderDetail.sender_address": sender.fullAddress || '无发货地址'
           });
 
-          console.log("✅ 寄件信息获取成功：", sender);
+          console.log("✅ 寄件信息组装成功：", sender);
           if (this.data.receiver.name && this.data.receiver.mobile) {
             this.jdPreCheck();
           }
         } else {
           wx.showToast({ title: '未设置默认发货地址', icon: 'none' });
-          // 兜底赋值，避免页面显示undefined
+          this.setData({
+            "orderDetail.sender_name": '未设置',
+            "orderDetail.sender_phone": '未设置',
+            "orderDetail.sender_address": '请设置默认发货地址'
+          });
+        }
+      }
+    }).catch(err => {
+      console.error("❌ 获取地址失败：", err);
+    });
+  },
+  // ✅ 终极修复：地址拼接，彻底杜绝 undefined
+  getDefaultSenderAddress() {
+    if (this.data.sender.name) return;
+
+    const app = getApp();
+    app.request({
+      url: `${app.globalData.baseUrl}/app01/address/list/`,
+      method: 'GET',
+      header: app.getRequestHeader()
+    }).then(res => {
+      if (res.data.code === 200) {
+        const addressList = res.data.data?.address_list || [];
+        let defaultAddr = addressList.find(item => item.is_default === true || item.is_default == 1);
+
+        if (defaultAddr) {
+          
+          // 🌟 核心修改：直接利用后端已有的 address 和 detail 字段进行拼接
+          const baseAddress = defaultAddr.address || ''; // 例如："北京市 北京市 海淀区"
+          const detailAddress = defaultAddr.detail || ''; // 例如："东升科技园2期8号楼b2驿站"
+          
+          // 拼接并过滤多余空格
+          const fullAddress = `${baseAddress} ${detailAddress}`.replace(/\s+/g, ' ').trim();
+
+          const sender = {
+            name: defaultAddr.name || '',
+            mobile: defaultAddr.phone || '',
+            fullAddress: fullAddress
+          };
+
+          this.setData({
+            sender: sender,
+            "orderDetail.sender_name": sender.name || '默认寄件人',
+            "orderDetail.sender_phone": sender.mobile || '无联系方式',
+            "orderDetail.sender_address": sender.fullAddress || '无发货地址'
+          });
+
+          console.log("✅ 寄件信息组装成功：", sender);
+          if (this.data.receiver.name && this.data.receiver.mobile) {
+            this.jdPreCheck();
+          }
+        } else {
+          wx.showToast({ title: '未设置默认发货地址', icon: 'none' });
           this.setData({
             "orderDetail.sender_name": '未设置',
             "orderDetail.sender_phone": '未设置',

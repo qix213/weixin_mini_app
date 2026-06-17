@@ -1,11 +1,10 @@
 <view class="video-play-page">
-  <view class="dynamic-bg"></view>
-
-  <view wx:if="{{hasPermission}}" class="content-wrapper">
+  <view class="content-wrapper">
     <view class="video-container">
       <video 
         id="myVideo"
         src="{{videoUrl}}"
+        custom-cache="{{false}}"
         controls
         playsinline
         show-play-btn
@@ -35,33 +34,12 @@
         <view class="meta-tag"><text class="icon">⏱</text> 时长：{{duration || '00:00'}}</view>
         <view class="meta-tag"><text class="icon">▶</text> 播放：{{playCount || 0}} 次</view>
       </view>
-      
-      <view class="level-info">
-        <view class="level-item current">
-          <text class="label">当前等级</text>
-          <text class="value">{{userLevelName}}</text>
-        </view>
-        <view class="level-divider"></view>
-        <view class="level-item require">
-          <text class="label">要求等级</text>
-          <text class="value">{{requiredLevelName}}</text>
-        </view>
-      </view>
     </view>
 
     <view class="func-btns">
       <button bindtap="toCheckIn" class="func-btn primary-btn">学习打卡</button>
-      <button bindtap="toExam" class="func-btn warning-btn">考核通关</button>
-      <button bindtap="goBack" class="func-btn cancel-btn">返回列表</button>
-    </view>
-  </view>
-
-  <view wx:else class="no-permission">
-    <view class="glass-card forbidden-card">
-      <view class="lock-icon">🔒</view>
-      <view class="forbidden-text">您暂无权限观看该视频</view>
-      <view class="forbidden-desc">需升级到<text class="highlight"> {{requiredLevelName || '未知等级'}} </text>及以上会员</view>
-      <button bindtap="goBack" class="back-btn">返回课程列表</button>
+      <button bindtap="toExam" class="func-btn secondary-btn">考核通关</button>
+      <button bindtap="goBack" class="func-btn ghost-btn">返回列表</button> 
     </view>
   </view>
 </view>
