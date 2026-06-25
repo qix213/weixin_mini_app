@@ -64,24 +64,25 @@ Page({
   isPointGoods(item) {
     const app = getApp();
     const goodsId = item.goods_id || item.id || '';
-    const cacheIsPoint = app.getGoodsPointCache ? app.getGoodsPointCache(goodsId) : undefined;
-    const isForcePointGoods = item.price > 0 || item.goods_price > 0; 
     
-    if (cacheIsPoint !== undefined) {
-      return cacheIsPoint || isForcePointGoods;
+    // 1. 优先查缓存
+    if (app.getGoodsPointCache) {
+      const cacheIsPoint = app.getGoodsPointCache(goodsId);
+      if (cacheIsPoint !== undefined) return cacheIsPoint;
     }
-    const pointField = item.can_point_exchange || item.is_point_goods || item.is_exchange || item.exchangeable || false;
+    
+    // 2. 正常判断（彻底删掉那个坑人的 price > 0 逻辑）
+    const pointField = item.can_point_exchange || item.is_point_goods || item.is_exchange || item.exchangeable;
     const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
     
     let isPoint = false;
     if (typeof pointField === 'string') {
       isPoint = pointField.toLowerCase() === 'true' || pointField === '1';
-    } else if (typeof pointField === 'number') {
-      isPoint = pointField === 1;
     } else {
       isPoint = !!pointField;
     }
-    return isPoint || hasPointPrice || isForcePointGoods;
+    
+    return isPoint || hasPointPrice;
   },
 
   fetchOrders(isRefresh = false) {

@@ -1,5 +1,7 @@
 {
   "navigationBarTitleText": "地址管理系统",
   "enablePullDownRefresh": false,
-  "onReachBottomDistance": 50
+  "onReachBottomDistance": 50,
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
 }

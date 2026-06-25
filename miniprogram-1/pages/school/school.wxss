@@ -233,12 +233,34 @@ page {
   padding: 24rpx; 
 }
 
+/* 视频标题容器 */
 .video-title {
+  display: flex;
+  align-items: flex-start; /* 确保多行文本时序号对齐第一行 */
   font-size: 30rpx;
   color: #2C3327;
   font-weight: 600;
-  line-height: 1.4; /* 增加行高，提升阅读体验 */
+  line-height: 1.4;
   margin-bottom: 12rpx;
+}
+
+/* 🌟 新增：优雅的数字序号前缀 */
+.video-index-num {
+  font-family: "DIN Alternate", "Courier New", monospace; /* 使用等宽高质感数字字体 */
+  font-size: 32rpx;
+  color: #94A48C; /* 经典莫兰迪绿 */
+  font-weight: 700;
+  margin-right: 16rpx; /* 与右侧标题拉开间距 */
+  background: rgba(148, 164, 140, 0.1); /* 极其清淡的绿底色背景 */
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* 标题文本限制 */
+.video-title-text {
+  flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

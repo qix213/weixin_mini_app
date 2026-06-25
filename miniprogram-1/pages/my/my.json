@@ -2,5 +2,5 @@
   "usingComponents": {"van-icon": "@vant/weapp/icon/index"},
   "navigationBarTitleText": "我的空间",
   "navigationBarBackgroundColor": "#94A48C",
-  "navigationBarTextStyle": "black"
+  "navigationBarTextStyle": "white"
 }

@@ -59,40 +59,27 @@
       </view>
 
       <view class="video-card glass-card" wx:for="{{videoList}}" wx:key="id" bindtap="toVideoPlay" data-id="{{item.id}}">
-        <view class="thumb-wrap">
-          
-          <video 
-            src="{{item.fullVideoUrl}}" 
-            class="video-thumb"
-            controls="{{false}}"
-            show-center-play-btn="{{false}}"
-            object-fit="cover"
-            initial-time="0"
-            custom-cache="{{false}}"
-          ></video>
-          
-          <view class="video-mask"></view>
-          
-          <view class="play-overlay">
-            <view class="play-icon"></view>
-          </view>
-          
-          <view class="duration-badge" wx:if="{{item.duration}}">时长：{{item.duration}} s</view>
-          
-        </view>
-        
-        <view class="video-info">
-          <view class="video-title">{{item.title}}</view>
-          
-          <view class="video-footer">
-            <view class="category-badge">{{item.category}}</view>
-            <view class="video-stats">
-              <text class="stat-item"><text class="stat-icon">播放次数 ▶</text>{{item.play_count || 0}}</text>
-            </view>
-          </view>
-          
-        </view>
+  <view class="thumb-wrap">
+    <video src="{{item.fullVideoUrl}}" class="video-thumb" controls="{{false}}" show-center-play-btn="{{false}}" object-fit="cover" initial-time="0" custom-cache="{{false}}"></video>
+    <view class="video-mask"></view>
+    <view class="play-overlay"><view class="play-icon"></view></view>
+    <view class="duration-badge" wx:if="{{item.duration}}">时长：{{item.duration}} s</view>
+  </view>
+  
+  <view class="video-info">
+    <view class="video-title">
+      <text class="video-index-num">{{item.sort_order < 10 ? '0' + item.sort_order : item.sort_order}}</text>
+      <text class="video-title-text">{{item.title}}</text>
+    </view>
+    
+    <view class="video-footer">
+      <view class="category-badge">{{item.category}}</view>
+      <view class="video-stats">
+        <text class="stat-item"><text class="stat-icon">播放次数 ▶</text> {{item.play_count || 0}}</text>
       </view>
+    </view>
+  </view>
+</view>
 
       <view class="empty-state" wx:if="{{!loading && videoList.length === 0}}">
         <view class="empty-text">该分类下暂无视频</view>

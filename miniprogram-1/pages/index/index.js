@@ -1,4 +1,4 @@
-import api from '../../config/settings'
+const api = require('../../config/settings.js');
 const app = getApp();
 
 Page({
@@ -65,7 +65,7 @@ toAiChat() {
       isLogin: isLogin,
       userInfo: memberInfo,
       memberInfo: memberInfo,
-      isAdminMember: isLogin && [4, 5].includes(userType)
+      isAdminMember: isLogin && [5].includes(userType)
     });
   },
 
@@ -83,7 +83,7 @@ toAiChat() {
         this.setData({
           userInfo: memberInfo,
           memberInfo: memberInfo,
-          isAdminMember: [4, 5].includes(userType)
+          isAdminMember: [5].includes(userType)
         });
       }
     }).catch(err => {

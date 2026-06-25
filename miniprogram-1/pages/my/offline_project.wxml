@@ -1,0 +1,146 @@
+<view class="container">
+  <van-tabs active="{{ activeTab }}" bind:change="onMainTabChange" color="#94A48C" title-active-color="#2C3327" sticky>
+    
+    <!-- ================= 栏目一：我的项目 (资产) ================= -->
+    <van-tab title="我的项目" name="assets">
+      <view class="list-container">
+        <block wx:if="{{ assetsList.length > 0 }}">
+          <view class="asset-card glass-panel" wx:for="{{ assetsList }}" wx:key="id">
+            <image class="project-img" src="{{ item.project_image || '/images/bg/default_project.png' }}" mode="aspectFill"></image>
+            <view class="asset-info">
+              <view class="project-name">{{ item.project_name }}</view>
+              <view class="asset-meta">
+                <text class="times-label">剩余可用：</text>
+                <text class="times-val">{{ item.remain_times }}</text>
+                <text class="total-val">/ 共{{ item.total_times }}次</text>
+              </view>
+              <view class="action-row">
+                <text style="font-size: 22rpx; color: #8A8E88;">请联系店长为您设定预约时间</text>
+              </view>
+            </view>
+          </view>
+        </block>
+        <view class="empty-state" wx:else>
+          <van-icon name="gift-card-o" size="100rpx" color="#CBD5E1" />
+          <text>您暂无购买的线下项目</text>
+        </view>
+      </view>
+    </van-tab>
+
+    <!-- ================= 🌟 栏目二：服务记录 (核销与评价) ================= -->
+    <van-tab title="服务记录" name="records">
+      <view class="sub-tabs-wrapper">
+        <van-tabs active="{{ subActiveTab }}" bind:change="onSubTabChange" type="card" color="#94A48C">
+          
+          <!-- 💡 子Tab：待处理 (客户进行核销确认) -->
+          <van-tab title="待处理" name="pending">
+            <view class="list-container sub-list">
+              <block wx:for="{{ pendingList }}" wx:key="id">
+                <view class="record-card glass-panel">
+                  <view class="card-header">
+                    <text class="time-text">预约时间：{{ item.appointment_time || '未设定' }}</text>
+                    <text class="status-tag pending">待核销</text>
+                  </view>
+                  <view class="record-body">
+                    <view class="p-name">{{ item.project_name }}</view>
+                    <view class="p-desc">服务店长：{{ item.manager_name || '专属店长' }}</view>
+                  </view>
+                  
+                  <!-- 🌟 核心功能：客户主动确认核销 -->
+                  <view class="card-footer">
+                    <view class="tip-text">体验完成后请点击确认</view>
+                    <van-button round type="primary" color="#94A48C" size="small" data-id="{{item.id}}" bindtap="confirmService">确认核销扣次</van-button>
+                  </view>
+                </view>
+              </block>
+              <view class="empty-state" wx:if="{{ !pendingList.length }}"><text>暂无待处理的服务</text></view>
+            </view>
+          </van-tab>
+
+          <!-- 💡 子Tab：已完成 (客户进行评价) -->
+          <van-tab title="已完成" name="completed">
+            <view class="list-container sub-list">
+              <block wx:for="{{ completedList }}" wx:key="id">
+                <view class="record-card glass-panel">
+                  <view class="card-header">
+                    <text class="time-text">核销时间：{{ item.confirm_time || '未记录' }}</text>
+                    <text class="status-tag done">已完成</text>
+                  </view>
+                  <view class="record-body" style="padding-bottom: 10rpx;">
+                    <view class="p-name">{{ item.project_name }}</view>
+                  </view>
+                  
+                  <!-- 🌟 已经评价过：展示评价 -->
+                  <view class="review-box" wx:if="{{ item.rating }}">
+                    <view class="review-header">
+                      <text class="r-title">我的评价</text>
+                      <van-rate value="{{ item.rating }}" readonly size="14px" color="#F59E0B" />
+                    </view>
+                    <view class="r-content" wx:if="{{ item.review_content }}">{{ item.review_content }}</view>
+                    
+                    <view class="r-imgs" wx:if="{{ item.review_images && item.review_images.length > 0 }}">
+                      <image 
+                        class="r-img-item" 
+                        wx:for="{{ item.review_images }}" 
+                        wx:for-item="imgUrl" 
+                        wx:key="*this" 
+                        src="{{ imgUrl }}" 
+                        mode="aspectFill"
+                        data-current="{{ imgUrl }}"
+                        data-urls="{{ item.review_images }}"
+                        bindtap="previewReviewImage"
+                      ></image>
+                    </view>
+
+                  </view>
+                  
+                  <!-- 🌟 还没评价：展示去评价按钮 -->
+                  <view class="card-footer" wx:else>
+                    <view class="tip-text">对本次服务满意吗？</view>
+                    <van-button round plain color="#94A48C" size="small" data-id="{{item.id}}" bindtap="openReviewPopup">去评价</van-button>
+                  </view>
+                </view>
+              </block>
+              <view class="empty-state" wx:if="{{ !completedList.length }}"><text>暂无已完成的服务记录</text></view>
+            </view>
+          </van-tab>
+
+        </van-tabs>
+      </view>
+    </van-tab>
+
+  </van-tabs>
+</view>
+
+<!-- 🌟 评价弹窗 -->
+<van-popup show="{{ showReview }}" position="bottom" custom-style="border-radius: 32rpx 32rpx 0 0; padding: 40rpx 30rpx 60rpx; background: #ffffff;" bind:close="closeReviewPopup">
+  <view class="popup-title">服务评价</view>
+  
+  <view class="rate-section">
+    <text class="rate-label">星级打分</text>
+    <van-rate value="{{ reviewForm.rating }}" bind:change="onRateChange" size="28px" color="#F59E0B" />
+  </view>
+  
+  <view class="input-section" style="margin-top: 30rpx;">
+    <van-field value="{{ reviewForm.content }}" type="textarea" placeholder="分享一下您的体验感受吧 (选填)" autosize="{{ {maxHeight: 120, minHeight: 80} }}" border="{{ false }}" bind:change="onReviewContentChange" custom-class="review-textarea" />
+  </view>
+
+  <view class="upload-section" style="margin-top: 24rpx;">
+    <van-uploader 
+      file-list="{{ reviewForm.images }}" 
+      max-count="3" 
+      bind:after-read="afterReadImage" 
+      bind:delete="deleteImage" 
+      image-fit="aspectFill"
+      upload-text="添加图片"
+    />
+  </view>
+
+  <view class="popup-actions" style="margin-top: 50rpx; display: flex; justify-content: space-between;">
+    <van-button type="default" round bindtap="closeReviewPopup" custom-style="width: 320rpx; color: #8A8E88; background: #F8F9F5; border: none;">暂不评价</van-button>
+    <van-button type="primary" color="#94A48C" round bindtap="submitReview" custom-style="width: 320rpx;">提交反馈</van-button>
+  </view>
+</van-popup>
+
+<van-toast id="van-toast" />
+<van-dialog id="van-dialog" />

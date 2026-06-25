@@ -6,5 +6,6 @@
   },
   "navigationBarTitleText": "商城",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#f5f5f5"
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
 }

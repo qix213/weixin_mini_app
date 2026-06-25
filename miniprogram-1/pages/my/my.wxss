@@ -361,13 +361,6 @@ page {
   font-weight: 500;
 }
 
-.function-arrow {
-  font-size: 28rpx;
-  color: #CBD5E1;
-  font-weight: 300;
-  font-family: 'Courier New', Courier, monospace;
-}
-
 /* ================= 🌟 弹窗通用样式 ================= */
 .modal-mask {
   position: fixed;
@@ -460,11 +453,67 @@ page {
   box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.15);
 }
 
-/* ================= Vant 列表图标样式 ================= */
+/* ========== 常用功能宫格 (独立悬浮卡片版) ========== */
+.function-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between; /* 让三个卡片自动分散对齐 */
+  
+  /* 强制去掉外部大框的背景和阴影，把表现力留给里面的小卡片 */
+  padding: 0 !important; 
+  background: transparent !important; 
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.function-item {
+  width: 31.5%; /* 🌟 核心：缩小宽度，给卡片之间留出悬浮间隙 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36rpx 0;
+  margin-bottom: 20rpx; /* 卡片的上下间距 */
+  
+  /* 🌟 核心修改：卡片本身的悬浮质感 */
+  background: #FFFFFF;
+  border-radius: 24rpx; 
+  box-shadow: 0 10rpx 30rpx rgba(148, 164, 140, 0.12); /* 悬浮阴影 */
+  border: 1px solid rgba(255, 255, 255, 0.9); /* 顶层轻微高光边 */
+  
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1); /* 让动画丝滑 */
+}
+
+/* 🌟 高级触控反馈：点击时模拟真实的“按压”物理效果 */
+.function-item:active {
+  transform: scale(0.96) translateY(4rpx); /* 按下去时变小且往下沉 */
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.08); /* 离底部更近，阴影变小变实 */
+  background: #FAFCFA; /* 背景微微变深 */
+}
+
+/* 图标容器 (由于外层已经是卡片，内部图标可以去掉底色，更加干净) */
+.function-icon {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx; 
+}
+
+.function-name {
+  font-size: 26rpx; 
+  color: #2C3327;
+  font-weight: 500;
+  text-align: center;
+  letter-spacing: 1rpx;
+}
+
+/* ================= Vant 图标尺寸 ================= */
 .list-van-icon {
-  font-size: 34rpx;       /* 统一控制图标大小，如果觉得小可改为 38rpx */
-  color: #94A48C;         /* 统一的轻奢主题绿色 */
-  display: flex;          /* 保证在方块内居中不出偏差 */
+  font-size: 50rpx; /* 悬浮卡片风格下，图标可以稍微放大一点作为视觉中心 */
+  color: #94A48C; 
+  display: flex;
   align-items: center;
   justify-content: center;
 }

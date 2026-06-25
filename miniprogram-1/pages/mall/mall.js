@@ -1,5 +1,5 @@
+const api = require('../../config/settings.js');
 const app = getApp();
-import api from '../../config/settings'
 
 Page({
   data: {

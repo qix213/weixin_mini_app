@@ -1,66 +1,10 @@
-<view class="benefits-container">
-  <view class="dynamic-bg"></view>
-
-  <view class="header-banner">
-    <view class="welcome-text">你好，蓝朋友</view>
-    <view class="title">欢迎开启【仙女肌】养肤之旅</view>
-    <view class="slogan">{{slogan}}</view>
-  </view>
-
-  <view class="section-title">如何成为【蓝朋友】？</view>
-  <view class="intro-text glass-card">
-    关注官方小程序并完成会员注册，即可加入。于线下护肤门店或线上官方微商城，注册储值至如下指定金额，即可享有对应星级权益。
-  </view>
-
-  <scroll-view class="level-scroll" scroll-x="true" show-scrollbar="false" enhanced="true">
-    <view class="level-cards-wrap">
-      <view class="level-card {{item.stars === 0 ? 'card-0' : 'card-pro'}}" wx:for="{{levels}}" wx:key="stars">
-        
-        <view class="card-header">
-          <view class="card-name">{{item.name}}</view>
-          <view class="stars-wrap">
-            <view class="star-box {{item.stars === 0 ? 'dashed' : ''}}" wx:for="{{item.stars === 0 ? 1 : item.stars}}" wx:key="index" wx:for-item="starItem">
-              <van-icon name="{{item.stars === 0 ? 'user-o' : 'star'}}" color="#0ea5e9" size="28rpx" />
-            </view>
-          </view>
-        </view>
-
-        <view class="card-desc">{{item.desc}}</view>
-        <view class="divider"></view>
-
-        <view class="privilege-list">
-          <view class="p-item">
-            <text class="p-label">注册储值</text>
-            <text class="p-val highlight">{{item.cost}}</text>
-          </view>
-          <view class="p-item">
-            <text class="p-label">专享价格</text>
-            <text class="p-val">{{item.pricePrivilege}}</text>
-          </view>
-          <view class="p-item">
-            <text class="p-label">裂变权益</text>
-            <text class="p-val">{{item.fission}}</text>
-          </view>
-        </view>
-
-      </view>
-    </view>
-  </scroll-view>
-
-  <view class="rules-section">
-    <view class="rule-card glass-card" wx:for="{{rules}}" wx:key="title">
-      <view class="rule-header">
-        <text class="rule-icon">{{item.icon}}</text>
-        <text class="rule-title">{{item.title}}</text>
-      </view>
-      <view class="rule-body">
-        <view class="rule-item" wx:for="{{item.items}}" wx:key="index" wx:for-item="ruleText">
-          <view class="dot"></view>
-          <view class="text">{{ruleText}}</view>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view class="footer-spacer">- 蓝色奇肌，伴你发光 -</view>
+<view class="privilege-container">
+  <image 
+    wx:if="{{privilegeImg}}" 
+    src="{{privilegeImg}}" 
+    mode="widthFix" 
+    lazy-load="{{true}}"
+    show-menu-by-longpress="{{true}}" 
+    class="privilege-img" 
+  />
 </view>

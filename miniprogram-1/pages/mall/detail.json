@@ -6,6 +6,6 @@
     "van-toast": "@vant/weapp/toast/index"
   },
   "navigationBarTitleText": "商品详情",
-  "navigationBarBackgroundColor": "#FAF8F5",
-  "navigationBarTextStyle": "black"
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
 }

@@ -90,7 +90,7 @@
 
     <!-- 顺序 5: Brief Intro -->
     <view class="detail-section" wx:if="{{goodsDetail.brief_intro}}">
-      <view class="section-title">主要成分</view>
+      <view class="section-title">{{goodsDetail.goods_type === 2 ? '项目亮点' : '主要成分'}}</view>
       <view class="section-content">{{goodsDetail.brief_intro}}</view>
     </view>
 

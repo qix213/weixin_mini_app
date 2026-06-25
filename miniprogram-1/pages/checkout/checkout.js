@@ -233,7 +233,27 @@ Page({
 
   submitOrder() {
     const { deliveryType, defaultAddress, selectedStore, cartList, deductPoint, totalCashPrice, actualPayMoney } = this.data;
+    
     if (cartList.length === 0) return;
+
+    // ================= 🌟 统一改为 == 2，确保字符串和数字都能完美拦截 =================
+    const isOfflineProject = cartList.some(item => item.goods_type == 2 || item.goodsType == 2);
+
+    if (isOfflineProject) {
+      // 1. 线下项目不需要发货，直接提取商品 ID 和名称
+      const goodsId = cartList[0].goods_id || cartList[0].id;
+      const typeName = cartList[0].name || cartList[0].goods_name || '线下项目预约';
+
+      // 2. 绕过传统的订单生成接口，直接跳去 pay.js 走我们的场景 D 支付！
+      wx.navigateTo({ 
+        url: `/pages/pay/pay?isOfflineProject=true&orderId=${goodsId}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}&typeName=${typeName}` 
+      });
+      
+      return; // 拦截成功，直接 return，不往下走常规订单逻辑
+    }
+
+
+    // ================= 🛒 以下为原有的实体商品常规订单逻辑 =================
     if (deliveryType === 1 && !defaultAddress) { this.toAddressPage(); return; }
     if (deliveryType === 2 && !selectedStore) return;
   
@@ -256,14 +276,25 @@ Page({
   
     wx.showLoading({ title: '提交中...' });
     app.request({
-      url: '/app01/order/add/', method: 'POST',
-      header: { 'Authorization': `Bearer ${wx.getStorageSync('accessToken')}`, 'content-type': 'application/json' },
+      url: '/app01/order/add/', 
+      method: 'POST',
+      header: { 
+        'Authorization': `Bearer ${wx.getStorageSync('accessToken')}`, 
+        'content-type': 'application/json' 
+      },
       data: orderData
     }).then(res => {
       wx.hideLoading();
       if (res.data.code === 200) {
-        wx.navigateTo({ url: `/pages/pay/pay?orderId=${res.data.data.order_id}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}` });
+        wx.navigateTo({ 
+          url: `/pages/pay/pay?orderId=${res.data.data.order_id}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}` 
+        });
+      } else {
+        wx.showToast({ title: res.data.msg || '订单提交失败', icon: 'none' });
       }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '网络异常，请重试', icon: 'none' });
     });
   }
 });

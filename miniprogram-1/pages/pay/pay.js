@@ -30,6 +30,7 @@ Page({
     selectedCoupon: null,
     noCouponTip: '暂无可用优惠券',
     couponIndex: 0,
+    isOfflineProject: false, // 🌟 新增：是否为线下项目
     pendingRegisterData: {} 
   },
 
@@ -37,7 +38,11 @@ Page({
   onLoad(options) {
     let scene = options.scene || 'order';
     let typeName = options.typeName ? decodeURIComponent(options.typeName) : '';
-    
+    const isOfflineProject = options.isOfflineProject === 'true';
+    if (isOfflineProject) {
+      scene = 'offline';
+      typeName = typeName || '线下项目预约/购买';
+    }
     // 识别升级场景
     if (typeName === '会员升级订单') {
       scene = 'upgrade';
@@ -67,6 +72,7 @@ Page({
     this.setData({
       scene,
       typeName,
+      isOfflineProject,
       originalAmount,
       actualAmount,
       pointDeductPoints,
@@ -313,10 +319,9 @@ getCouponList() {
     }, 1500);
   },
 
-  // ================= 7. 支付成功分流逻辑 =================
 // ================= 7. 支付成功分流逻辑 =================
 paySuccess(orderId, selectedCoupon) {
-  const { scene, pointDeductPoints } = this.data;
+  const { scene, pointDeductPoints, isOfflineProject } = this.data; 
   const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
   
   // 【拦截器】非注册场景必须有登录态
@@ -395,57 +400,81 @@ paySuccess(orderId, selectedCoupon) {
     });
     return;
   }
-
-  // ================= 🌟 场景 C：普通商城订单 (全新真实请求闭环) =================
-  wx.showLoading({ title: '正在同步订单状态...' });
-
-  // 1. 发起请求，通知后端该订单已支付成功
+// ================= 🌟 场景 D：线下项目直接购买/预约 =================
+if (isOfflineProject || scene === 'offline') {
+  wx.showLoading({ title: '正在下发项目资产...' });
+  
   wx.request({
-    url: `${app.globalData.baseUrl}/app01/order/pay_success/`, // ⚠️ 需确保 Django 有此路由
+    // ⚠️ 配合这个逻辑，你需要在 Django 的 OfflineServiceViewSet 写一个 buy_project 接口
+    url: `${app.globalData.baseUrl}/app01/offline_services/buy_project/`, 
     method: 'POST',
     header: {
       'content-type': 'application/json',
       'Authorization': `Bearer ${accessToken}`
     },
     data: {
-      order_id: orderId, // 订单ID
-      coupon_user_id: selectedCoupon ? selectedCoupon.value : null, // 优惠券ID (如有)
-      point_deduct: pointDeductPoints || 0 // 抵扣的积分 (如有)
+      goods_id: orderId, // 对于线下项目，前一个页面传过来的 orderId 实际上应该是商品的 ID
+      pay_amount: this.data.actualAmount
     },
     success: (res) => {
+      wx.hideLoading();
       if (res.data.code === 200 || res.data.code === 201) {
+        wx.showToast({ title: '购买成功！', icon: 'success', duration: 2000 });
         
-        // 2. 订单状态修改成功后，通知后端清空用户的购物车
-        wx.request({
-          url: `${app.globalData.baseUrl}/app01/cart/clear/`, // ⚠️ 需确保 Django 有此路由
-          method: 'POST',
-          header: {
-            'Authorization': `Bearer ${accessToken}`
-          },
-          complete: () => {
-            // 3. 无论后端清空是否成功，前端强制清空本地购物车缓存，双保险！
-            wx.removeStorageSync('cart');
-            
-            wx.hideLoading();
-            wx.showToast({ title: '支付成功，订单已成', icon: 'success', duration: 2000 });
-            
-            // 4. 顺滑跳转到首页 (或订单列表页)
-            setTimeout(() => {
-              wx.switchTab({ url: '/pages/index/index' });
-            }, 1500);
-          }
-        });
-
+        // 购买成功后，直接跳转到刚刚写好的线下项目中心！
+        setTimeout(() => {
+          wx.navigateTo({ url: '/pages/my/offline_project' }); 
+        }, 1500);
       } else {
-        wx.hideLoading();
-        wx.showToast({ title: res.data.msg || '订单状态更新延迟，请联系客服', icon: 'none' });
-        setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
+        wx.showToast({ title: res.data.msg || '资产下发异常，请联系客服', icon: 'none' });
       }
     },
     fail: () => {
       wx.hideLoading();
-      wx.showToast({ title: '网络异常，请在我的订单中确认状态', icon: 'none' });
+      wx.showToast({ title: '网络异常，请稍后确认', icon: 'none' });
     }
   });
+  return;
+}
+
+// ================= 🌟 场景 C：普通商城订单 =================
+wx.showLoading({ title: '正在同步订单状态...' });
+
+wx.request({
+  url: `${app.globalData.baseUrl}/app01/order/pay_success/`,
+  method: 'POST',
+  header: {
+    'content-type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`
+  },
+  data: {
+    order_id: orderId,
+    coupon_user_id: selectedCoupon ? selectedCoupon.value : null,
+    point_deduct: pointDeductPoints || 0
+  },
+  success: (res) => {
+    if (res.data.code === 200 || res.data.code === 201) {
+      wx.request({
+        url: `${app.globalData.baseUrl}/app01/cart/clear/`,
+        method: 'POST',
+        header: { 'Authorization': `Bearer ${accessToken}` },
+        complete: () => {
+          wx.removeStorageSync('cart');
+          wx.hideLoading();
+          wx.showToast({ title: '支付成功，订单已成', icon: 'success', duration: 2000 });
+          setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
+        }
+      });
+    } else {
+      wx.hideLoading();
+      wx.showToast({ title: res.data.msg || '订单状态更新延迟', icon: 'none' });
+      setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
+    }
+  },
+  fail: () => {
+    wx.hideLoading();
+    wx.showToast({ title: '网络异常，请在我的订单中确认', icon: 'none' });
+  }
+});
 }
 });

@@ -1,89 +1,23 @@
-/* 宇宙背景 */
+/* 页面基底：使用你的奶油可可白，防止长图没加载出来时出现刺眼的纯白屏 */
 page {
-  background-color: #020617;
-  color: #e2e8f0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.dynamic-bg {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
-  background-image:
-    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
-    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
-    radial-gradient(circle at center, #1e293b 0%, #0f172a 40%, #020617 100%);
-  background-size: 550px 550px, 350px 350px, 100% 100%;
-  animation: starsBreath 4s ease-in-out infinite alternate;
-}
-@keyframes starsBreath { from { opacity: 0.8; } to { opacity: 1; } }
-
-/* 通用玻璃态卡片 */
-.glass-card {
-  background: rgba(16, 20, 30, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  border-radius: 24rpx;
-}
-
-.benefits-container {
-  padding: 40rpx 0;
+  background-color: #FAF8F5; 
   min-height: 100vh;
 }
 
-/* 头部 Banner */
-.header-banner {
-  text-align: center;
-  padding: 0 40rpx 40rpx;
+/* 外部容器：宽度 100vw 绝对贴边 */
+.privilege-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* 适配苹果手机底部的“小黑条”，防止长图最底部的字被挡住 */
+  padding-bottom: env(safe-area-inset-bottom); 
 }
-.welcome-text { font-size: 28rpx; color: #94a3b8; letter-spacing: 4rpx; margin-bottom: 12rpx; }
-.title { font-size: 44rpx; font-weight: bold; color: #fff; text-shadow: 0 0 20rpx rgba(56, 189, 248, 0.5); margin-bottom: 20rpx; }
-.slogan { display: inline-block; padding: 8rpx 24rpx; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-radius: 50rpx; font-size: 24rpx; border: 1px solid rgba(56, 189, 248, 0.3); }
 
-/* 引言 */
-.section-title { font-size: 32rpx; font-weight: bold; color: #fff; padding: 0 40rpx; margin-bottom: 20rpx; }
-.intro-text { margin: 0 40rpx 40rpx; padding: 30rpx; font-size: 26rpx; color: #cbd5e1; line-height: 1.6; }
-
-/* 星级卡片横向滚动 */
-.level-scroll { width: 100%; white-space: nowrap; margin-bottom: 50rpx; }
-.level-cards-wrap { display: inline-flex; padding: 0 30rpx; }
-
-.level-card {
-  width: 500rpx; margin: 0 10rpx; padding: 40rpx 30rpx; border-radius: 30rpx;
-  background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 10rpx 30rpx rgba(0,0,0,0.3);
-  display: inline-block; white-space: normal; vertical-align: top;
+/* 🌟 核心：长图样式 */
+.privilege-img {
+  width: 100%;       /* 强制宽度匹配父级（即屏幕宽度） */
+  height: auto;      /* 高度设为自动，把计算权交给 WXML 的 widthFix */
+  display: block;    /* 极其关键：消除 image 标签默认作为内联元素带来的底部 3px 留白间隙 */
+  will-change: transform; /* 性能优化：开启 GPU 硬件加速，让超长图在手机上上下滑动时更丝滑，不掉帧 */
 }
-/* 0星特殊虚线边框 */
-.level-card.card-0 { border: 2rpx dashed rgba(148, 163, 184, 0.5); background: rgba(15, 23, 42, 0.6); }
-/* 1-3星高级渐变边框 */
-.level-card.card-pro { border: 1px solid rgba(56, 189, 248, 0.4); background: linear-gradient(145deg, rgba(14, 165, 233, 0.1), rgba(15, 23, 42, 0.9)); }
-
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
-.card-name { font-size: 36rpx; font-weight: bold; color: #fff; }
-.stars-wrap { display: flex; gap: 4rpx; }
-.star-box { width: 44rpx; height: 44rpx; display: flex; align-items: center; justify-content: center; background: rgba(56, 189, 248, 0.1); border-radius: 50%; }
-.star-box.dashed { border: 2rpx dashed #38bdf8; background: transparent; }
-
-.card-desc { font-size: 24rpx; color: #94a3b8; margin-bottom: 30rpx; min-height: 34rpx; }
-.divider { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent); margin-bottom: 30rpx; }
-
-.privilege-list { display: flex; flex-direction: column; gap: 20rpx; }
-.p-item { display: flex; justify-content: space-between; align-items: center; font-size: 26rpx; }
-.p-label { color: #94a3b8; }
-.p-val { color: #e2e8f0; font-weight: 500; }
-.p-val.highlight { color: #38bdf8; font-size: 32rpx; font-weight: bold; }
-
-/* 规则模块 */
-.rules-section { padding: 0 40rpx; }
-.rule-card { margin-bottom: 30rpx; padding: 30rpx; }
-.rule-header { display: flex; align-items: center; margin-bottom: 20rpx; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20rpx; }
-.rule-icon { font-size: 36rpx; margin-right: 16rpx; }
-.rule-title { font-size: 32rpx; font-weight: bold; color: #38bdf8; }
-
-.rule-body { display: flex; flex-direction: column; gap: 16rpx; }
-.rule-item { display: flex; align-items: flex-start; }
-.dot { width: 8rpx; height: 8rpx; background-color: #38bdf8; border-radius: 50%; margin-top: 14rpx; margin-right: 16rpx; flex-shrink: 0; box-shadow: 0 0 10rpx #38bdf8; }
-.text { font-size: 26rpx; color: #cbd5e1; line-height: 1.6; flex: 1; }
-
-.footer-spacer { text-align: center; font-size: 24rpx; color: #64748b; padding: 40rpx 0 60rpx; letter-spacing: 2rpx; }

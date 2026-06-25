@@ -84,14 +84,13 @@
   </view>
 
   <!-- ========== 常用功能列表 ========== -->
-  <view class="glass-panel function-list">
+  <view class="glass-panel function-grid">
     
     <view class="function-item" bindtap="{{isLogin ? 'goToAIChat' : 'goToLogin'}}">
       <view class="function-icon">
         <van-icon name="smile-comment-o" class="list-van-icon" />
       </view>
       <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">AI蓝博士</view>
-      <view class="function-arrow">></view>
     </view>
 
     <view class="function-item" bindtap="goToMemberCenter">
@@ -99,7 +98,13 @@
         <van-icon name="coupon-o" class="list-van-icon" />
       </view>
       <view class="function-name">会员权益</view>
-      <view class="function-arrow">></view>
+    </view>
+
+    <view class="function-item" bindtap="goToOfflineProject">
+      <view class="function-icon">
+        <van-icon name="shop-o" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">线下项目</view>
     </view>
 
     <view class="function-item" bindtap="{{isLogin ? 'goToAddressManage' : 'goToLogin'}}">
@@ -107,7 +112,6 @@
         <van-icon name="location-o" class="list-van-icon" />
       </view>
       <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">地址管理</view>
-      <view class="function-arrow">></view>
     </view>
 
     <view class="function-item" bindtap="goToInvoiceManage">
@@ -115,15 +119,13 @@
         <van-icon name="logistics" class="list-van-icon" />
       </view>
       <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">订单状态</view>
-      <view class="function-arrow">></view>
     </view>
 
     <view class="function-item" bindtap="{{isLogin ? 'goToSubMemberConsume' : 'goToLogin'}}">
       <view class="function-icon">
         <van-icon name="cluster-o" class="list-van-icon" />
       </view>
-      <view class="function-name" style="{{!isLogin || !memberInfo.user_type ? 'color:#94a3b8' : ''}}">关联订单记录</view>
-      <view class="function-arrow">></view>
+      <view class="function-name" style="{{!isLogin || !memberInfo.user_type ? 'color:#94a3b8' : ''}}">关联订单</view>
     </view>
 
     <view class="function-item" bindtap="previewQrcode">
@@ -131,7 +133,6 @@
         <van-icon name="qr" class="list-van-icon" />
       </view>
       <view class="function-name">关注公众号</view>
-      <view class="function-arrow">></view>
     </view>
 
     <view class="function-item" bindtap="goToCustomerService">
@@ -139,19 +140,16 @@
         <van-icon name="service-o" class="list-van-icon" />
       </view>
       <view class="function-name">客服中心</view>
-      <view class="function-arrow">></view>
     </view>
 
     <view class="function-item" bindtap="goToLogout">
       <view class="function-icon">
         <van-icon name="revoke" class="list-van-icon" />
       </view>
-      <view class="function-name">退出登录</view>
-      <view class="function-arrow">></view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">退出登录</view>
     </view>
 
   </view>
-
 </view>
 <view class="modal-mask" wx:if="{{showQrcode}}">
   <view class="modal-content">

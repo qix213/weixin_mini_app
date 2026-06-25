@@ -8,6 +8,8 @@
     "pages/my/my",
     "pages/my/benefits",   
     "pages/my/update", 
+    "pages/my/offline_project",
+    "pages/my/offline_manage",
     "pages/coupun/coupun",
     "pages/pay/pay",
     "pages/login/login",
@@ -32,7 +34,6 @@
   ],
   "__usePrivacyCheck__": true,
   "window": {
-    "navigationBarTitleText": "蓝色奇迹",
     "navigationBarBackgroundColor": "#FAF8F5", 
     "navigationBarTextStyle": "black",
     "enablePullDownRefresh": true,

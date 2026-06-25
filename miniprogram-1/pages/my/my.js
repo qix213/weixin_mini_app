@@ -303,4 +303,21 @@ onChooseAvatar(e) {
     if (!this.checkLogin('/pages/my/update')) return;
     wx.navigateTo({ url: '/pages/my/update' });
   },
+  // 跳转线下项目
+  goToOfflineProject() {
+    const memberInfo = wx.getStorageSync('memberInfo') || app.globalData.memberInfo || {};
+    const userType = Number(memberInfo.user_type || 1);
+
+    if (userType > 4) {
+      // 🌟 店长/管理员去专业的管理台
+      wx.navigateTo({
+        url: '/pages/my/offline_manage' // 需在 app.json 新建此页面
+      });
+    } else {
+      // 🌟 普通用户去极简的个人资产页
+      wx.navigateTo({
+        url: '/pages/my/offline_project'
+      });
+    }
+  },
 });

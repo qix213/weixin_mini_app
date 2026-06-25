@@ -5,5 +5,7 @@
     "van-icon": "@vant/weapp/icon/index"
   },
   "navigationBarTitleText": "提交订单",
-  "enablePullDownRefresh": true
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
 }
