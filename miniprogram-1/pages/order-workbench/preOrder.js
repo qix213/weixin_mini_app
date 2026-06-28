@@ -8,7 +8,10 @@ Page({
     receiver: {},
     precheckLoading: false,
     "orderDetail.jd_precheck_status": null,
-    "orderDetail.jd_error_msg": ""
+    "orderDetail.jd_error_msg": "",
+    cargoName: '护肤品',
+    cargoWeight: 1.0,
+    cargoVolume: 10.0
   },
 
   onLoad(options) {
@@ -184,7 +187,8 @@ Page({
 
   jdPreCheck() {
     const app = getApp();
-    const { orderSn, sender, receiver, orderDetail } = this.data;
+    // 🌟 1. 把动态包裹数据也解构出来
+    const { orderSn, sender, receiver, orderDetail, cargoName, cargoWeight, cargoVolume } = this.data;
 
     if (!sender.name || !sender.mobile || !receiver.name || !receiver.mobile) {
       wx.showToast({ title: '寄/收件信息不完整', icon: 'none' });
@@ -194,7 +198,8 @@ Page({
     this.setData({
       precheckLoading: true,
       "orderDetail.jd_precheck_status": null,
-      "orderDetail.jd_error_msg": ""
+      "orderDetail.jd_error_msg": "",
+      "orderDetail.jd_freight": 0 // 🌟 新增：初始化运费
     });
 
     wx.request({
@@ -205,14 +210,19 @@ Page({
         order_sn: orderSn,
         sender: sender,
         receiver: receiver,
-        quantity: orderDetail.goods_count || 1
+        quantity: orderDetail.goods_count || 1,
+        // 🌟 2. 传给后端算运费
+        cargo_name: cargoName || '护肤品',
+        cargo_weight: parseFloat(cargoWeight) || 1.0,
+        cargo_volume: parseFloat(cargoVolume) || 10.0
       },
       success: (res) => {
         console.log("✅ 预校验结果：", res.data);
         this.setData({
           precheckLoading: false,
           "orderDetail.jd_precheck_status": res.data.data?.success || false,
-          "orderDetail.jd_error_msg": res.data.data?.error_msg || ""
+          "orderDetail.jd_error_msg": res.data.data?.error_msg || "",
+          "orderDetail.jd_freight": res.data.data?.freight || 0 // 🌟 3. 接收并保存后端返回的预估运费
         });
 
         if (res.data.data?.success) {
@@ -220,16 +230,10 @@ Page({
         }
       },
       fail: (err) => {
-        console.error("❌ 预校验失败：", err);
-        this.setData({
-          precheckLoading: false,
-          "orderDetail.jd_precheck_status": false,
-          "orderDetail.jd_error_msg": "网络请求失败"
-        });
+        this.setData({ precheckLoading: false });
       }
     });
   },
-
   goToAddressList() {
     wx.navigateTo({ url: '/pages/address/address' });
   },
@@ -278,10 +282,18 @@ Page({
       }
     });
   },
-
+  onCargoNameInput(e) {
+    this.setData({ cargoName: e.detail.value });
+  },
+  onCargoWeightInput(e) {
+    this.setData({ cargoWeight: e.detail.value });
+  },
+  onCargoVolumeInput(e) {
+    this.setData({ cargoVolume: e.detail.value });
+  },
   // 提交发货（完整参数）
   executeJDSubmit() {
-    const { orderSn, sender, receiver, orderDetail } = this.data;
+    const { orderSn, sender, receiver, orderDetail, cargoName, cargoWeight, cargoVolume } = this.data;
     this.setData({ isSubmitting: true });
     wx.showLoading({ title: '提交中...', mask: true });
 
@@ -294,7 +306,12 @@ Page({
         order_sn: orderSn,
         sender: sender,
         receiver: receiver,
-        quantity: orderDetail.goods_count || 1
+        quantity: orderDetail.goods_count || 1,
+        
+        // 🌟 核心增补：向后端上报动态物流数据
+        cargo_name: cargoName || '护肤品',
+        cargo_weight: parseFloat(cargoWeight) || 1.0,
+        cargo_volume: parseFloat(cargoVolume) || 10.0
       },
       success: (res) => {
         wx.hideLoading();

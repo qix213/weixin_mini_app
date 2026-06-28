@@ -49,6 +49,8 @@ Page({
   // ✅【终极修复】选择地址回传（完美传递所有字段，无null）
   selectAddress(e) {
     const { address } = e.currentTarget.dataset;
+    console.log("🔍 [Debug] 当前选中的原始地址数据:", address); // 联调时先看一眼控制台
+    
     const pages = getCurrentPages();
     if (pages.length < 2) {
       wx.navigateBack({ delta: 1 });
@@ -58,15 +60,45 @@ Page({
     const prevPage = pages[pages.length - 2];
     const prevRoute = prevPage.route || '';
   
-    // 京东发货页：直接用完整拼接地址
     if (prevRoute.includes('preOrder')) {
-      let orderDetail = prevPage.data.orderDetail || {};
-      orderDetail.sender_name = address.name;
-      orderDetail.sender_phone = address.phone;
-      // 🔥 直接用前端拼接好的完整地址，永不丢省市区
-      orderDetail.sender_address = `${address.address} ${address.detail}`.trim();
-  
-      prevPage.setData({ orderDetail: orderDetail });
+      // 🌟 1. 超强兼容性省市区抓取流：
+      // 优先读 address，如果没有，就动态把分拆的 province、city、district/area 强行拼接起来
+      let baseAddr = '';
+      if (address.address) {
+        baseAddr = address.address;
+      } else {
+        const p = address.province || '';
+        const c = address.city || '';
+        const d = address.district || address.area || ''; // 兼容区县可能叫 area 的情况
+        baseAddr = `${p} ${c} ${d}`.trim();
+      }
+
+      // 🌟 2. 详细地址安全抓取
+      const detailAddr = address.detail || address.detail_address || '';
+
+      const fullAddress = `${baseAddr} ${detailAddr}`.replace(/\s+/g, ' ').trim();
+
+      const senderName = address.name || '';
+      const senderPhone = address.phone || address.mobile || '';
+
+      console.log("✈️ 准备同步回上一页的终极地址:", fullAddress);
+
+      // 🌟 3. 双向同步上一页的变量，激活重新校验
+      prevPage.setData({
+        sender: {
+          name: senderName,
+          mobile: senderPhone,
+          fullAddress: fullAddress
+        },
+        "orderDetail.sender_name": senderName,
+        "orderDetail.sender_phone": senderPhone,
+        "orderDetail.sender_address": fullAddress
+      }, () => {
+        // 返回上一页后立即自动执行一次京东前置校验
+        if (prevPage.jdPreCheck) {
+          prevPage.jdPreCheck();
+        }
+      });
     }
   
     wx.navigateBack({ delta: 1 });

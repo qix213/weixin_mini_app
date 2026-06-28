@@ -8,12 +8,14 @@
   <!-- 主内容 -->
   <view wx:else>
     <!-- 状态提示：修复加载中不显示错误 -->
-    <view class="status-banner" 
-          wx:if="{{orderDetail.jd_precheck_status !== null}}"
-          class="{{orderDetail.jd_precheck_status === false ? 'error' : 'success'}}">
-      <view class="icon">{{orderDetail.jd_precheck_status === false ? '⚠️' : '✅'}}</view>
-      <view class="text">
-        <text class="title">{{orderDetail.jd_precheck_status === false ? '前置校验未通过' : '京东前置校验已通过'}}</text>
+
+    <view wx:if="{{orderDetail.jd_precheck_status !== null}}"
+          class="status-banner {{orderDetail.jd_precheck_status === false ? 'error' : 'success'}}">
+      <view class="text-content">
+        <view class="title-row">
+          <text class="title">{{orderDetail.jd_precheck_status === false ? '前置校验未通过' : '京东前置校验已通过'}}</text>
+          <text class="icon">{{orderDetail.jd_precheck_status === false ? '⚠️' : '✅'}}</text>
+        </view>
         <text class="desc">{{orderDetail.jd_precheck_status === false ? (orderDetail.jd_error_msg || '地址超区或受限') : '地址可达，符合揽收标准'}}</text>
       </view>
     </view>
@@ -71,12 +73,30 @@
         共 {{orderDetail.goods_count || 0}} 件商品，由京东物流承担配送
       </view>
     </view>
+    <view class="glass-card cargo-form-section" style="margin: 20rpx; padding: 20rpx; background: #fff; border-radius: 12rpx;">
+  <view style="font-size: 28rpx; font-weight: bold; margin-bottom: 16rpx; color: #2E3529;">物流包裹信息补充</view>
+  
+  <view class="input-item" style="display: flex; align-items: center; margin-bottom: 12rpx; font-size: 26rpx;">
+    <text style="width: 160rpx; color: #64748b;">物品内容：</text>
+    <input style="flex: 1; border-bottom: 1rpx solid #e2e8f0; padding: 4rpx 0;" value="{{cargoName}}" bindinput="onCargoNameInput" placeholder="请输入物品内容"/>
+  </view>
 
+  <view class="input-item" style="display: flex; align-items: center; margin-bottom: 12rpx; font-size: 26rpx;">
+    <text style="width: 160rpx; color: #64748b;">包裹重量(kg)：</text>
+    <input type="digit" style="flex: 1; border-bottom: 1rpx solid #e2e8f0; padding: 4rpx 0;" value="{{cargoWeight}}" bindinput="onCargoWeightInput" placeholder="请输入包裹重量"/>
+  </view>
+
+  <view class="input-item" style="display: flex; align-items: center; font-size: 26rpx;">
+    <text style="width: 160rpx; color: #64748b;">包裹体积(cm³)：</text>
+    <input type="number" style="flex: 1; border-bottom: 1rpx solid #e2e8f0; padding: 4rpx 0;" value="{{cargoVolume}}" bindinput="onCargoVolumeInput" placeholder="请输入包裹体积"/>
+  </view>
+</view>
     <!-- 底部按钮 -->
     <view class="bottom-bar">
       <view class="price-info">
         <text class="label">预估运费</text>
-        <text class="value">以京东快递员实际揽收为准</text>
+        <text class="value" wx:if="{{orderDetail.jd_freight > 0}}">¥ {{orderDetail.jd_freight}}</text>
+        <text class="value" wx:else style="font-size: 22rpx; font-weight: normal; color: #8A9684;">以快递员实际揽收为准</text>
       </view>
       <button class="submit-btn" disabled="{{isSubmitting || precheckLoading}}" bindtap="onSubmitJDExpress">
         {{isSubmitting ? '派单中...' : '确认呼叫京东快递'}}

@@ -1,44 +1,16 @@
 <view class="detail-container">
 
-<!-- 骨架屏加载 -->
 <view class="skeleton-wrap" wx:if="{{loading}}">
   <van-skeleton title row="8" />
 </view>
 
 <view class="main-content" wx:if="{{!loading && goodsDetail.id}}">
   
-  <!-- 1. 媒体轮播区 -->
   <view class="swiper-container" wx:if="{{mediaList.length > 0}}">
-    <swiper 
-      class="goods-swipe" 
-      indicator-dots="{{false}}"  
-      autoplay="{{!isPlayingVideo}}" 
-      interval="5000"
-      circular="{{true}}" 
-      bindchange="onSwipeChange"
-    >
+    <swiper class="goods-swipe" indicator-dots="{{false}}" autoplay="{{!isPlayingVideo}}" interval="5000" circular="{{true}}" bindchange="onSwipeChange">
       <swiper-item wx:for="{{mediaList}}" wx:key="index">
-        <video 
-          wx:if="{{item.type === 1}}"
-          id="goods-video-{{index}}"  src="{{item.url}}" 
-          class="goods-media"
-          controls
-          object-fit="contain"
-          show-center-play-btn="{{true}}"
-          bindplay="onVideoPlay"
-          bindpause="onVideoPause"
-          bindended="onVideoPause"
-        ></video>
-        <image 
-          wx:else
-          src="{{item.url}}" 
-          mode="aspectFit"  
-          class="goods-media"
-          bindtap="previewImages"  
-          data-index="{{index}}" 
-          data-src="{{item.url}}"
-          binderror="imageLoadError" 
-        />
+        <video wx:if="{{item.type === 1}}" id="goods-video-{{index}}" src="{{item.url}}" class="goods-media" controls object-fit="contain" show-center-play-btn="{{true}}" bindplay="onVideoPlay" bindpause="onVideoPause" bindended="onVideoPause"></video>
+        <image wx:else src="{{item.url}}" mode="aspectFill" class="goods-media" bindtap="previewImages" data-index="{{index}}" data-src="{{item.url}}" binderror="imageLoadError" />
       </swiper-item>
     </swiper>
     
@@ -53,78 +25,80 @@
     <image class="default-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
   </view>
 
-  <!-- 2. 商品核心信息卡片 -->
-  <view class="info-card">
-    <!-- 顺序 1: Name -->
-    <view class="goods-title">{{goodsDetail.name}}</view>
+  <view class="product-info-wrapper">
+    
+    <view class="goods-header">
+      <text class="goods-title">{{goodsDetail.name}}</text>
+      <text class="goods-specs" wx:if="{{goodsDetail.qualification}}">{{goodsDetail.qualification}}</text>
+    </view>
 
-    <!-- 顺序 2 & 3: Member Price & Original Price -->
-    <view class="price-wrap">
+    <view class="price-section">
       <block wx:if="{{isPointGoods}}">
-        <view class="price-row">
+        <view class="price-row member-price">
           <text class="price-label">兑换所需</text>
           <text class="price-val point-val">{{pointPrice}} 积分</text>
         </view>
       </block>
       <block wx:else>
-        <view class="price-row highlight-row">
+        <view class="price-row member-price">
           <text class="price-label">会员价</text>
-          <text class="price-val">¥{{goodsDetail.member_price}}</text>
+          <text class="price-symbol">￥</text>
+          <text class="price-val">{{goodsDetail.member_price}}</text>
         </view>
-        <view class="price-row muted-row" wx:if="{{goodsDetail.original_price && goodsDetail.original_price > goodsDetail.member_price}}">
+        <view class="price-row retail-price" wx:if="{{goodsDetail.original_price && goodsDetail.original_price > goodsDetail.member_price}}">
           <text class="price-label">零售价</text>
-          <text class="price-val strikethrough">¥{{goodsDetail.original_price}}</text>
+          <text class="price-val strikethrough">￥{{goodsDetail.original_price}}</text>
         </view>
       </block>
     </view>
-  </view>
 
-  <!-- 3. 商品详情卡片 (依次向下排列) -->
-  <view class="detail-card">
-    
-    <!-- 顺序 4: Intro -->
-    <view class="detail-section" wx:if="{{goodsDetail.intro}}">
-      <view class="section-title">产品介绍</view>
-      <view class="section-content">{{goodsDetail.intro}}</view>
+    <view class="intro-text" wx:if="{{goodsDetail.intro}}">
+      {{goodsDetail.intro}}
     </view>
 
-    <!-- 顺序 5: Brief Intro -->
+    <view class="theme-divider"></view>
+    <view class="detail-section" wx:if="{{goodsDetail.fuc}}">
+      <view class="section-title">
+        <view class="vertical-bar"></view>
+        <text>产品功效</text>
+      </view>
+      <view class="section-content">{{goodsDetail.fuc}}</view>
+    </view>
+
     <view class="detail-section" wx:if="{{goodsDetail.brief_intro}}">
-      <view class="section-title">{{goodsDetail.goods_type === 2 ? '项目亮点' : '主要成分'}}</view>
+      <view class="section-title">
+        <view class="vertical-bar"></view>
+        <text>{{goodsDetail.goods_type === 2 ? '项目亮点' : '核心成分'}}</text>
+      </view>
       <view class="section-content">{{goodsDetail.brief_intro}}</view>
     </view>
 
-    <!-- 顺序 6: Method -->
-    <view class="detail-section" wx:if="{{goodsDetail.method}}">
-      <view class="section-title">使用方法</view>
-      <view class="section-content">{{goodsDetail.method}}</view>
+    <view class="detail-section" wx:if="{{goodsDetail.specs}}">
+      <view class="section-title">
+        <view class="vertical-bar"></view>
+        <text>适合肤质</text>
+      </view>
+      <view class="section-content">{{goodsDetail.specs}}</view>
     </view>
 
-    <!-- 顺序 7: Specs -->
-    <view class="detail-section" wx:if="{{goodsDetail.specs}}">
-      <view class="section-title">产品规格</view>
-      <view class="section-content">{{goodsDetail.specs}}</view>
+    <view class="detail-section" wx:if="{{goodsDetail.method}}">
+      <view class="section-title">
+        <view class="vertical-bar"></view>
+        <text>使用方法</text>
+      </view>
+      <view class="section-content">{{goodsDetail.method}}</view>
     </view>
 
   </view>
 </view>
 
-<!-- 底部固定动作条 -->
 <view class="action-bar-placeholder" wx:if="{{!loading && goodsDetail.id}}"></view>
 <view class="action-bar" wx:if="{{!loading && goodsDetail.id}}">
   <view class="action-btn cart-btn" bindtap="openPopup" data-action="cart">加入购物车</view>
   <view class="action-btn buy-btn" bindtap="openPopup" data-action="buy">立即购买</view>
 </view>
 
-<!-- 🌟 底部弹窗：数量选择器 -->
-<van-popup
-  show="{{ showPopup }}"
-  position="bottom"
-  round
-  closeable
-  bind:close="closePopup"
-  custom-class="buy-popup"
->
+<van-popup show="{{ showPopup }}" position="bottom" round closeable bind:close="closePopup" custom-class="buy-popup">
   <view class="popup-container">
     <view class="popup-header">
       <image class="popup-img" src="{{mediaList[0].url || 'https://img.yzcdn.cn/vant/empty-image-default.png'}}" mode="aspectFill"></image>
@@ -134,7 +108,6 @@
         <text class="popup-stock">库存 {{goodsDetail.stock}}件</text>
       </view>
     </view>
-
     <view class="popup-body">
       <text class="stepper-label">购买数量</text>
       <view class="custom-stepper">
@@ -143,7 +116,6 @@
         <view class="step-btn plus" bindtap="plusNum"><van-icon name="plus" color="#FFFFFF" /></view>
       </view>
     </view>
-
     <view class="popup-footer">
       <view class="confirm-btn" bindtap="onConfirmAction">确 定</view>
     </view>

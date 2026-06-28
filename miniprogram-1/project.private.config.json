@@ -3,11 +3,18 @@
     "miniprogram": {
       "list": [
         {
-          "name": "pages/register/register",
-          "pathName": "pages/register/register",
+          "name": "pages/order-workbench/order-workbench",
+          "pathName": "pages/order-workbench/order-workbench",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/register/register",
+          "pathName": "pages/register/register",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "pages/order-list/order-list",
