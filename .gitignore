@@ -1,0 +1,21 @@
+# 🌟 核心：绝对不能上传的密码配置文件
+djangoProject1/secrets.json
+
+# 数据库文件（生产环境不用 sqlite3，也不应该传到代码库）
+db.sqlite3
+
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+venv/
+env/
+.env
+
+# 媒体上传文件夹（用户上传的图片不应该放进代码库）
+media/
+# 商户秘钥
+cert/
+cert/apiclient_key.pem

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>运单列表</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container" style="margin-top: 50px;">
+        <h2>运单物流轨迹列表</h2>
+        <a href="{% url 'express_create' %}" class="btn btn-primary btn-sm">新建运单</a>
+        <hr>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>订单号</th>
+                    <th>运单号</th>
+                    <th>物流公司</th>
+                    <th>物流时间</th>
+                    <th>地点</th>
+                    <th>物流状态</th>
+                    <th>派件人</th>
+                    <th>联系电话</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in logistics_list %}
+                <tr>
+                    <td>{{ item.order_sn }}</td>
+                    <td>{{ item.logistics_no }}</td>
+                    <td>{{ item.logistics_company }}</td>
+                    <td>{{ item.logistics_time|date:"Y-m-d H:i:s" }}</td>
+                    <td>{{ item.accept_address }}</td>
+                    <td>{{ item.logistics_status_name }}</td>
+                    <td>{{ item.courier_name|default:"-" }}</td>
+                    <td>{{ item.courier_phone|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">暂无物流轨迹</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
