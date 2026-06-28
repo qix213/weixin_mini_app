@@ -1,0 +1,375 @@
+/* ================= 全局配置 ================= */
+page {
+  background-color: #FAF8F5; /* 奶油可可白 */
+  color: #2C3327;            /* 深邃灰绿文字，避免纯黑的死板 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.exam-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= 1. 选择科目区域 ================= */
+.header-title {
+  font-size: 38rpx;
+  font-weight: 600;
+  text-align: center;
+  margin: 40rpx 0;
+  color: #2C3327;
+  letter-spacing: 2rpx;
+  /* 去除原有的霓虹发光效果，改为干净利落的排版 */
+}
+
+.course-list {
+  padding: 0 30rpx;
+}
+
+.course-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 164, 140, 0.15); /* 极细的高级绿边框 */
+  border-radius: 24rpx; /* 更圆润的倒角 */
+  padding: 36rpx 30rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.05); /* 极其轻柔的弥散阴影 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.course-card:active {
+  transform: scale(0.98);
+  background: #FFFFFF;
+}
+
+.card-icon {
+  font-size: 60rpx;
+  margin-right: 30rpx;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2C3327;
+  margin-bottom: 10rpx;
+}
+
+.card-desc {
+  font-size: 24rpx;
+  color: #8A8E88;
+}
+
+.card-arrow {
+  font-size: 32rpx;
+  color: #94A48C; /* 品牌主色 */
+  font-weight: 300;
+}
+
+/* ================= 2. 答题区域 ================= */
+.exam-header {
+  padding: 30rpx 40rpx;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(148, 164, 140, 0.08);
+  z-index: 10;
+}
+
+.exam-title {
+  font-size: 30rpx;
+  color: #2C3327;
+  font-weight: 600;
+}
+
+.exam-progress {
+  font-size: 26rpx;
+  color: #94A48C;
+  font-weight: 500;
+}
+
+.question-scroll, .analysis-scroll {
+  flex: 1;
+  height: calc(100vh - 120rpx);
+  padding: 24rpx 30rpx;
+  box-sizing: border-box;
+}
+
+/* 题目卡片 */
+.question-item, .analysis-item {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(148, 164, 140, 0.04);
+}
+
+.q-title {
+  font-size: 32rpx;
+  line-height: 1.6;
+  margin-bottom: 40rpx;
+  color: #2C3327;
+  font-weight: 500;
+}
+
+/* 标签莫兰迪化 */
+.q-type-tag {
+  font-size: 20rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 8rpx;
+  margin-right: 16rpx;
+  vertical-align: middle;
+  font-weight: 500;
+}
+.q-type-tag.single { background: rgba(148, 164, 140, 0.1); color: #94A48C; border: 1px solid rgba(148, 164, 140, 0.3); }
+.q-type-tag.multi { background: rgba(175, 161, 143, 0.1); color: #AFA18F; border: 1px solid rgba(175, 161, 143, 0.3); } /* 燕麦色 */
+.q-type-tag.tf { background: rgba(122, 139, 114, 0.1); color: #7A8B72; border: 1px solid rgba(122, 139, 114, 0.3); } /* 森林绿 */
+.q-type-tag.fail { background: rgba(212, 163, 157, 0.1); color: #D4A39D; border: 1px solid rgba(212, 163, 157, 0.3); } /* 陶土红 */
+
+.options-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 选项条目 */
+.option-label {
+  padding: 30rpx 24rpx;
+  background: #F8F9F5; /* 极浅的底色区分层级 */
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.option-label.selected {
+  background: rgba(148, 164, 140, 0.08);
+  border-color: #94A48C;
+}
+
+.opt-text {
+  margin-left: 20rpx;
+  font-size: 28rpx;
+  color: #4A4F48;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.submit-btn-wrap {
+  padding: 40rpx 0 80rpx;
+}
+
+/* 提交按钮：高级渐变 */
+.submit-btn {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: white;
+  border-radius: 50rpx;
+  font-weight: 500;
+  font-size: 32rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.25);
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid #94A48C;
+  color: #94A48C;
+  box-shadow: none;
+  height: 96rpx;
+  line-height: 94rpx;
+  border-radius: 50rpx;
+}
+
+/* ================= 3. 成绩与解析区域 ================= */
+.result-header {
+  text-align: center;
+  padding: 80rpx 0;
+  margin: 30rpx;
+  border-radius: 24rpx;
+}
+/* 成绩通过/失败卡片采用极简淡彩 */
+.result-header.pass {
+  background: rgba(148, 164, 140, 0.08);
+  border: 1px solid rgba(148, 164, 140, 0.2);
+}
+.result-header.fail {
+  background: rgba(212, 163, 157, 0.08);
+  border: 1px solid rgba(212, 163, 157, 0.2);
+}
+
+.score-num {
+  font-size: 110rpx;
+  font-weight: 800;
+  color: #2C3327;
+  letter-spacing: -2rpx;
+}
+
+.score-status {
+  font-size: 30rpx;
+  color: #6B7067;
+  margin-top: 16rpx;
+}
+
+.analysis-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  padding: 0 30rpx;
+  color: #2C3327;
+  margin-bottom: 20rpx;
+}
+
+.ans-compare {
+  background: #F8F9F5;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  margin-bottom: 30rpx;
+  color: #6B7067;
+  border: 1px solid rgba(148, 164, 140, 0.08);
+}
+
+.text-green { color: #7A8B72; font-weight: 500; }
+.text-red { color: #D4A39D; font-weight: 500; }
+
+.explanation-box {
+  background: rgba(148, 164, 140, 0.04);
+  border-left: 8rpx solid #94A48C;
+  padding: 24rpx 30rpx;
+  border-radius: 0 12rpx 12rpx 0;
+}
+
+.exp-title {
+  font-size: 28rpx;
+  color: #94A48C;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.exp-content {
+  font-size: 26rpx;
+  color: #6B7067;
+  line-height: 1.8;
+}
+/* ================= 4. 开始考试准备区/迎宾卡片 ================= */
+.start-exam-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 40rpx;
+  height: 75vh;
+  box-sizing: border-box;
+}
+
+/* 迎宾告示卡片：白净、通透，带微弱的薄雾阴影 */
+.exam-ready-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(148, 164, 140, 0.15);
+  border-radius: 32rpx;
+  padding: 60rpx 40rpx;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 12rpx 40rpx rgba(148, 164, 140, 0.04);
+  text-align: center;
+  margin-bottom: 80rpx;
+}
+
+/* 顶部的奢华微章动画 */
+.exam-badge-wrap {
+  width: 140rpx;
+  height: 140rpx;
+  background: rgba(148, 164, 140, 0.08);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 30rpx;
+  animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8rpx); }
+  100% { transform: translateY(0px); }
+}
+
+.exam-badge-icon {
+  font-size: 64rpx;
+}
+
+.exam-ready-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #2C3327;
+  margin-bottom: 16rpx;
+  letter-spacing: 2rpx;
+}
+
+.exam-ready-subtitle {
+  font-size: 24rpx;
+  color: #8A8E88;
+  margin-bottom: 40rpx;
+}
+
+/* 考试须知区域：内敛的浅卡其灰底色 */
+.exam-notice-box {
+  text-align: left;
+  background: #F8F9F5;
+  padding: 30rpx 36rpx;
+  border-radius: 20rpx;
+  border: 1px solid rgba(148, 164, 140, 0.05);
+}
+
+.notice-item {
+  font-size: 24rpx;
+  color: #6B7067;
+  line-height: 1.8;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.notice-item:last-child {
+  margin-bottom: 0;
+}
+
+.notice-item::before {
+  content: '✦'; /* 莫兰迪星芒四角星，代替死板的圆点 */
+  color: #94A48C;
+  margin-right: 14rpx;
+  font-size: 18rpx;
+  line-height: 1.8;
+}
+
+/* 🌟 终极优化：“开始考试”高级感大按钮 */
+.start-exam-btn {
+  width: 85% !important;
+  height: 100rpx;
+  line-height: 100rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%); /* 渐变绸缎绿 */
+  color: #FFFFFF !important;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 50rpx;
+  /* 灵魂属性：撑开字间距，让呼吸感和气场瞬间出来 */
+  letter-spacing: 8rpx; 
+  text-indent: 8rpx; /* 完美居中修正，抵消字间距带来的微小右偏 */
+  box-shadow: 0 16rpx 32rpx rgba(148, 164, 140, 0.25); /* 柔和深邃的底托阴影 */
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  border: none;
+}
+
+/* 极具弹性的微下沉反馈 */
+.start-exam-btn:active {
+  transform: scale(0.96) translateY(4rpx);
+  box-shadow: 0 6rpx 12rpx rgba(148, 164, 140, 0.15);
+  opacity: 0.95;
+}

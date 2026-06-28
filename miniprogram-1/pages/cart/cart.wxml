@@ -1,0 +1,87 @@
+<van-nav-bar title="我的购物车" fixed border="{{false}}" custom-class="nav-glass" />
+
+<view class="cart-container">
+  <view class="dynamic-bg"></view>
+
+  <view class="skeleton-wrap glass-card" wx:if="{{loading}}">
+    <van-skeleton title row="3" wx:for="{{2}}" wx:key="index" custom-class="skel-item" />
+  </view>
+
+  <view class="cart-list" wx:if="{{cartList.length > 0}}">
+    <view class="glass-card cart-item" wx:for="{{cartList}}" wx:key="id">
+      <view class="item-main">
+        <image class="goods-img" src="{{item.goods.image_url}}" mode="aspectFill"></image>
+        <view class="goods-info">
+          <view class="goods-name">{{item.goods.name}}</view>
+          
+          <view class="tags-row">
+            <view wx:if="{{item.isPointGoods}}" class="point-tag">积分兑换</view>
+            <view class="goods-stock">库存: {{item.goods.stock}} 件</view>
+          </view>
+          
+          <view class="goods-price">
+            <block wx:if="{{item.isPointGoods}}">
+              <text class="val">{{item.pointPrice}}</text> <text class="unit">积分</text>
+            </block>
+            <block wx:else>
+              <text class="unit">¥</text><text class="val">{{item.goods.member_price}}</text>
+            </block>
+          </view>
+        </view>
+      </view>
+
+      <view class="item-footer">
+        <view class="sub-total">
+          小计：<text class="highlight">{{item.isPointGoods ? item.total_price + ' 积分' : '¥ ' + item.total_price}}</text>
+        </view>
+        
+        <view class="action-wrap">
+          <view class="stepper-glass">
+            <view class="btn-minus {{item.num <= 1 ? 'disabled' : ''}}" bindtap="changeNum" data-id="{{item.id}}" data-type="minus">-</view>
+            <input type="number" value="{{item.num}}" disabled class="num-input" />
+            <view class="btn-plus {{item.num >= item.goods.stock ? 'disabled' : ''}}" bindtap="changeNum" data-id="{{item.id}}" data-type="plus">+</view>
+          </view>
+          
+          <view class="delete-btn" bindtap="deleteCart" data-id="{{item.id}}">
+            <text class="icon">🗑️</text> 删除
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{cartList.length === 0 && !loading}}" class="empty-state">
+    <view class="empty-icon-wrapper">
+      <view class="empty-icon">🛒</view>
+      <view class="glow-ring"></view>
+    </view>
+    <view class="empty-text">购物车空空如也，快去商城探索吧</view>
+    <button class="empty-btn" bindtap="toMall">前往商城</button>
+  </view>
+
+  <view class="bottom-submit-bar" wx:if="{{cartList.length > 0}}">
+    <view class="total-info">
+      <text class="label">合计：</text>
+      <view class="pay-amount">
+        
+        <block wx:if="{{totalPointPrice > 0 && totalCashPrice > '0.00'}}">
+          <text class="val point-color">{{totalPointPrice}} 积分</text>
+          <text class="plus-sign"> + </text>
+          <text class="unit">¥</text><text class="val">{{totalCashPrice}}</text>
+        </block>
+        
+        <block wx:elif="{{totalPointPrice > 0}}">
+          <text class="val">{{totalPointPrice}}</text> <text class="unit">积分</text>
+        </block>
+        
+        <block wx:else>
+          <text class="unit">¥</text><text class="val">{{totalCashPrice}}</text>
+        </block>
+
+      </view>
+    </view>
+    <button class="submit-btn" bindtap="toCheckout">去结算</button>
+  </view>
+
+  <van-toast id="van-toast" />
+</view>

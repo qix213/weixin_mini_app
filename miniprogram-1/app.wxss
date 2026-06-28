@@ -1,0 +1,211 @@
+@font-face {
+  font-family: 'vant-icon';
+  src: url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.woff2?t=1694918397022') format('woff2'),
+       url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.woff?t=1694918397022') format('woff'),
+       url('https://at.alicdn.com/t/c/font_2553510_kfwma2yq1rs.ttf?t=1694918397022') format('truetype');
+}
+
+@import "/static/css/iconfont.wxss";
+
+/* ==========================================
+   1. 核心视觉变量定义 (轻奢科技美学)
+========================================== */
+page {
+  /* 基础变量 */
+  --primary-color: #94A48C;           /* 主品牌色 (莫兰迪绿) */
+  --primary-dark: #7A8B72;            /* 主色加深 (用于渐变) */
+  --primary-light: rgba(148, 164, 140, 0.1); /* 主色极浅透 (用于背景/Hover) */
+  
+  --bg-color: #FAF8F5;                /* 全局背景色 (奶油可可白) */
+  --glass-bg: rgba(255, 255, 255, 0.7);/* 毛玻璃基础白 */
+  
+  --text-main: #222222;               /* 一级标题文字 */
+  --text-dark: #333333;               /* 深色正文 */
+  --text-gray: #666666;               /* 灰色辅助文字 */
+  --text-light: #94a3b8;              /* 浅灰/禁用文字 */
+  
+  --border-color: rgba(0, 0, 0, 0.04);/* 极浅边框线 */
+  --border-primary: rgba(148, 164, 140, 0.2); /* 品牌色边框线 */
+
+  /* 渐变与阴影体系 */
+  --gradient-primary: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  --shadow-primary: 0 8rpx 24rpx rgba(148, 164, 140, 0.25);
+  
+  /* 注入全局页面底色 */
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+}
+
+/* ==========================================
+   2. 基础组件样式重置
+========================================== */
+view, text, input, button, checkbox, image, navigator, picker {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'DIN Alternate', -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* ==========================================
+   3. 通用高阶 UI 组件库
+========================================== */
+/* 科技感渐变文字 */
+.tech-gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 拟态毛玻璃卡片 */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.06);
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+/* ==========================================
+   4. 通用按钮样式升级
+========================================== */
+/* 主操作按钮 (渐变胶囊) */
+.btn-primary {
+  width: 90%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: var(--gradient-primary);
+  color: #FFFFFF;
+  border-radius: 44rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+  margin: 40rpx auto;
+  border: none;
+  box-shadow: var(--shadow-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-primary::after { display: none; }
+.btn-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15);
+}
+
+.btn-primary:disabled {
+  background: #E2E8DF; /* 禁用状态下的专属浅灰绿 */
+  color: #AAB7A3;
+  box-shadow: none;
+}
+
+/* 次要/取消按钮 (半透明主色底) */
+.btn-gray {
+  width: 90%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border: 1px solid var(--border-primary);
+  border-radius: 44rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 500;
+  margin: 20rpx auto;
+  transition: all 0.2s ease;
+}
+
+.btn-gray::after { display: none; }
+.btn-gray:active { background: rgba(148, 164, 140, 0.15); transform: scale(0.98); }
+
+/* ==========================================
+   5. 通用表单与输入框美化
+========================================== */
+.input-item {
+  width: 90%;
+  height: 100rpx; /* 稍微加高，增加呼吸感 */
+  border-bottom: 1px solid var(--border-color);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  transition: border-color 0.3s;
+}
+
+/* 聚焦时底边框高亮主色调 (需要 js 配合动态增减 class，或利用默认态) */
+.input-item:focus-within {
+  border-bottom: 1px solid var(--primary-color);
+}
+
+.input-item label {
+  width: 180rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.input-item input {
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+  color: var(--text-dark);
+  outline: none;
+  border: none;
+}
+
+.input-placeholder {
+  color: var(--text-light);
+  font-weight: 300;
+}
+
+/* 发送验证码按钮 */
+.input-item .verify-btn {
+  width: auto;
+  min-width: 160rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--primary-color);
+  background: var(--primary-light);
+  border-radius: 28rpx;
+  padding: 0 24rpx;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s;
+}
+
+.input-item .verify-btn::after { display: none; }
+.input-item .verify-btn:active { opacity: 0.8; transform: scale(0.95); }
+
+/* ==========================================
+   6. 协议勾选样式精调
+========================================== */
+.agreement {
+  width: 90%;
+  margin: 30rpx auto;
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+/* 美化复选框 */
+.agreement checkbox {
+  margin-right: 12rpx;
+  transform: scale(0.75);
+}
+
+/* 微信原生 checkbox 选中颜色的覆盖 */
+checkbox .wx-checkbox-input.wx-checkbox-input-checked {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.agreement a, .agreement .link {
+  color: var(--primary-color);
+  text-decoration: none; /* 去除土气的下划线 */
+  font-weight: 500;
+  margin: 0 6rpx;
+}

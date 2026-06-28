@@ -1,0 +1,100 @@
+<view class="exam-container">
+  
+  <view class="step-box" wx:if="{{status === 'select'}}">
+    <view class="start-exam-wrapper">
+      <view class="exam-ready-card">
+        <view class="exam-badge-wrap">
+          <text class="exam-badge-icon">🏆</text>
+        </view>
+        <view class="exam-ready-title">商学院 · 考核认证</view>
+        <view class="exam-ready-subtitle">选择科目，通过考核即可获得相关资质</view>
+        
+        <view class="course-list">
+          <view class="course-card" wx:for="{{courseTypes}}" wx:key="id" bindtap="startExam" data-id="{{item.id}}" data-name="{{item.name}}">
+            <view class="card-icon">📝</view>
+            <view class="card-info">
+              <view class="card-title">{{item.name}}</view>
+              <view class="card-desc">满分100分 | 包含单选、多选、判断</view>
+            </view>
+            <view class="card-arrow">开始 ＞</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="step-box" wx:if="{{status === 'testing'}}">
+    <view class="exam-header">
+      <text class="exam-title">{{currentCourseName}}</text>
+      <text class="exam-progress">进度: {{questions.length}} 题</text>
+    </view>
+
+    <scroll-view scroll-y class="question-scroll">
+      <view class="question-item" wx:for="{{questions}}" wx:key="id" wx:for-index="qIndex">
+        
+        <view class="q-title">
+          <text class="q-type-tag {{item.question_type === 1 ? 'single' : (item.question_type === 2 ? 'multi' : 'tf')}}">
+            {{item.question_type === 1 ? '单选' : (item.question_type === 2 ? '多选' : '判断')}}
+          </text>
+          <text>{{qIndex + 1}}. {{item.question}} <text style="color:#8A8E88; font-size:24rpx; font-weight:normal;">({{item.score}}分)</text></text>
+        </view>
+
+        <radio-group wx:if="{{item.question_type === 1 || item.question_type === 3}}" 
+                     bindchange="onSingleChange" data-qid="{{item.id}}" class="options-group">
+          <label class="option-label {{userAnswers[item.id] === optKey ? 'selected' : ''}}" 
+                 wx:for="{{item.options}}" wx:for-index="optKey" wx:for-item="optVal" wx:key="optKey" wx:if="{{optVal}}">
+            <radio value="{{optKey}}" color="#94A48C" checked="{{userAnswers[item.id] === optKey}}" />
+            <text class="opt-text">{{optKey}}. {{optVal}}</text>
+          </label>
+        </radio-group>
+
+        <checkbox-group wx:if="{{item.question_type === 2}}" 
+                        bindchange="onMultiChange" data-qid="{{item.id}}" class="options-group">
+          <label class="option-label" 
+                 wx:for="{{item.options}}" wx:for-index="optKey" wx:for-item="optVal" wx:key="optKey" wx:if="{{optVal}}">
+            <checkbox value="{{optKey}}" color="#94A48C" />
+            <text class="opt-text">{{optKey}}. {{optVal}}</text>
+          </label>
+        </checkbox-group>
+      </view>
+
+      <view class="submit-btn-wrap">
+        <button class="submit-btn start-exam-btn" bindtap="submitExam">提交考卷</button>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="step-box result-box" wx:if="{{status === 'result'}}">
+    <view class="result-header {{examResult.is_pass ? 'pass' : 'fail'}}">
+      <view class="score-num">{{examResult.score}} <text style="font-size:36rpx; font-weight:normal; margin-left:8rpx;">分</text></view>
+      <view class="score-status">{{examResult.is_pass ? '🎉 恭喜，考核通过！' : '❕ 抱歉，未能及格，请复习后重考'}}</view>
+    </view>
+
+    <view class="analysis-title">解析与回顾</view>
+    
+    <scroll-view scroll-y class="analysis-scroll">
+      <view class="analysis-item" wx:for="{{resultList}}" wx:key="index">
+        <view class="q-title">
+          <text class="q-type-tag {{item.is_correct ? 'tf' : 'fail'}}">
+            {{item.is_correct ? '正确' : '错误'}}
+          </text>
+          <text>{{item.question}}</text>
+        </view>
+        
+        <view class="ans-compare">
+          <view class="your-ans {{item.is_correct ? 'text-green' : 'text-red'}}">你的答案：{{item.user_answer || '未作答'}}</view>
+          <view class="correct-ans text-green" style="margin-top: 10rpx;">正确答案：{{item.correct_answer}}</view>
+        </view>
+        
+        <view class="explanation-box" wx:if="{{item.explanation}}">
+          <view class="exp-title">专家解析</view>
+          <view class="exp-content">{{item.explanation}}</view>
+        </view>
+      </view>
+
+      <view class="submit-btn-wrap">
+        <button class="submit-btn back-btn" bindtap="backToSelect">返回首页</button>
+      </view>
+    </scroll-view>
+  </view>
+</view>

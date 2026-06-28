@@ -1,0 +1,342 @@
+/* ================= 页面基础容器 ================= */
+page {
+  background-color: #FAF9F6; /* 温柔的天然大理石白底色，衬托卡片 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
+.container {
+  padding: 24rpx 24rpx 180rpx 24rpx; /* 底部留足空间，防止内容被悬浮栏遮挡 */
+  box-sizing: border-box;
+}
+
+/* ================= 骨架屏 / 加载状态 ================= */
+.loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+  font-size: 26rpx;
+  color: #6B7566;
+}
+
+.spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #E2E7DF;
+  border-top-color: #94A48C; /* 鼠尾草绿主色加载指示 */
+  border-radius: 50%;
+  margin-bottom: 24rpx;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ================= 京东校验状态横幅 ================= */
+.status-banner {
+  padding: 24rpx 32rpx;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  box-sizing: border-box;
+}
+
+/* 文本内容外层容器 */
+.status-banner .text-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* 🌟 新增：标题行横向对齐容器 */
+.status-banner .title-row {
+  display: flex;
+  align-items: center; /* 确保文字和图标垂直居中对齐 */
+  margin-bottom: 6rpx;
+}
+
+.status-banner .title {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+/* 🌟 修改：图标紧跟在标题右侧 */
+.status-banner .icon {
+  font-size: 30rpx;
+  margin-left: 12rpx; /* 图标与文字的间距 */
+  line-height: 1;
+  display: inline-flex;
+}
+
+.status-banner .desc {
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+/* 色彩样式保持原有的高级配色不变 */
+.status-banner.success {
+  background-color: #EBF0EA;
+  border: 1rpx solid #D2D8CE;
+}
+.status-banner.success .title { color: #5C6656; }
+.status-banner.success .desc { color: #7A8574; }
+
+.status-banner.error {
+  background-color: #FDF4F2;
+  border: 1rpx solid #EAE0DC;
+}
+.status-banner.error .title { color: #A66453; }
+.status-banner.error .desc { color: #BC8273; }
+
+/* ================= 通用高级卡片布局 ================= */
+.card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(148, 164, 140, 0.06); /* 带有主色调呼吸感的极淡阴影 */
+  box-sizing: border-box;
+}
+
+/* ================= 地址选择卡片区 ================= */
+.address-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* 地址左侧精致胶囊标 */
+.address-item .icon-tag {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  font-size: 22rpx;
+  font-weight: bold;
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: 24rpx;
+}
+
+/* 寄件人：品牌鼠尾草绿 */
+.address-item .icon-tag.blue {
+  background-color: #94A48C;
+}
+
+/* 收件人：温润柔和的黏土红 */
+.address-item .icon-tag.red {
+  background-color: #C08A7C;
+}
+
+.address-item .info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.address-item .name-phone {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8rpx;
+}
+
+.address-item .name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2E3529; /* 深苔绿黑 */
+  margin-right: 16rpx;
+}
+
+.address-item .phone {
+  font-size: 26rpx;
+  color: #6B7566;
+}
+
+.address-item .addr {
+  font-size: 26rpx;
+  color: #6B7566;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.address-item .arrow-right {
+  font-size: 24rpx;
+  color: #B4B9AE;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+}
+
+/* 中间分割线 */
+.address-divider {
+  height: 2rpx;
+  border-top: 2rpx dashed #E2E7DF;
+  margin: 28rpx 0 28rpx 68rpx; /* 精准对齐文字边缘 */
+}
+
+/* ================= 商品包裹明细区 ================= */
+.card-header {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #2E3529;
+  margin-bottom: 24rpx;
+}
+
+.goods-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F5F2EB;
+}
+
+.goods-img {
+  width: 90rpx;
+  height: 90rpx;
+  border-radius: 12rpx;
+  background-color: #FAF9F6;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.goods-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.goods-name {
+  font-size: 26rpx;
+  color: #2E3529;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 100rpx; /* 为右侧数量和价格留空 */
+}
+
+.goods-price {
+  font-size: 26rpx;
+  color: #6B7566;
+}
+
+.goods-num {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 24rpx;
+  color: #B4B9AE;
+}
+
+.empty-tip {
+  text-align: center;
+  font-size: 26rpx;
+  color: #B4B9AE;
+  padding: 40rpx 0;
+}
+
+.package-summary {
+  font-size: 24rpx;
+  color: #8A9684;
+  text-align: right;
+  margin-top: 20rpx;
+}
+
+/* ================= 物流包裹表单补充区 ================= */
+.cargo-form-section {
+  box-shadow: 0 4rpx 20rpx rgba(148, 164, 140, 0.06) !important;
+  border: 1rpx solid #ffffff;
+}
+
+.input-item {
+  height: 80rpx; /* 统一度量横向高度，确保输入框不扁塌 */
+  border-bottom: 1rpx solid #F5F2EB !important; /* 统一更换为偏软的奶油色实线 */
+}
+
+.input-item:last-child {
+  border-bottom: none !important;
+}
+
+.input-item text {
+  font-weight: 500;
+}
+
+.input-item input {
+  height: 100%;
+  font-size: 26rpx;
+  color: #2E3529;
+}
+
+/* ================= 底部固定的吸底控制台 ================= */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140rpx;
+  background-color: #ffffff;
+  border-top: 1rpx solid #E2E7DF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32rpx pb_placeholder; /* pb_placeholder 会由微信底层自动适配全面屏安全区 */
+  padding-bottom: cubic-bezier(0.1, 0, 0, 1) env(safe-area-inset-bottom); 
+  box-sizing: border-box;
+  z-index: 99;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: row; 
+  align-items: center; 
+  margin-left: 26rpx; /* 🌟 新增：整体向右稍微平移，增加呼吸感 */
+}
+
+.price-info .label {
+  font-size: 24rpx;
+  color: #6B7566;
+  margin-right: 16rpx; 
+}
+
+.price-info .value {
+  font-size: 28rpx; 
+  font-weight: bold;
+  color: #94A48C; 
+}
+
+/* ================= 呼叫京东快递主按钮 ================= */
+.submit-btn {
+  width: 340rpx !important;
+  height: 76rpx;
+  line-height: 76rpx;
+  background: #94A48C !important; /* 经典鼠尾草绿 */
+  color: #ffffff !important;
+  font-size: 26rpx;
+  font-weight: bold;
+  border-radius: 38rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none !important;
+  box-shadow: 0 6rpx 16rpx rgba(148, 164, 140, 0.25);
+  transition: all 0.2s ease;
+  margin-right: 26rpx;
+}
+
+/* 按钮点击时的轻度反馈 */
+.submit-btn:active {
+  opacity: 0.85;
+}
+
+/* 按钮禁用状态（例如：正在派单或前置校验未结束时） */
+.submit-btn[disabled] {
+  background: #D2D8CE !important; /* 优雅的淡抹茶灰底色 */
+  color: #ffffff !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}

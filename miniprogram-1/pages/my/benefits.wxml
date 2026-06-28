@@ -1,0 +1,10 @@
+<view class="privilege-container">
+  <image 
+    wx:if="{{privilegeImg}}" 
+    src="{{privilegeImg}}" 
+    mode="widthFix" 
+    lazy-load="{{true}}"
+    show-menu-by-longpress="{{true}}" 
+    class="privilege-img" 
+  />
+</view>

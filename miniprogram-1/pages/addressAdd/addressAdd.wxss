@@ -1,0 +1,233 @@
+/* ================== 全局底色配置 ================== */
+page {
+  background-color: #FAF8F5; /* 奶油可可白 */
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  padding-bottom: 180rpx; 
+}
+
+.container {
+  padding: 30rpx;
+}
+
+/* ================== 智能解析舱 (毛玻璃卡片) ================== */
+.smart-parse-box {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.06); /* 主色调极淡光晕 */
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 30rpx;
+}
+
+.smart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.smart-header .title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  letter-spacing: 1rpx;
+}
+
+/* 标题左侧的科技感渐变指示条 */
+.smart-header .title::before {
+  content: "";
+  display: inline-block;
+  width: 8rpx;
+  height: 28rpx;
+  background: linear-gradient(180deg, #94A48C 0%, #7A8B72 100%);
+  border-radius: 4rpx;
+  margin-right: 16rpx;
+}
+
+.smart-header .clear-btn {
+  font-size: 24rpx;
+  color: #94a3b8;
+  padding: 10rpx;
+}
+.smart-header .clear-btn:active {
+  opacity: 0.7;
+}
+
+/* 解析输入框：略微下沉的透气感 */
+.smart-textarea {
+  width: 100%;
+  height: 140rpx;
+  font-size: 28rpx;
+  color: #333333;
+  line-height: 1.6;
+  background: rgba(148, 164, 140, 0.04); /* 透出一点点极浅的主调绿 */
+  border: 1px solid rgba(148, 164, 140, 0.1);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
+  transition: all 0.3s;
+}
+.smart-textarea:focus {
+  background: #FFFFFF;
+  border-color: rgba(148, 164, 140, 0.4);
+}
+
+/* 智能识别按钮 */
+.parse-btn {
+  background: rgba(148, 164, 140, 0.08);
+  color: #94A48C;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 40rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  border: 1px solid rgba(148, 164, 140, 0.15);
+  transition: all 0.2s;
+  letter-spacing: 2rpx;
+}
+
+.parse-btn::after { display: none; }
+
+/* 按钮激活态：莫兰迪绿渐变 */
+.parse-btn.active {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 6rpx 16rpx rgba(148, 164, 140, 0.25);
+}
+.parse-btn.active:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(148, 164, 140, 0.15);
+}
+
+/* ================== 表单卡片 (统一毛玻璃风格) ================== */
+.form-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24rpx;
+  padding: 0 32rpx;
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.04);
+  margin-bottom: 30rpx;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  min-height: 110rpx;
+  position: relative;
+}
+.input-group.align-top { 
+  align-items: flex-start; 
+  padding: 32rpx 0; 
+}
+
+.label {
+  width: 160rpx;
+  font-size: 28rpx;
+  color: #666666;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.label.push-down { margin-top: 6rpx; }
+
+.input-control {
+  flex: 1;
+  font-size: 30rpx;
+  color: #222222;
+  height: 100%;
+}
+
+.picker-control {
+  flex: 1;
+  font-size: 30rpx;
+  color: #A3A3A3;
+}
+.picker-control.has-value { 
+  color: #222222; 
+}
+
+.textarea-control {
+  flex: 1;
+  font-size: 30rpx;
+  color: #222222;
+  min-height: 140rpx;
+  line-height: 1.6;
+}
+
+/* 占位符颜色 */
+.placeholder-style { color: #A3A3A3; font-weight: 300; }
+
+.arrow-icon {
+  color: #C2C2C2;
+  font-size: 28rpx;
+  margin-left: 12rpx;
+}
+
+/* 极简高级分割线 */
+.divider {
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.03);
+  margin-left: 160rpx; 
+}
+
+/* ================== 开关卡片 ================== */
+.switch-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 110rpx;
+  padding: 0 32rpx;
+}
+.switch-card .label { 
+  width: auto; 
+  color: #333333; 
+  font-weight: bold; 
+}
+
+/* 覆盖原生 switch 选中颜色 */
+switch {
+  transform: scale(0.85); /* 让原生开关看起来更精致小巧 */
+}
+/* 这里不写死颜色，建议在 wxml 中的 <switch> 标签加上 color="#94A48C" 属性 */
+
+/* ================== 底部操作栏 ================== */
+.bottom-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 40rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  /* 底部吸附栏使用页面同款底色的高斯模糊，极为优雅 */
+  background: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.02);
+  z-index: 10;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  border-radius: 45rpx; /* 高度90的一半，完美胶囊 */
+  height: 90rpx;
+  line-height: 90rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  letter-spacing: 4rpx;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.25);
+  transition: all 0.2s ease;
+}
+
+.submit-btn::after { display: none; }
+.submit-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15);
+}

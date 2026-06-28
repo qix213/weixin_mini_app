@@ -1,0 +1,82 @@
+<view class="container">
+  <view class="smart-parse-box">
+    <view class="smart-header">
+      <text class="title">智能解析</text>
+      <text class="clear-btn" bindtap="clearSmartText" wx:if="{{smartText}}">清空</text>
+    </view>
+    <textarea 
+      class="smart-textarea" 
+      placeholder="请粘贴收件人姓名、电话、地址文本，例如：明明 13812345678 广东省深圳市南山区某某街道8号" 
+      placeholder-class="placeholder-style"
+      model:value="{{smartText}}"
+    ></textarea>
+    <button class="parse-btn {{smartText ? 'active' : ''}}" catchtap="smartParse">一键识别</button>
+  </view>
+
+  <view class="form-card">
+    <view class="input-group">
+      <view class="label">收货人</view>
+      <input 
+        class="input-control" 
+        placeholder="请填写收货人姓名" 
+        placeholder-class="placeholder-style"
+        value="{{formData.name}}"
+        data-name="name"
+        bindinput="onInputChange"
+      />
+    </view>
+    
+    <view class="divider"></view>
+    
+    <view class="input-group">
+      <view class="label">手机号码</view>
+      <input 
+        class="input-control" 
+        type="number" 
+        maxlength="11" 
+        placeholder="请填写手机号码" 
+        placeholder-class="placeholder-style"
+        value="{{formData.phone}}"
+        data-name="phone"
+        bindinput="onInputChange"
+      />
+    </view>
+
+    <view class="divider"></view>
+
+    <view class="input-group">
+      <view class="label">所在地区</view>
+      <picker mode="region" bindchange="bindRegionChange" value="{{region}}">
+        <view class="picker-control {{region[0] ? 'has-value' : ''}}">
+          {{region[0] || '点击选择省市区'}} {{region[1] || ''}} {{region[2] || ''}}
+        </view>
+      </picker>
+      <view class="arrow-icon">></view>
+    </view>
+
+    <view class="divider"></view>
+
+    <view class="input-group align-top">
+      <view class="label push-down">详细地址</view>
+      <textarea 
+        class="textarea-control" 
+        placeholder="街道、楼牌号等详细信息" 
+        placeholder-class="placeholder-style"
+        value="{{formData.detail}}"
+        data-name="detail"
+        bindinput="onInputChange"
+      ></textarea>
+    </view>
+  </view>
+
+  <view class="form-card switch-card">
+    <view class="label">设为默认收货地址</view>
+    <switch color="#00CFD6" checked="{{is_default}}" bindchange="onDefaultChange" />
+  </view>
+
+  <view class="bottom-action">
+    <button class="submit-btn" catchtap="saveAddress">
+      {{addressId ? '确认修改' : '保存收货地址'}}
+    </button>
+  </view>
+</view>

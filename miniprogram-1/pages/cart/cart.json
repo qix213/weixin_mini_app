@@ -1,0 +1,10 @@
+{
+  "usingComponents": {
+    "van-button": "@vant/weapp/button/index",
+    "van-toast": "@vant/weapp/toast/index"
+  },
+  "navigationBarTitleText": "我的购物车",
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
+}

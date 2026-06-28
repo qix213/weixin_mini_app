@@ -1,0 +1,45 @@
+<view class="video-play-page">
+  <view class="content-wrapper">
+    <view class="video-container">
+      <video 
+        id="myVideo"
+        src="{{videoUrl}}"
+        custom-cache="{{false}}"
+        controls
+        playsinline
+        show-play-btn
+        show-center-play-btn
+        show-fullscreen-btn
+        enable-progress-gesture
+        bindplay="onPlay"
+        bindpause="onPause"
+        bindtimeupdate="onTimeUpdate"
+        bindended="onEnded"
+        bindseeked="onSeeked"
+        bindfullscreenchange="onFullScreenChange"
+        binderror="onVideoError"
+        bindloadeddata="onLoadedData"
+        class="video-player"
+        autoplay="{{false}}"
+        initial-time="0"
+      ></video>
+      <view class="custom-play-btn" bindtap="togglePlay" wx:if="{{!isPlaying && videoLoaded}}">
+        <image src="https://cdn.jsdelivr.net/gh/feathericons/feather/icons/play-circle.svg" class="play-svg"></image>
+      </view>
+    </view>
+
+    <view class="glass-card video-info">
+      <view class="video-title">{{videoTitle || '未知视频'}}</view>
+      <view class="video-meta">
+        <view class="meta-tag"><text class="icon">⏱</text> 时长：{{duration || '00:00'}}</view>
+        <view class="meta-tag"><text class="icon">▶</text> 播放：{{playCount || 0}} 次</view>
+      </view>
+    </view>
+
+    <view class="func-btns">
+      <button bindtap="toCheckIn" class="func-btn primary-btn">学习打卡</button>
+      <button bindtap="toExam" class="func-btn secondary-btn">考核通关</button>
+      <button bindtap="goBack" class="func-btn ghost-btn">返回列表</button> 
+    </view>
+  </view>
+</view>

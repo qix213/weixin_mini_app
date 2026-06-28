@@ -1,0 +1,87 @@
+<view class="container">
+  <view class="loading-box" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>正在连接京东物流雷达...</text>
+  </view>
+
+  <block wx:else>
+    <view class="map-container" wx:if="{{showMap}}">
+      <map 
+        id="jdMap" 
+        class="track-map" 
+        longitude="{{longitude}}" 
+        latitude="{{latitude}}" 
+        scale="{{scale}}" 
+        markers="{{markers}}"
+        polyline="{{polylines}}"
+      ></map>
+      <view class="map-mask"></view>
+    </view>
+    
+    <view class="no-map-header" wx:else>
+      <text>包裹正在飞奔向你</text>
+    </view>
+
+    <view class="card route-card {{showMap ? 'overlap-map' : ''}}">
+      <view class="route-header">
+        <view class="brand-tag">京东特快</view>
+        <text class="status-text">{{latestStatus}}</text>
+      </view>
+      
+      <view class="promise-time-box" wx:if="{{promiseTime}}">
+        <view class="promise-icon">⏱</view>
+        <text class="promise-label">预计送达</text>
+        <text class="promise-value">{{promiseTime}}</text>
+      </view>
+      
+      <view class="route-path-box">
+        <view class="city-box">
+          <text class="city-name">{{senderCity}}</text>
+          <text class="city-label">发货地</text>
+        </view>
+        <view class="path-line">
+          <view class="car-icon">🚚</view>
+          <view class="line-dashed"></view>
+        </view>
+        <view class="city-box text-right">
+          <text class="city-name">{{receiverCity}}</text>
+          <text class="city-label">收货地</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card timeline-card">
+      <view class="timeline-header">物流关键节点</view>
+
+      <view class="empty-tip" wx:if="{{trackList.length === 0}}">
+        <text>包裹正在等待揽收...</text>
+      </view>
+
+      <view class="timeline" wx:else>
+        <block wx:for="{{trackList}}" wx:key="index">
+          <view class="timeline-item" wx:if="{{index === 0 || isTimelineExpanded}}">
+            <view class="axis">
+              <view class="dot {{index === 0 ? 'active' : ''}}">
+                <view class="pulse" wx:if="{{index === 0}}"></view>
+              </view>
+              <view class="line" wx:if="{{isTimelineExpanded ? index !== trackList.length - 1 : false}}"></view>
+            </view>
+            
+            <view class="content {{index === 0 ? 'active-content' : ''}}">
+              <view class="header">
+                <text class="status-name">{{item.categoryName || item.statusName || '运输动态'}}</text>
+                <text class="time">{{item.occurTime || item.occurDt}}</text>
+              </view>
+              <view class="desc">{{item.operationRemark || item.address}}</view>
+            </view>
+          </view>
+        </block>
+
+        <view class="expand-btn" wx:if="{{trackList.length > 1}}" bindtap="toggleTimeline">
+          <text>{{isTimelineExpanded ? '收起完整轨迹' : '查看完整轨迹'}}</text>
+          <view class="arrow {{isTimelineExpanded ? 'up' : 'down'}}"></view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,282 @@
+/* ================= 全局与背景 (轻奢奶油白) ================= */
+page {
+  background: #FAF8F5; /* 奶油可可白 */
+  min-height: 100vh;
+  color: #2C3327;
+}
+
+.order-list-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  /* 温柔的珍珠白/奶绿微渐变 */
+  background: linear-gradient(-45deg, #FAF8F5, #FFFFFF, #F4F6F2, #F8F9F5);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= 订单卡片 (温润玻璃质感) ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 164, 140, 0.15); /* 高级绿微边框 */
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.05); /* 极其轻柔的弥散阴影 */
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:active {
+  transform: scale(0.98);
+  background: #FFFFFF;
+}
+
+/* ================= 头部：订单号与状态 ================= */
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20rpx;
+  border-bottom: 1px solid rgba(148, 164, 140, 0.1); /* 摒弃虚线，改用高级极细实线 */
+}
+
+.sn-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.sn-wrap .icon { font-size: 28rpx; margin-right: 8rpx; color: #8A8E88; }
+.sn-text { font-size: 24rpx; color: #8A8E88; font-weight: 500; letter-spacing: 1rpx; }
+
+.status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.status {
+  font-size: 28rpx;
+  color: #94A48C; /* 默认完成状态用主色绿 */
+  font-weight: 600;
+}
+
+/* 待付款的强调色 (高级陶土红，摒弃刺眼橙红) */
+.status.pending { color: #D4A39D; }
+
+/* 倒计时徽章 */
+.countdown-badge {
+  background: rgba(212, 163, 157, 0.08);
+  border: 1px solid rgba(212, 163, 157, 0.3);
+  color: #D4A39D;
+  font-size: 22rpx;
+  font-family: 'DIN Alternate', sans-serif;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+.clock-icon { margin-right: 6rpx; font-size: 20rpx; }
+
+/* ================= 中部：商品列表 ================= */
+.goods-area {
+  padding: 24rpx 0;
+}
+
+.goods-title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.goods-title { font-size: 28rpx; color: #2C3327; font-weight: 600; margin-right: 16rpx;}
+
+/* 积分标签：莫兰迪绿底色 */
+.point-tag {
+  background: rgba(148, 164, 140, 0.1);
+  color: #94A48C;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+  border: 1px solid rgba(148, 164, 140, 0.2);
+}
+
+.goods-list {
+  background: #F8F9F5; /* 极浅的燕麦灰底色 */
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+}
+
+.goods-item {
+  font-size: 26rpx;
+  color: #6B7067;
+  margin-bottom: 12rpx;
+  display: flex;
+  align-items: center;
+}
+.goods-item:last-child { margin-bottom: 0; }
+
+.goods-item .dot { color: #94A48C; font-weight: bold; margin-right: 8rpx; }
+.goods-count { margin-left: auto; color: #8A8E88; font-size: 24rpx; }
+
+.no-goods { font-size: 24rpx; color: #8A8E88; font-style: italic; }
+
+/* ================= 订单底部操作区 ================= */
+.order-footer {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx dashed #E2E7DF; /* 带有一丝植物绿调的温和虚线 */
+}
+
+/* 时间独占一行 */
+.time-text {
+  font-size: 24rpx;
+  color: #8A9684; /* 融入主色调的低饱和度灰色 */
+  margin-bottom: 20rpx; 
+  display: block; 
+}
+
+/* 横向两端对齐容器 */
+.action-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* 价格展示区（左侧） */
+.price-area {
+  display: flex;
+  align-items: baseline;
+  color: #2E3529; /* 深苔绿黑，替代死板的纯黑，视觉更高级 */
+  flex-shrink: 0; 
+}
+.price-area .label {
+  font-size: 24rpx;
+  color: #6B7566; /* 次级文本绿灰 */
+  margin-right: 8rpx;
+}
+.price-area .unit {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.price-area .price-val {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+/* 积分数字与主色调完美呼应 */
+.price-area .point-val {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #94A48C; /* 主色调显现 */
+}
+
+/* ================= 按钮组容器（右侧） ================= */
+.btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16rpx;
+  flex-wrap: nowrap;
+}
+
+/* 统一按钮基础 */
+.btn-group button {
+  margin: 0 !important; 
+  padding: 0 32rpx !important;
+  height: 58rpx;
+  line-height: 58rpx;
+  font-size: 24rpx;
+  border-radius: 30rpx;
+  font-weight: 500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+/* 1. 主操作：立即支付 (鼠尾草色块) */
+.pay-btn {
+  background: #94A48C !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.2);
+}
+
+/* 2. 核心区分：查看物流 (奶油色底，实线边框，代表常用功能) */
+.logistics-btn {
+  background: #F5F2EB !important;
+  color: #5C6656 !important;
+  border: 2rpx solid #D2D8CE !important;
+}
+
+/* 3. 核心区分：删除订单 (无底色，仅灰色细线，表示低优先级/破坏性操作) */
+.delete-btn {
+  background: transparent !important;
+  color: #B4B9AE !important; /* 更灰的苔绿色，降低视觉权重 */
+  border: 2rpx solid #E2E7DF !important; /* 非常细的边框 */
+  padding: 0 24rpx !important; /* 宽度稍微缩窄 */
+}
+
+.delete-btn:active {
+  background: #fdfdfd !important;
+  color: #94A48C !important; /* 点击时微显主色调，给予删除确认感 */
+}
+/* ================= 空状态 & 加载态 ================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20vh;
+}
+
+.empty-icon-wrapper {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
+}
+
+.empty-icon { font-size: 100rpx; z-index: 2; opacity: 0.9; }
+
+.glow-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(148, 164, 140, 0.08);
+  box-shadow: 0 0 40rpx rgba(148, 164, 140, 0.15);
+  animation: pulse 3s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+.empty-text { font-size: 26rpx; color: #8A8E88; font-weight: 500; letter-spacing: 2rpx;}
+.loading-state { text-align: center; padding: 40rpx; font-size: 24rpx; color: #8A8E88; }

@@ -1,0 +1,12 @@
+{
+  "usingComponents": {
+    "van-icon": "@vant/weapp/icon/index",  
+    "van-skeleton": "@vant/weapp/skeleton/index",
+    "van-toast": "@vant/weapp/toast/index"
+  },
+  "navigationBarTitleText": "我的订单状态",
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
+  
+}

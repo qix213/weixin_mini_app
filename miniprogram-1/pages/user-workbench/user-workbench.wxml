@@ -1,0 +1,120 @@
+<view class="ambient-light"></view>
+
+<view class="page-container" wx:if="{{!loading}}">
+  
+  <view class="fixed-header">
+    <view class="header">
+      <text class="title tech-gradient-text">档案陈列室</text>
+      <text class="subtitle">Data & Tracking · A-Z</text>
+    </view>
+    
+    <view class="search-bar-wrap">
+      <view class="search-box glass-card">
+        <text class="search-icon">🔍</text>
+        <input 
+          class="search-input" 
+          placeholder="搜索被测人姓名..." 
+          placeholder-class="search-placeholder"
+          bindinput="onSearchInput"
+          value="{{searchValue}}"
+        />
+      </view>
+    </view>
+  </view>
+
+  <scroll-view 
+    class="main-scroll-view" 
+    scroll-y 
+    scroll-into-view="{{scrollToLetter}}" 
+    scroll-with-animation
+    enhanced show-scrollbar="{{false}}"
+  >
+    <view class="profile-list" wx:if="{{filteredGroups.length > 0}}">
+      
+      <block wx:for="{{filteredGroups}}" wx:key="letter" wx:for-item="group">
+        
+        <view class="group-header" id="letter-{{group.letter}}">
+          {{group.letter}}
+        </view>
+
+        <block wx:for="{{group.list}}" wx:key="id" wx:for-item="item">
+          <view class="glass-card profile-card">
+            
+            <view class="profile-header" bindtap="toggleExpand" data-id="{{item.id}}">
+              <view class="header-left">
+                <view class="avatar-dot"></view>
+                <text class="subject-name">{{item.subject_name}}</text>
+              </view>
+              <view class="header-right">
+                <text class="photo-count" wx:if="{{item.photo_records.length}}">{{item.photo_records.length}} 张记录</text>
+                <text class="arrow-icon {{expandedId === item.id ? 'expanded' : ''}}">▼</text>
+              </view>
+            </view>
+
+            <view class="profile-body" wx:if="{{expandedId === item.id}}">
+              <view class="skin-section">
+                <text class="section-label">AI 肤质标签</text>
+                <view class="tags-container" wx:if="{{item.skin_tags.length > 0}}">
+                  <view class="skin-tag" wx:for="{{item.skin_tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</view>
+                </view>
+                <view class="no-tags" wx:else>尚未完成问卷诊断</view>
+              </view>
+
+              <view class="timeline-section">
+                <text class="section-label">时光追踪记录</text>
+                <view class="timeline-wrap" wx:if="{{item.photo_records.length > 0}}">
+                  <view class="timeline-node" wx:for="{{item.photo_records}}" wx:key="id" wx:for-item="record">
+                    <view class="node-line"></view>
+                    <view class="node-dot"></view>
+                    <view class="node-content">
+                      <text class="node-date">{{record.display_date}}</text>
+                      <image 
+                        class="record-img-small" 
+                        src="{{record.full_url}}" 
+                        mode="aspectFill" 
+                        bindtap="previewImage" 
+                        data-url="{{record.full_url}}"
+                        data-profileid="{{item.id}}"
+                      />
+                    </view>
+                  </view>
+                </view>
+                <view class="empty-photo" wx:else><text>该档案暂无照片记录</text></view>
+              </view>
+            </view>
+
+          </view>
+        </block>
+      </block>
+      <view class="bottom-spacer"></view>
+    </view>
+
+    <view class="empty-state" wx:elif="{{searchValue}}">
+      <text class="empty-text">未搜索到相关被测人</text>
+    </view>
+    <view class="empty-state" wx:else>
+      <text class="empty-icon">📁</text>
+      <text class="empty-text">您还未创建任何测肤档案</text>
+    </view>
+  </scroll-view>
+
+  <view 
+    class="alphabet-sidebar" 
+    catchtouchstart="onAlphaTouchStart" 
+    catchtouchmove="onAlphaTouchMove" 
+    catchtouchend="onAlphaTouchEnd"
+  >
+    <view class="alpha-item {{currentLetter === item ? 'active' : ''}}" wx:for="{{alphabet}}" wx:key="*this">
+      {{item}}
+    </view>
+  </view>
+
+  <view class="letter-toast glass-card" wx:if="{{showLetterToast}}">
+    {{currentLetter}}
+  </view>
+
+</view>
+
+<view class="loading-state" wx:else>
+  <text class="tech-gradient-text">档案解码中...</text>
+</view>

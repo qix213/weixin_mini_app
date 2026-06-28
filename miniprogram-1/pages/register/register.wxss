@@ -1,0 +1,337 @@
+/* --- 基础与背景 --- */
+page { 
+  background: #FAF8F5; /* 奶油可可白 */
+  font-family: 'DIN Alternate', -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; 
+}
+
+.register-container { 
+  padding: 40rpx 30rpx; 
+  min-height: 100vh; 
+  display: flex; 
+  flex-direction: column; 
+  box-sizing: border-box; 
+}
+
+/* 科技感极简环境光晕 */
+.dynamic-bg { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 600rpx; 
+  z-index: -1; 
+  background: linear-gradient(180deg, rgba(148, 164, 140, 0.15) 0%, rgba(250, 248, 245, 0) 100%); 
+  pointer-events: none;
+}
+
+/* --- 玻璃卡片 (极致通透感) --- */
+.glass-card { 
+  background: rgba(255, 255, 255, 0.6); 
+  backdrop-filter: blur(20px); 
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.9); 
+  border-radius: 32rpx; 
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.06); 
+}
+
+.main-form-card { 
+  padding: 10rpx 30rpx 40rpx; 
+  margin-bottom: 40rpx; 
+}
+
+/* --- Tab栏 --- */
+.tab-bar { 
+  display: flex; 
+  margin-bottom: 40rpx; 
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04); /* 极简分割线代替虚线 */
+}
+
+.tab-item { 
+  flex: 1; 
+  text-align: center; 
+  padding: 30rpx 0 20rpx; 
+  font-size: 30rpx; 
+  color: #A3A3A3; 
+  font-weight: 500; 
+  position: relative; 
+  transition: all 0.3s; 
+}
+
+.tab-active { 
+  color: #222222; /* 选中时深色更显高级 */
+  font-weight: bold; 
+}
+
+/* 底部滑块：莫兰迪绿渐变 */
+.tab-active::after { 
+  content: ''; 
+  position: absolute; 
+  bottom: -2rpx; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  width: 40rpx; 
+  height: 6rpx; 
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%); 
+  border-radius: 6rpx; 
+}
+
+/* --- 输入项 --- */
+.input-item { 
+  display: flex; 
+  align-items: center; 
+  background: rgba(255, 255, 255, 0.5); 
+  border: 1px solid rgba(148, 164, 140, 0.1); 
+  border-radius: 20rpx; 
+  padding: 0 24rpx; 
+  margin-bottom: 24rpx; 
+  height: 96rpx; 
+  transition: all 0.3s; 
+}
+
+.input-item:focus-within { 
+  background: #FFFFFF; 
+  border-color: rgba(148, 164, 140, 0.4); 
+  box-shadow: 0 4rpx 16rpx rgba(148, 164, 140, 0.08); 
+}
+
+.input-label { 
+  width: 150rpx; 
+  font-size: 28rpx; 
+  color: #666666; 
+  font-weight: 500; 
+}
+
+.input-content, .picker-content { 
+  flex: 1; 
+  font-size: 28rpx; 
+  color: #222222; 
+  height: 100%; 
+  display: flex; 
+  align-items: center; 
+}
+
+.picker-content { justify-content: space-between; }
+.picker-text { color: #222222; font-weight: 500; }
+.ph-style { color: #A3A3A3; font-weight: 300; }
+.disabled-content { color: #94A48C; font-weight: bold; letter-spacing: 1rpx; }
+.arrow { color: #C2C2C2; font-size: 24rpx; margin-left: 10rpx; transition: all 0.3s;}
+
+/* --- 刷新按钮 --- */
+.refresh-btn { 
+  height: 60rpx; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: rgba(148, 164, 140, 0.08); 
+  color: #94A48C; 
+  font-size: 24rpx; 
+  font-weight: 600; 
+  border-radius: 30rpx; /* 胶囊状更圆润 */
+  padding: 0 24rpx; 
+  border: 1px solid rgba(148, 164, 140, 0.15); 
+  margin: 0; 
+}
+.refresh-btn::after { border: none; }
+.refresh-btn:active { background: rgba(148, 164, 140, 0.15); transform: scale(0.96); }
+
+/* --- 🌟 伸缩日期选择面板 --- */
+.date-picker-panel { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease; }
+.date-picker-panel.expanded { max-height: 500rpx; opacity: 1; margin-bottom: 24rpx; }
+.dp-inner { 
+  background: rgba(255, 255, 255, 0.6); 
+  border-radius: 20rpx; 
+  padding: 20rpx; 
+  border: 1px solid rgba(148, 164, 140, 0.1); 
+}
+.dp-header { display: flex; align-items: center; margin-bottom: 20rpx; padding-bottom: 16rpx; border-bottom: 1px dashed rgba(0,0,0,0.05); }
+.dp-crumb { font-size: 24rpx; color: #666; padding: 8rpx 20rpx; border-radius: 20rpx; font-weight: 500; transition: all 0.2s; }
+.dp-crumb.active { color: #fff; background: #94A48C; box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.2); }
+.dp-sep { margin: 0 8rpx; color: #D1D5DB; }
+.dp-grid { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.dp-btn { 
+  background: #F8F9FA; 
+  text-align: center; 
+  padding: 16rpx 0; 
+  font-size: 24rpx; 
+  border-radius: 12rpx; 
+  border: 1px solid rgba(0,0,0,0.02); 
+  color: #333; 
+  transition: all 0.2s;
+}
+.dp-btn:active { background: rgba(148, 164, 140, 0.1); color: #94A48C; border-color: rgba(148, 164, 140, 0.2); }
+.col-3 .dp-btn { width: calc(33.33% - 8rpx); }
+.col-4 .dp-btn { width: calc(25% - 9rpx); }
+.col-6 .dp-btn { width: calc(16.66% - 10rpx); font-size: 22rpx; padding: 12rpx 0; }
+
+/* 提示条使用高级的脏粉色警戒色 */
+.shop-notice { 
+  font-size: 22rpx; 
+  color: #C49B9B; 
+  background: rgba(196, 155, 155, 0.08); 
+  padding: 16rpx 24rpx; 
+  border-radius: 16rpx; 
+  margin-bottom: 24rpx; 
+  display: flex; 
+  align-items: center; 
+  border: 1px solid rgba(196, 155, 155, 0.15); 
+}
+
+/* --- 🌟 底部操作区 --- */
+.action-area { margin-top: auto; padding: 0 10rpx; }
+
+.agreement-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
+  width: 100%;
+}
+
+.checkbox {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 8rpx;
+  border: 1px solid #A3A3A3;
+  background: #fff;
+  margin-right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.checkbox.checked { 
+  background: #94A48C; 
+  border-color: #94A48C; 
+  box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.3); 
+}
+.check-mark { color: #fff; font-size: 24rpx; font-weight: bold; }
+
+.text-group { display: flex; align-items: center; font-size: 24rpx; }
+.agree-text { color: #94a3b8; }
+.link-text { color: #94A48C; font-weight: bold; margin: 0 4rpx; }
+
+/* 注册主按钮：渐变胶囊 */
+.register-btn { 
+  width: 100% !important; 
+  height: 90rpx; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%); 
+  color: #fff; 
+  font-size: 32rpx; 
+  font-weight: bold; 
+  letter-spacing: 4rpx;
+  border-radius: 45rpx; 
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.25); 
+  transition: transform 0.2s; 
+}
+.register-btn::after { border: none; }
+.register-btn:active { transform: scale(0.98); box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15); }
+
+/* ================= 🌟 协议弹窗样式 (毛玻璃质感) ================= */
+.modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-content {
+  width: 85%;
+  background: #FAF8F5; /* 奶油可可白 */
+  border-radius: 32rpx;
+  padding: 50rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.modal-header {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #222222;
+  text-align: center;
+  margin-bottom: 30rpx;
+  letter-spacing: 2rpx;
+}
+
+.modal-body {
+  max-height: 60vh; 
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.8;
+  margin-bottom: 40rpx;
+}
+
+.agreement-text { white-space: pre-wrap; }
+
+.modal-footer { display: flex; justify-content: center; }
+
+.agree-btn {
+  width: 100% !important;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+  border-radius: 44rpx;
+  margin: 0;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.25);
+}
+.agree-btn:active { transform: scale(0.98); }
+
+.avatar-register-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40rpx;
+  padding-top: 20rpx;
+}
+
+.avatar-btn {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.avatar-btn::after { 
+  display: none; 
+}
+
+.avatar-img {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(148, 164, 140, 0.3); /* 莫兰迪绿边框 */
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.15); /* 弥散阴影 */
+  margin-bottom: 16rpx;
+  transition: all 0.3s ease;
+}
+
+.avatar-btn:active .avatar-img {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.1);
+}
+
+.avatar-tip {
+  font-size: 22rpx;
+  color: #94A48C;
+  font-weight: 500;
+  letter-spacing: 2rpx;
+}

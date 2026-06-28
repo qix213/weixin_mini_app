@@ -1,0 +1,109 @@
+<view class="order-list-container">
+  <view class="dynamic-bg"></view>
+
+  <block wx:if="{{orderList.length > 0}}">
+    <view 
+      class="glass-card order-card" 
+      wx:for="{{orderList}}" 
+      wx:key="order_sn" 
+      bindtap="handleOrderClick" 
+      data-order="{{item}}"
+    >
+      
+      <view class="order-header">
+        <view class="sn-wrap">
+          <text class="icon">🔖</text>
+          <text class="sn-text">{{item.order_sn}}</text>
+        </view>
+        <view class="status-wrap">
+          <text class="status {{item.status === '待付款' ? 'pending' : ''}}">{{item.status}}</text>
+          <view class="countdown-badge" wx:if="{{item.status === '待付款' && item.countdownText}}">
+            <text class="clock-icon">🕒</text> {{item.countdownText}}
+          </view>
+        </view>
+      </view>
+
+      <view class="goods-area">
+        <view class="goods-title-row">
+          <text class="goods-title">包含商品</text>
+          <text class="point-tag" wx:if="{{item.isPointsExchange}}">积分兑换</text>
+        </view>
+        
+        <view class="goods-list">
+          <view class="goods-item" wx:for="{{item.goodsList}}" wx:key="index" wx:for-item="goodsName">
+            <text class="dot">·</text> {{goodsName}} <text class="goods-count">×1</text>
+          </view>
+          <view class="no-goods" wx:if="{{item.goodsList.length === 0}}">暂无商品明细</view>
+        </view>
+      </view>
+
+      <view class="order-footer">
+        <text class="time-text">{{item.create_time}}</text>
+        
+        <view class="action-area">
+          <view class="price-area">
+            <text class="label">实付</text>
+            <block wx:if="{{!item.isPointsExchange}}">
+              <text class="unit">￥</text><text class="price-val">{{item.total_price}}</text>
+            </block>
+            <block wx:elif="{{item.isPointsExchange && item.exchangePoints > 0}}">
+              <text class="price-val point-val">{{item.exchangePoints}}</text><text class="unit"> 积分</text>
+            </block>
+            <block wx:else>
+              <text class="price-val point-val">0</text><text class="unit"> 积分</text>
+            </block>
+          </view>
+
+          <view class="btn-group">
+            <button 
+              wx:if="{{item.status_code === 0}}"
+              class="pay-btn"
+              catchtap="goToPay"
+              data-orderid="{{item.order_id}}" 
+              data-ordersn="{{item.order_sn}}"
+              data-totalprice="{{item.total_price}}"
+              data-actualpayprice="{{item.actual_pay_price}}" 
+            >立即支付</button>
+
+            <button 
+              wx:if="{{item.status_code === 4}}"
+              class="pay-btn"
+              catchtap="handleReactivateAndPay"
+              data-orderid="{{item.order_id}}" 
+              data-ordersn="{{item.order_sn}}"
+              data-totalprice="{{item.total_price}}"
+              data-actualpayprice="{{item.actual_pay_price}}" 
+            >重新支付</button>
+
+            <button 
+              wx:if="{{item.status_code === 4}}"
+              class="delete-btn" 
+              style="background: #f9fafb; color: #9ca3af; border: 1rpx solid #e5e7eb; margin-left: 16rpx;"
+              catchtap="handleDeleteOrder"
+              data-ordersn="{{item.order_sn}}"
+            >删除订单</button>
+
+            <button 
+              wx:if="{{item.status_code !== 0 && item.status_code !== 4}}"
+              class="logistics-btn"
+              catchtap="goToLogistics"
+              data-ordersn="{{item.order_sn}}"
+            >查看物流</button>
+          </view>
+
+        </view>
+      </view>
+
+    </view>
+  </block>
+
+  <view class="empty-state" wx:if="{{orderList.length === 0 && !loading}}">
+    <view class="empty-icon-wrapper">
+      <view class="empty-icon">🧾</view>
+      <view class="glow-ring"></view>
+    </view>
+    <view class="empty-text">您还没有任何订单记录哦</view>
+  </view>
+
+  <view class="loading-state" wx:if="{{loading}}">数据加载中...</view>
+</view>

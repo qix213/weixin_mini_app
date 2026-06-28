@@ -1,0 +1,94 @@
+<view class="school-container">
+  <view class="dynamic-bg"></view>
+
+  <view class="search-header">
+    <view class="search-box">
+      <icon type="search" size="16" color="#94A48C" class="search-icon"></icon>
+      <input type="text" placeholder="搜索课程/视频关键词" placeholder-class="search-placeholder" 
+             value="{{searchValue}}" bindinput="onSearchChange" confirm-type="search" 
+             bindconfirm="onSearch" class="search-input" />
+      <text bindtap="clearSearch" wx:if="{{searchValue}}" class="clear-icon">×</text>
+      <view bindtap="onSearch" class="search-action-btn">搜索</view>
+    </view>
+  </view>
+
+  <view class="main-content">
+    
+    <scroll-view scroll-y class="sidebar">
+      
+      <view class="menu-item {{activeMenu === 'brand' ? 'active' : ''}}" data-id="brand" bindtap="handleMainMenuClick">
+        <van-icon name="{{activeMenu === 'brand' ? 'gem' : 'gem-o'}}" class="menu-icon" />
+        <text class="menu-name">品牌溯源</text>
+      </view>
+
+      <view class="menu-item {{activeMenu === 'course' ? 'active-parent' : ''}}" data-id="course" bindtap="handleMainMenuClick">
+        <van-icon name="{{activeMenu === 'course' ? 'video' : 'video-o'}}" class="menu-icon" />
+        <text class="menu-name">课程学习</text>
+        <view class="arrow {{isCourseExpanded ? 'up' : 'down'}}"></view>
+      </view>
+
+      <view class="sub-menu-list" wx:if="{{isCourseExpanded}}">
+        <view class="sub-item {{activeSubCategory === item ? 'active' : ''}}" 
+              wx:for="{{courseCategories}}" wx:key="*this" 
+              data-name="{{item}}" bindtap="handleSubCategoryClick">
+          <text class="sub-dot" wx:if="{{activeSubCategory === item}}"></text>
+          {{item}}
+        </view>
+      </view>
+
+      <view class="menu-item {{activeMenu === 'exam' ? 'active' : ''}}" data-id="exam" bindtap="handleMainMenuClick">
+        <van-icon name="{{activeMenu === 'exam' ? 'todo-list' : 'todo-list-o'}}" class="menu-icon" />
+        <text class="menu-name">考试通关</text>
+      </view>
+
+      <view class="menu-item {{activeMenu === 'cert' ? 'active' : ''}}" data-id="cert" bindtap="handleMainMenuClick">
+        <van-icon name="{{activeMenu === 'cert' ? 'medal' : 'medal-o'}}" class="menu-icon" />
+        <text class="menu-name">线下认证</text>
+      </view>
+      
+    </scroll-view>
+
+    <scroll-view scroll-y class="video-scroll" bindscrolltolower="loadMoreVideos">
+      
+      <view class="skeleton-item" wx:if="{{loading && videoList.length === 0}}" wx:for="3" wx:key="index">
+        <view class="skeleton-thumb"></view>
+        <view class="skeleton-info">
+          <view class="skeleton-title"></view>
+          <view class="skeleton-desc"></view>
+        </view>
+      </view>
+
+      <view class="video-card glass-card" wx:for="{{videoList}}" wx:key="id" bindtap="toVideoPlay" data-id="{{item.id}}">
+  <view class="thumb-wrap">
+    <video src="{{item.fullVideoUrl}}" class="video-thumb" controls="{{false}}" show-center-play-btn="{{false}}" object-fit="cover" initial-time="0" custom-cache="{{false}}"></video>
+    <view class="video-mask"></view>
+    <view class="play-overlay"><view class="play-icon"></view></view>
+    <view class="duration-badge" wx:if="{{item.duration}}">时长：{{item.duration}} s</view>
+  </view>
+  
+  <view class="video-info">
+    <view class="video-title">
+      <text class="video-index-num">{{item.sort_order < 10 ? '0' + item.sort_order : item.sort_order}}</text>
+      <text class="video-title-text">{{item.title}}</text>
+    </view>
+    
+    <view class="video-footer">
+      <view class="category-badge">{{item.category}}</view>
+      <view class="video-stats">
+        <text class="stat-item"><text class="stat-icon">播放次数 ▶</text> {{item.play_count || 0}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+      <view class="empty-state" wx:if="{{!loading && videoList.length === 0}}">
+        <view class="empty-text">该分类下暂无视频</view>
+      </view>
+
+      <view class="no-more" wx:if="{{finished && videoList.length > 0}}">
+        <text>- 没有更多了 -</text>
+      </view>
+
+    </scroll-view>
+  </view>
+</view>

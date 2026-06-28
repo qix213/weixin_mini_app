@@ -1,0 +1,13 @@
+<view class="welcome-container">
+  <image 
+  class="bg-img" 
+  src="{{bgUrl}}" 
+  mode="aspectFill" 
+  lazy-load="{{true}}"
+  fade-in="{{true}}"
+/>
+  
+  <view class="skip-btn" bindtap="doJump">
+    跳过 {{second}}s
+  </view>
+</view>

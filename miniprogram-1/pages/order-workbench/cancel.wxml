@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="loading" wx:if="{{loading}}"><text>加载中...</text></view>
+
+  <view wx:else class="content">
+    <!-- 物流状态卡片 -->
+    <view class="card status-card">
+      <view class="card-title">物流状态</view>
+      <view class="status-info">
+        <view class="status-tag {{statusClass}}">
+          {{statusText}}
+        </view>
+        <view class="status-desc">{{statusDesc}}</view>
+      </view>
+    </view>
+
+    <!-- 订单信息 -->
+    <view class="card info-card">
+      <view class="card-title">订单详情</view>
+      <view class="info-item"><text class="label">订单编号</text><text class="value">{{orderInfo.order_sn}}</text></view>
+      <view class="info-item" wx:if="{{orderInfo.logistics_no}}">
+        <text class="label">运单号</text><text class="value">{{orderInfo.logistics_no}}</text>
+      </view>
+    </view>
+
+    <!-- 操作提示 -->
+    <view class="card tip-card">
+      <view class="card-title">取消规则</view>
+      <view class="tip-text">1. 揽收前：直接取消，无费用</view>
+      <view class="tip-text">2. 揽收后：拦截退回，需支付运费</view>
+      <view class="tip-text red">3. 妥投后：无法取消</view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="bottom-btn-box">
+      <button 
+        class="cancel-btn" 
+        disabled="{{disableBtn}}"
+        loading="{{isSubmitting}}"
+        bindtap="confirmCancel"
+      >
+        {{btnText}}
+      </button>
+    </view>
+  </view>
+</view>

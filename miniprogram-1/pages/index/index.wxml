@@ -1,0 +1,149 @@
+<view class="dynamic-bg"></view>
+
+<view class="banner-header-wrap">
+  <view class="banner-header">
+    <view class="banner-text">
+      <text class="greeting">欢迎来到蓝色奇肌</text>
+      <text class="welcome">肌肤有别 · 养护有方 · 定格仙女肌</text>
+      <text class="welcome-sub">Unique Skin · Tailored Care · Timeless Glow</text>
+    </view>
+
+    <view class="header-right">
+      <image class="banner-logo" src="/images/home/logo.png" mode="aspectFit" />
+      
+      <view class="user-status-capsule" wx:if="{{isLogin}}">
+        <text class="status-dot"></text>
+        <text class="welcome-text">Hello, {{userInfo.nickname || '用户'}}</text>
+      </view>
+      <view class="login-register-btn-group" wx:else>
+        <view class="glass-btn primary" bindtap="goToLogin">登录</view>
+        <view class="glass-btn outline" bindtap="goToRegister">注册</view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="admin-content" wx:if="{{isAdminMember}}">
+  
+  <view class="section-title-wrap">
+    <text class="section-title tech-gradient-text">创+专属工作台</text>
+  </view>
+
+  <view class="dashboard-grid">
+    <view class="glass-card dash-card" bindtap="goToOrderList">
+      <view class="dash-icon-box">📊</view>
+      <text class="dash-title">订单管理</text>
+      <text class="dash-desc">全盘订单数据追踪</text>
+    </view>
+    
+    <view class="glass-card dash-card" bindtap="goToUserWorkbench">
+      <view class="dash-icon-box">👥</view>
+      <text class="dash-title">用户管理</text>
+      <text class="dash-desc">AI测肤档案与数据</text>
+    </view>
+  </view>
+
+  <view class="admin-table-section" wx:if="{{star_goods.length > 0}}">
+    <view class="section-title-wrap" style="margin-top: 40rpx;">
+      <text class="section-title">明星家居产品总览</text>
+    </view>
+    
+    <view class="glass-card product-table-card">
+      <view class="table-header">
+        <view class="table-col table-col-img">图片</view>
+        <view class="table-col table-col-name">产品名称</view>
+        <view class="table-col table-col-price">会员价</view>
+        <view class="table-col table-col-original">原价</view>
+      </view>
+      
+      <scroll-view scroll-y class="table-body">
+        <block wx:for="{{star_goods}}" wx:key="id">
+          <view class="table-row" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+            <view class="table-col table-col-img">
+              <image class="row-img" src="{{item.image}}" mode="aspectFill" lazy-load="false" default-src="/images/home/default-img.png" />
+            </view>
+            <view class="table-col table-col-name text-ellipsis">{{item.name}}</view>
+            <view class="table-col table-col-price emphasis">¥{{item.price}}</view>
+            <view class="table-col table-col-original" wx:if="{{item.original_price}}">¥{{item.original_price}}</view>
+            <view class="table-col table-col-original" wx:else>-</view>
+          </view>
+        </block>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:elif="{{star_goods.length === 0}}">
+    <text class="empty-text">暂无明星产品数据</text>
+  </view>
+</view>
+
+<view class="normal-content" wx:else>
+  
+  <view class="notice-bar-wrap" wx:if="{{notice || content}}">
+    <view class="glass-card notice-bar">
+      <text class="notice-icon">✨</text>
+      <view class="notice-marquee">
+        <text class="notice-text">{{notice}} {{content}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="banner-swiper-wrap" wx:if="{{banner_list.length > 0}}">
+    <swiper class="banner-swiper" autoplay indicator-dots circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#fff" interval="4000">
+      <swiper-item wx:for="{{banner_list}}" wx:key="index">
+        <image class="swiper-img" src="{{item.img}}" mode="aspectFill" />
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="section-title-wrap">
+    <text class="section-title tech-gradient-text">明星家居产品</text>
+  </view>
+  
+  <view class="star-goods-wrap" wx:if="{{star_goods.length > 0}}">
+    <view class="star-goods-grid">
+      <block wx:for="{{star_goods}}" wx:key="id">
+        <view class="glass-card goods-card" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
+          <view class="img-box">
+            <image src="{{item.image}}" mode="aspectFill" class="goods-img" lazy-load="true" default-src="/images/home/default-img.png" />
+          </view>
+          <view class="goods-info">
+            <text class="goods-name">{{item.name}}</text>
+            <view class="price-row">
+              <text class="price-unit">¥</text>
+              <text class="current-price">{{item.price}}</text>
+              <text class="original-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+</view>
+
+<view class="ai-popup-mask {{showAiPopup ? 'show' : ''}}" bindtap="closeAiPopup" catchtouchmove="preventTouchMove">
+  <view class="ai-popup-box {{showAiPopup ? 'show' : ''}}" catchtap="preventTouchMove">
+    
+    <view class="popup-bg-glow"></view>
+
+    <view class="popup-content">
+      <view class="avatar-container">
+        <view class="ai-avatar-placeholder">
+          <image class="ai-avatar-img" src="/images/bg/AI蓝博士头像.jpg" mode="aspectFit" />
+        </view>
+        <view class="avatar-ring"></view>
+        <view class="avatar-ring delay"></view>
+      </view>
+
+      <view class="popup-title">欢迎体验AI蓝博士</view>
+      <view class="popup-desc">您的专属护肤私教已准备好为您测试！</view>
+
+      <view class="popup-btns">
+        <button class="popup-btn cancel-btn" bindtap="closeAiPopup">稍后体验</button>
+        <button class="popup-btn confirm-btn" bindtap="toAiChat">立即体验</button>
+      </view>
+    </view>
+    
+  </view>
+</view>

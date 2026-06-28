@@ -1,0 +1,8 @@
+{
+  "usingComponents": {"van-icon": "@vant/weapp/icon/index"},
+  "navigationBarTitleText": "商学院",
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
+}

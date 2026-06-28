@@ -1,0 +1,118 @@
+<wxs module="statusFormatter">
+  module.exports.getClass = function(status) {
+    var currentStatus = status || '待发货';
+    if (currentStatus === '待发货') return 'status-pending';
+    if (currentStatus === '已揽收' || currentStatus === '运送中') return 'status-transit';
+    if (currentStatus === '派送中') return 'status-delivering';
+    if (currentStatus === '已签收') return 'status-success';
+    if (currentStatus === '异常件' || currentStatus === '已取消') return 'status-error';
+    return 'status-default';
+  }
+</wxs>
+
+<view class="container">
+  <view class="loading-box" wx:if="{{loading}}">
+    <view class="spinner"></view>
+    <text>正在获取最新订单数据...</text>
+  </view>
+
+  <block wx:else>
+    <view class="tab-container">
+      <scroll-view class="tab-scroll" scroll-x="true" scroll-with-animation="true">
+        <view class="tab-list">
+          <view 
+            class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+            wx:for="{{orderStatusTabs}}"
+            wx:key="key"
+            bindtap="onTabChange"
+            data-key="{{item.key}}"
+          >
+            <view class="tab-text">{{item.name}}</view>
+            <view class="tab-line"></view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="empty-state" wx:if="{{filteredOrders.length === 0}}">
+      <view class="empty-icon">📦</view>
+      <text>暂无相关{{activeTabName}}记录</text>
+    </view>
+
+    <view class="order-list" wx:else>
+      <view class="order-card {{item.expanded ? 'card-active' : ''}}" wx:for="{{filteredOrders}}" wx:key="orderSn" wx:for-index="idx">
+        
+        <view class="order-header" bindtap="toggleOrderExpand" data-index="{{idx}}">
+          <view class="header-main">
+            <view class="sn-row">
+              <text class="sn-label">订单号</text>
+              <text class="sn-num">{{item.orderSn}}</text>
+            </view>
+            <!-- ============== 【核心修复】优先显示订单状态，已取消订单正常显示 ============== -->
+            <view class="status-tag {{statusFormatter.getClass(item.statusName)}}">
+              {{item.statusName}}
+            </view>
+          </view>
+          
+          <view class="header-sub">
+            <view class="order-info-left">
+              <text class="order-time">{{item.createTime}}</text>
+              <text class="member-tag">会员: {{item.memberNickname}}</text>
+            </view>
+            <view class="price-box">
+              <text class="currency">¥</text>
+              <text class="amount">{{item.totalPrice}}</text>
+              <view class="arrow-icon {{item.expanded ? 'arrow-up' : ''}}">{{item.expanded ? '▲' : '▼'}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="order-content {{item.expanded ? 'show' : ''}}">
+          <view class="detail-section">
+            <view class="section-head">
+              <view class="title-dot"></view>
+              <text>商品清单</text>
+            </view>
+            <view class="goods-table">
+              <view class="goods-row head">
+                <text class="col-n">商品名称</text>
+                <text class="col-s">单价/数量</text>
+                <text class="col-p">小计</text>
+              </view>
+              <view class="goods-row" wx:for="{{item.goodsList}}" wx:for-item="goods" wx:key="goodsName">
+                <text class="col-n">{{goods.goodsName}}</text>
+                <view class="col-s">
+                  <text class="g-price">¥{{goods.price}}</text>
+                  <text class="g-num">x{{goods.num}}</text>
+                </view>
+                <text class="col-p">¥{{goods.totalPrice}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="action-bar">
+  
+  <button class="action-btn primary" 
+          wx:if="{{item.showPreOrderBtn}}" 
+          catchtap="goToPreOrder" data-sn="{{item.orderSn}}">预约下单</button>
+  
+  <button class="action-btn" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" 
+          wx:if="{{item.showWaitCollectBtn}}">等待揽收</button>
+  
+  <button class="action-btn" 
+          wx:if="{{item.showModifyBtn}}" 
+          catchtap="goToModifyOrder" data-sn="{{item.orderSn}}">修改订单</button>
+  
+  <button class="action-btn danger" 
+          wx:if="{{item.showCancelBtn}}" 
+          catchtap="goToCancelOrder" data-sn="{{item.orderSn}}">取消订单</button>
+  
+  <button class="action-btn" 
+          wx:if="{{item.showLogisticsBtn}}" 
+          catchtap="goToLogistics" data-sn="{{item.orderSn}}">物流查询</button>
+          
+</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

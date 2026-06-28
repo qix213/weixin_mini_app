@@ -1,0 +1,11 @@
+{
+  "usingComponents": {
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-icon": "@vant/weapp/icon/index"
+  },
+  "navigationBarTitleText": "提交订单",
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white"
+}

@@ -1,0 +1,97 @@
+<view class="consume-container">
+  <view class="loading" wx:if="{{loading}}">
+    <view class="loading-icon"></view>
+    <text>数据加载中...</text>
+  </view>
+
+  <view class="empty" wx:if="{{!loading && memberList.length === 0}}">
+    <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
+    <text>暂无推荐会员消费记录</text>
+  </view>
+
+  <view class="main-content" wx:if="{{!loading && memberList.length > 0}}">
+    
+    <view class="total-all-card">
+      <view class="card-bg-circle"></view>
+      <text class="total-all-label">所有推荐会员合计消费</text>
+      <view class="total-all-amount-wrap">
+        <text class="symbol">¥</text>
+        <text class="total-all-amount">{{totalAllConsume}}</text>
+      </view>
+    </view>
+
+    <view class="member-list">
+      <view wx:for="{{memberList}}" wx:key="id" class="member-card {{currentMemberId === item.id ? 'is-expanded' : ''}}">
+        
+        <view class="member-header" bindtap="onMemberClick" data-member-id="{{item.id}}">
+          <view class="member-info">
+            <view class="member-title-row">
+              <text class="member-nickname">{{item.nickname}}</text>
+              <text class="member-tag" wx:if="{{item.level_name}}">{{item.level_name}} V{{item.star_level}}</text>
+            </view>
+            <view class="member-subtitle" wx:if="{{item.member_code}}">ID: {{item.member_code}}</view>
+          </view>
+          
+          <view class="member-action">
+            <view class="member-total-box">
+              <text class="total-label">个人消费</text>
+              <text class="total-value">¥{{item.totalConsume}}</text>
+            </view>
+            <view class="toggle-icon">
+              <text class="arrow {{currentMemberId === item.id ? 'arrow-up' : 'arrow-down'}}"></text>
+            </view>
+          </view>
+        </view>
+
+        <view class="consume-detail-wrap" wx:if="{{currentMemberId === item.id}}">
+          <view class="consume-detail-inner">
+            
+            <view class="consume-list" wx:if="{{item.consumeRecords.length > 0}}">
+              <view class="order-item" wx:for="{{item.consumeRecords || []}}" wx:key="id">
+                
+                <view class="order-summary">
+                  <view class="summary-top">
+                    <text class="order-sn">单号：{{item.order_sn}}</text>
+                    <text class="order-status {{item.status_name === '已完成' ? 'status-success' : 'status-primary'}}">{{item.status_name || '未知状态'}}</text>
+                  </view>
+                  <view class="summary-bottom">
+                    <text class="order-date">{{item.create_time}}</text>
+                    <text class="order-total">订单金额：<text class="price-text">¥{{item.total_price}}</text></text>
+                  </view>
+                </view>
+
+                <view class="goods-table" wx:if="{{item.goods.length > 0}}">
+                  <view class="table-header">
+                    <view class="col-goods">商品信息</view>
+                    <view class="col-count">数量</view>
+                    <view class="col-price">单价</view>
+                    <view class="col-subtotal">小计</view>
+                  </view>
+                  <view class="table-body">
+                    <view class="table-row" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="goods_name">
+                      <view class="col-goods text-ellipsis">{{goods.goods_name}}</view>
+                      <view class="col-count">x{{goods.num}}</view>
+                      <view class="col-price">¥{{goods.price}}</view>
+                      <view class="col-subtotal emphasis">¥{{goods.total_price}}</view>
+                    </view>
+                  </view>
+                </view>
+                
+                <view class="no-goods" wx:else>
+                  <text>暂无商品明细</text>
+                </view>
+
+              </view>
+            </view>
+            
+            <view class="empty-order" wx:else>
+              <text>该会员暂无消费记录</text>
+            </view>
+            
+          </view>
+        </view>
+
+      </view>
+    </view>
+  </view>
+</view>

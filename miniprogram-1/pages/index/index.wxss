@@ -1,0 +1,637 @@
+/* ==========================================
+   1. 基础全局背景（奶油可可白）
+========================================== */
+page {
+  /* 奶油可可白 (RGB: 250, 248, 245) */
+  background-color: #FAF8F5; 
+  color: #333333;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* ==========================================
+   2. 主色调渐变色组：基于 rgb(148, 164, 140)
+========================================== */
+
+/* 🌟 主色调渐变背景 (适用于按钮、重要卡片、标签) */
+.bg-gradient-primary {
+  /* 从 85% 透明度的主色 过渡到 100% 纯主色，营造呼吸感与立体感 */
+  background: linear-gradient(135deg, rgba(148, 164, 140, 0.85) 0%, rgb(148, 164, 140) 100%);
+  color: #FFFFFF;
+}
+
+/* 🌟 主色调渐变文字 (适用于大标题、强调金额) */
+.text-gradient-primary {
+  background: linear-gradient(135deg, rgba(148, 164, 140, 0.8) 0%, rgb(148, 164, 140) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 🌟 单一纯色主调 (适用于小号边框、小图标) */
+.color-primary {
+  color: rgb(148, 164, 140);
+}
+
+/* ==========================================
+   3. 高级感辅助 UI 库（毛玻璃与阴影）
+========================================== */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7); /* 微微透出底部的奶油可可白 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  /* 阴影使用主色调的极淡透明度，代替死板的纯黑阴影 */
+  box-shadow: 0 12rpx 36rpx rgba(148, 164, 140, 0.08);
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+/* 🌟 悬浮按钮动效 */
+.btn-hover-effect:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+  transition: all 0.2s ease;
+}
+
+/* 🌟 科技感环境光 (用于放在页面最顶部的 absolute 元素) */
+.ambient-light-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 500rpx;
+  /* 用主色调向下消散的极浅渐变光晕 */
+  background: linear-gradient(180deg, rgba(148, 164, 140, 0.15) 0%, rgba(250, 248, 245, 0) 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+/* 顶部环境光渐变（提升科技感与通透感） */
+.dynamic-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 600rpx;
+  background: linear-gradient(180deg, rgba(148, 164, 140, 0.12) 0%, rgba(250, 248, 245, 0) 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 科技感渐变文字提取类 */
+.tech-gradient-text {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ================= 拟态毛玻璃通用卡片 ================= */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 12rpx 40rpx rgba(148, 164, 140, 0.06);
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+/* ================= 顶部欢迎区 ================= */
+.banner-header-wrap {
+  padding: 40rpx 30rpx 20rpx;
+}
+
+.banner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.greeting {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #222222;
+  letter-spacing: 2rpx;
+}
+
+.welcome {
+  font-size: 24rpx;
+  color: #94A48C;
+  font-family: 'DIN Alternate', sans-serif;
+  margin-top: 8rpx;
+  letter-spacing: 1rpx;
+  text-transform: uppercase;
+}
+
+.welcome-sub {
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 6rpx;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.banner-logo {
+  width: 140rpx;
+  height: 50rpx;
+  margin-bottom: 20rpx;
+}
+
+/* 登录胶囊/按钮 */
+.user-status-capsule {
+  display: flex;
+  align-items: center;
+  background: rgba(148, 164, 140, 0.1);
+  padding: 8rpx 24rpx;
+  border-radius: 40rpx;
+  border: 1px solid rgba(148, 164, 140, 0.2);
+}
+
+.status-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background-color: #94A48C;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  box-shadow: 0 0 8rpx rgba(148, 164, 140, 0.6);
+}
+
+.welcome-text {
+  font-size: 22rpx;
+  color: #666666;
+  font-weight: 500;
+}
+
+.login-register-btn-group {
+  display: flex;
+  gap: 16rpx;
+}
+
+.glass-btn {
+  font-size: 22rpx;
+  padding: 10rpx 30rpx;
+  border-radius: 30rpx;
+  font-weight: 500;
+}
+
+.glass-btn.primary {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFF;
+  box-shadow: 0 6rpx 16rpx rgba(148, 164, 140, 0.3);
+}
+
+.glass-btn.outline {
+  background: rgba(255, 255, 255, 0.5);
+  color: #94A48C;
+  border: 1px solid #94A48C;
+}
+
+/* ================= 标题模块 ================= */
+.section-title-wrap {
+  padding: 0 30rpx;
+  margin: 40rpx 0 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  letter-spacing: 2rpx;
+  color: #222;
+}
+
+/* ================= 创客工作台 (双卡片网格) ================= */
+.admin-content {
+  padding-top: 20rpx;
+}
+
+.dashboard-grid {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 30rpx;
+  gap: 20rpx;
+}
+
+.dash-card {
+  flex: 1;
+  padding: 30rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.dash-card:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.dash-icon-box {
+  width: 80rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, rgba(148, 164, 140, 0.15) 0%, rgba(148, 164, 140, 0.05) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  margin-bottom: 16rpx;
+}
+
+.dash-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 6rpx;
+}
+
+.dash-desc {
+  font-size: 20rpx;
+  color: #999;
+}
+
+/* ================= 创客后台：明星产品表格 ================= */
+.product-table-card {
+  margin: 0 30rpx;
+  padding: 0;
+}
+
+.table-header {
+  display: flex;
+  background: rgba(148, 164, 140, 0.08);
+  padding: 20rpx;
+  font-size: 22rpx;
+  color: #666;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.table-body {
+  max-height: 500rpx;
+}
+
+.table-row {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  border-bottom: 1px solid rgba(0,0,0,0.02);
+  transition: background 0.2s;
+}
+
+.table-row:active {
+  background: rgba(148, 164, 140, 0.04);
+}
+
+.table-col { flex: 1; text-align: center; font-size: 24rpx; color: #333; }
+.table-col-img { flex: 0.8; display: flex; justify-content: center; }
+.table-col-name { flex: 1.5; text-align: left; }
+.table-col-price { color: #94A48C; font-weight: bold; font-family: 'DIN Alternate', sans-serif;}
+.table-col-original { color: #aaa; text-decoration: line-through; font-size: 20rpx;}
+
+.row-img {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 12rpx;
+  background-color: #f5f5f5;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ================= 普通用户：公告栏 ================= */
+.notice-bar-wrap {
+  padding: 20rpx 30rpx;
+}
+
+.notice-bar {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  border-radius: 40rpx; /* 圆润的胶囊状 */
+}
+
+.notice-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+}
+
+.notice-marquee {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.notice-text {
+  font-size: 24rpx;
+  color: #94A48C;
+  font-weight: 500;
+}
+
+/* ================= 轮播图 ================= */
+.banner-swiper-wrap {
+  padding: 0 30rpx;
+  margin-top: 10rpx;
+}
+
+.banner-swiper {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  transform: translateY(0);
+  box-shadow: 0 16rpx 40rpx rgba(148, 164, 140, 0.15);
+}
+
+.swiper-img {
+  width: 100%;
+  height: 100%;
+}
+
+/* ================= 明星产品双列网格 ================= */
+.star-goods-wrap {
+  padding: 0 30rpx;
+}
+
+.star-goods-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.goods-card {
+  width: 48%;
+  margin-bottom: 24rpx;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.goods-card:active {
+  transform: scale(0.98);
+}
+
+.img-box {
+  width: 100%;
+  height: 330rpx;
+  background-color: #fff;
+}
+
+.goods-img {
+  width: 100%;
+  height: 100%;
+}
+
+.goods-info {
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.goods-name {
+  font-size: 26rpx;
+  color: #222;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 16rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  height: 72rpx;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.price-unit {
+  font-size: 22rpx;
+  color: #000;
+  font-weight: bold;
+}
+
+.current-price {
+  font-size: 36rpx;
+  color: #000;
+  font-weight: bold;
+  font-family: 'DIN Alternate', sans-serif;
+  margin-right: 12rpx;
+}
+
+.original-price {
+  font-size: 22rpx;
+  color: #aaa;
+  text-decoration: line-through;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60rpx 0;
+}
+.empty-text {
+  font-size: 24rpx;
+  color: #bbb;
+}
+
+/* ================== AI 弹窗蒙层 ================== */
+.ai-popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(11, 16, 30, 0.5); /* 深色蒙层凸显主体内容 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ai-popup-mask.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ================== 弹窗卡片主体 ================== */
+.ai-popup-box {
+  width: 620rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 40rpx;
+  padding: 70rpx 50rpx 60rpx;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30rpx 80rpx rgba(148, 164, 140, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  
+  /* 初始状态：缩小且稍微偏下 */
+  transform: translateY(60rpx) scale(0.9);
+  opacity: 0;
+  /* 果冻弹簧回弹效果 */
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+}
+
+.ai-popup-box.show {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* 动态旋转光晕背景 */
+.popup-bg-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 50%, rgba(148, 164, 140, 0.12) 0%, rgba(255, 255, 255, 0) 50%);
+  animation: rotateGlow 15s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes rotateGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================== 内容区 ================== */
+.popup-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* 头像与外发光呼吸波纹 */
+.avatar-container {
+  position: relative;
+  width: 140rpx;
+  height: 140rpx;
+  margin-bottom: 48rpx;
+}
+
+/* 容器样式微调 */
+.ai-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* 如果你的图片是透明底的 PNG，可以保留背景色；如果图片自带背景，可以注释掉下面这行 */
+  background: linear-gradient(135deg, #94A48C, #7A8B72); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 12rpx 32rpx rgba(148, 164, 140, 0.4);
+  position: relative;
+  z-index: 2;
+  overflow: hidden; /* 这一行非常重要，用于裁切图片为圆形 */
+}
+
+/* 新增：图片样式 */
+.ai-avatar-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.avatar-ring {
+  position: absolute;
+  top: -10rpx;
+  left: -10rpx;
+  right: -10rpx;
+  bottom: -10rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(148, 164, 140, 0.6);
+  animation: breathRing 2.5s cubic-bezier(0.21, 0.53, 0.56, 0.8) infinite;
+  z-index: 1;
+}
+
+.avatar-ring.delay {
+  animation-delay: 1.25s;
+}
+
+@keyframes breathRing {
+  0% { transform: scale(0.8); opacity: 1; border-width: 4rpx; }
+  100% { transform: scale(1.6); opacity: 0; border-width: 1rpx; }
+}
+
+/* 文字排版 */
+.popup-title {
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #2C3327;
+  margin-bottom: 20rpx;
+  letter-spacing: 2rpx;
+}
+
+.popup-desc {
+  font-size: 28rpx;
+  color: #8A8E88;
+  line-height: 1.6;
+  margin-bottom: 60rpx;
+  padding: 0 20rpx;
+}
+
+/* ================== 按钮组 ================== */
+.popup-btns {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.popup-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 44rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  transition: all 0.2s;
+  letter-spacing: 2rpx;
+}
+
+.popup-btn::after {
+  border: none;
+}
+
+.cancel-btn {
+  background: rgba(148, 164, 140, 0.08);
+  color: #7A8B72;
+}
+
+.cancel-btn:active {
+  background: rgba(148, 164, 140, 0.15);
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
+  color: #FFFFFF;
+  box-shadow: 0 12rpx 24rpx rgba(148, 164, 140, 0.3);
+}
+
+.confirm-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.2);
+}

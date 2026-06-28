@@ -1,0 +1,298 @@
+page {
+  background-color: #ffffff; /* 摒弃浅灰背景，使用全白打造高级感 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
+.detail-container {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ================= 1. 媒体轮播区 ================= */
+.swiper-container {
+  position: relative;
+  width: 100%;
+  height: 600rpx;
+  background-color: #f8f9f7;
+}
+
+.goods-swipe, .goods-media {
+  width: 100%;
+  height: 100%;
+}
+
+.custom-indicator {
+  position: absolute;
+  right: 32rpx;
+  bottom: 32rpx;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-size: 24rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  letter-spacing: 2rpx;
+}
+
+/* ================= 2. 核心信息与介绍区 ================= */
+.product-info-wrapper {
+  padding: 40rpx 40rpx 60rpx 40rpx; /* 四周留足呼吸感 */
+}
+
+/* 标题与规格（同一行排列） */
+.goods-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 40rpx;
+}
+
+.goods-title {
+  font-size: 46rpx;
+  font-weight: 800; /* 加粗 */
+  color: #94A48C; /* 核心鼠尾草绿 */
+  margin-right: 16rpx;
+}
+
+.goods-specs {
+  font-size: 32rpx;
+  color: #94A48C;
+  font-weight: 400;
+  opacity: 0.8; /* 稍微弱化规格 */
+}
+
+/* 价格区 */
+.price-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 48rpx;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 12rpx;
+}
+
+.price-label {
+  font-size: 32rpx;
+  margin-right: 16rpx;
+}
+
+/* 会员价高亮 */
+.member-price .price-label {
+  color: #94A48C;
+}
+.member-price .price-symbol {
+  font-size: 32rpx;
+  color: #94A48C;
+  margin-right: 4rpx;
+}
+.member-price .price-val {
+  font-size: 54rpx;
+  font-weight: bold;
+  color: #94A48C;
+}
+
+/* 零售价弱化 */
+.retail-price .price-label {
+  color: #B0B0B0;
+}
+.retail-price .price-val {
+  font-size: 32rpx;
+  color: #B0B0B0;
+  text-decoration: line-through; /* 保持删除线 */
+}
+
+/* 引言介绍段落 */
+.intro-text {
+  font-size: 30rpx;
+  color: #555555;
+  line-height: 1.8; /* 增大行高，提升阅读舒适度 */
+  margin-bottom: 48rpx;
+  letter-spacing: 1rpx;
+}
+
+/* 主题分割细线 */
+.theme-divider {
+  width: 100%;
+  height: 5rpx;
+  background-color: #94A48C;
+  opacity: 1;
+  margin-bottom: 60rpx;
+}
+
+/* ================= 3. 详情区块 ================= */
+.detail-section {
+  margin-bottom: 50rpx;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #2E3529; /* 深苔绿黑，比纯黑更优雅 */
+  margin-bottom: 20rpx;
+}
+
+/* 标题左侧的标识竖线 */
+.vertical-bar {
+  width: 8rpx;
+  height: 32rpx;
+  background-color: #94A48C;
+  margin-right: 16rpx;
+  border-radius: 4rpx;
+}
+
+.section-content {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 1.7;
+}
+
+/* ================= 4. 底部动作条 ================= */
+.action-bar-placeholder {
+  height: 120rpx;
+}
+
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120rpx;
+  background-color: #fff;
+  border-top: 1rpx solid #EBEBEB;
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+
+.action-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  border-radius: 40rpx;
+}
+
+/* 加入购物车（辅助色） */
+.cart-btn {
+  background-color: #F5F2EB; /* 奶油可可白 */
+  color: #5C6656;
+  margin-right: 20rpx;
+}
+
+/* 立即购买（主色调） */
+.buy-btn {
+  background-color: #94A48C;
+  color: #ffffff;
+}
+
+/* ================= 5. 底部弹窗 (Popup) ================= */
+.buy-popup {
+  border-radius: 32rpx 32rpx 0 0 !important;
+}
+
+.popup-container {
+  padding: 40rpx;
+}
+
+.popup-header {
+  display: flex;
+  margin-bottom: 60rpx;
+}
+
+.popup-img {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 16rpx;
+  background-color: #f8f9f7;
+  margin-right: 32rpx;
+}
+
+.popup-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 10rpx;
+}
+
+.popup-price {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #94A48C;
+  margin-bottom: 12rpx;
+}
+
+.popup-stock {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.popup-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 80rpx;
+}
+
+.stepper-label {
+  font-size: 30rpx;
+  color: #333333;
+}
+
+/* 自定义步进器 */
+.custom-stepper {
+  display: flex;
+  align-items: center;
+}
+
+.step-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #F5F5F5;
+  border-radius: 8rpx;
+  color: #333;
+}
+
+.step-btn.disabled {
+  color: #ccc;
+}
+
+.step-btn.plus {
+  background-color: #94A48C;
+}
+
+.step-input {
+  width: 80rpx;
+  height: 60rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  background-color: #F5F5F5;
+  margin: 0 10rpx;
+  border-radius: 8rpx;
+}
+
+.popup-footer {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.confirm-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  background-color: #94A48C;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 44rpx;
+}

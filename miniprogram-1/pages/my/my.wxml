@@ -1,0 +1,165 @@
+<view class="mine-container">
+  <!-- 极简轻奢背景色 -->
+  <view class="lux-bg"></view>
+
+  <!-- ========== 头部：用户卡片 (收紧内边距) ========== -->
+  <view class="user-info-card">
+    <block wx:if="{{isLogin}}">
+      <view class="avatar-area">
+        
+        <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="avatar" src="{{memberInfo.avatar_url || '/images/bg/avator.webp'}}" mode="aspectFit"></image>
+        </button>
+
+        <view class="user-base-info">
+          <view class="nickname">{{memberInfo.nickname || '微信用户'}}</view>
+          <view class="member-id">会员ID：{{memberInfo.member_id}}</view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="unlogin-area">
+        <button class="unlogin-btn" bindtap="goToLogin">立即登录 / 注册</button>
+      </view>
+    </block>
+  </view>
+  <!-- ========== VIP 星级面板 ========== -->
+  <view class="glass-panel vip-board" wx:if="{{isLogin}}">
+    
+    <view class="vip-meta-status">
+      <view class="vip-expire-box">
+        <text class="expire-label">会籍到期：</text>
+        <text class="expire-date-val">{{memberInfo.expire_time_text || '永久有效'}}</text>
+      </view>
+      <view class="vip-identity-tag">{{memberInfo.user_type_text}}</view>
+    </view>
+    
+    <view class="vip-upgrade-action-bar">
+      <view class="upgrade-left-tip">
+        <block wx:if="{{memberInfo.nextLevelDiff > 0}}">
+          <text class="tip-prefix">晋升特权</text>
+          <text class="tip-desc">距下级还需 <text class="tip-money">￥{{memberInfo.nextLevelDiff}}</text></text>
+        </block>
+        <block wx:else>
+          <text class="tip-max-status">✨ 尊贵的TA创+</text>
+        </block>
+      </view>
+
+      <view class="btn-upgrade-luxury" wx:if="{{memberInfo.user_type < 5}}" bindtap="goToUpgrade">
+        <text class="btn-text">提升会籍</text>
+        <van-icon name="arrow" class="btn-arrow-icon" size="20rpx" color="#FFFFFF" />
+      </view>
+    </view>
+
+    <view class="vip-progress">
+      <block wx:for="{{levelConfig}}" wx:key="value">
+        <view class="node-item" wx:if="{{item.value > 1}}">
+          <view class="node-cost" style="color: {{ memberInfo.user_type >= item.value ? '#2C3327' : '#8A8E88' }}">
+            <text class="rmb">￥</text><text>{{item.cost >= 10000 ? (item.cost/10000)+'万' : item.cost}}</text>
+          </view>
+          <view class="node-stars">
+            <!-- 🌟 恢复多颗星星，并加上 overlap-star 类实现重叠 -->
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 2}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 3}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 4}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 5}}" />
+          </view>
+        </view>
+      </block>
+    </view>
+
+  </view>
+
+  <!-- ========== 资产数据 ========== -->
+  <view class="glass-panel asset-container" wx:if="{{isLogin}}">
+    <view class="asset-item" bindtap="goToPoints">
+      <view class="asset-title">会员积分</view>
+      <view class="asset-value">{{points || 0}}</view>
+    </view>
+    <view class="asset-divider"></view>
+    <view class="asset-item" bindtap="goToCoupon">
+      <view class="asset-title">优惠券</view>
+      <view class="asset-value {{couponCount === 0 ? 'asset-value-gray' : ''}}">{{couponCount || 0}}</view>
+    </view>
+  </view>
+
+  <!-- ========== 常用功能列表 ========== -->
+  <view class="glass-panel function-grid">
+    
+    <view class="function-item" bindtap="{{isLogin ? 'goToAIChat' : 'goToLogin'}}">
+      <view class="function-icon">
+        <van-icon name="smile-comment-o" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">AI蓝博士</view>
+    </view>
+
+    <view class="function-item" bindtap="goToMemberCenter">
+      <view class="function-icon">
+        <van-icon name="coupon-o" class="list-van-icon" />
+      </view>
+      <view class="function-name">会员权益</view>
+    </view>
+
+    <view class="function-item" bindtap="goToOfflineProject">
+      <view class="function-icon">
+        <van-icon name="shop-o" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">线下项目</view>
+    </view>
+
+    <view class="function-item" bindtap="{{isLogin ? 'goToAddressManage' : 'goToLogin'}}">
+      <view class="function-icon">
+        <van-icon name="location-o" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">地址管理</view>
+    </view>
+
+    <view class="function-item" bindtap="goToInvoiceManage">
+      <view class="function-icon">
+        <van-icon name="logistics" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">订单状态</view>
+    </view>
+
+    <view class="function-item" bindtap="{{isLogin ? 'goToSubMemberConsume' : 'goToLogin'}}">
+      <view class="function-icon">
+        <van-icon name="cluster-o" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin || !memberInfo.user_type ? 'color:#94a3b8' : ''}}">关联订单</view>
+    </view>
+
+    <view class="function-item" bindtap="previewQrcode">
+      <view class="function-icon">
+        <van-icon name="qr" class="list-van-icon" />
+      </view>
+      <view class="function-name">关注公众号</view>
+    </view>
+
+    <view class="function-item" bindtap="goToCustomerService">
+      <view class="function-icon">
+        <van-icon name="service-o" class="list-van-icon" />
+      </view>
+      <view class="function-name">客服中心</view>
+    </view>
+
+    <view class="function-item" bindtap="goToLogout">
+      <view class="function-icon">
+        <van-icon name="revoke" class="list-van-icon" />
+      </view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">退出登录</view>
+    </view>
+
+  </view>
+</view>
+<view class="modal-mask" wx:if="{{showQrcode}}">
+  <view class="modal-content">
+    <view class="modal-header">关注公众号</view>
+    
+    <view class="modal-body">
+      <image class="modal-qrcode-img" src="/images/bg/公众号.jpg" mode="aspectFill" show-menu-by-longpress="true"></image>
+      <text class="modal-qrcode-text">长按图片识别二维码</text>
+    </view>
+
+    <button class="agree-btn" bindtap="hideQrcode">知道了</button>
+  </view>
+</view>

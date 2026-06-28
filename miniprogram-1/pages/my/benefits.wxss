@@ -1,0 +1,23 @@
+/* 页面基底：使用你的奶油可可白，防止长图没加载出来时出现刺眼的纯白屏 */
+page {
+  background-color: #FAF8F5; 
+  min-height: 100vh;
+}
+
+/* 外部容器：宽度 100vw 绝对贴边 */
+.privilege-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* 适配苹果手机底部的“小黑条”，防止长图最底部的字被挡住 */
+  padding-bottom: env(safe-area-inset-bottom); 
+}
+
+/* 🌟 核心：长图样式 */
+.privilege-img {
+  width: 100%;       /* 强制宽度匹配父级（即屏幕宽度） */
+  height: auto;      /* 高度设为自动，把计算权交给 WXML 的 widthFix */
+  display: block;    /* 极其关键：消除 image 标签默认作为内联元素带来的底部 3px 留白间隙 */
+  will-change: transform; /* 性能优化：开启 GPU 硬件加速，让超长图在手机上上下滑动时更丝滑，不掉帧 */
+}

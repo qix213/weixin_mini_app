@@ -1,0 +1,155 @@
+<view class="container">
+  <van-tabs active="{{ activeTab }}" bind:change="onMainTabChange" color="#94A48C" title-active-color="#2C3327" sticky>
+    
+    <!-- ================= 栏目一：客户管理 (折叠面板模式) ================= -->
+    <van-tab title="客户管理" name="customers">
+      <view class="manager-search-bar">
+        <van-search value="{{ searchKeyword }}" placeholder="搜索客户昵称或ID" bind:search="onSearch" shape="round"/>
+      </view>
+
+      <view class="list-container">
+        <!-- 🌟 核心：按客户分组的折叠面板 -->
+        <van-collapse value="{{ activeNames }}" bind:change="onCollapseChange" custom-class="custom-collapse">
+          <van-collapse-item wx:for="{{ groupedCustomers }}" wx:key="user_id" name="{{ item.user_id }}" content-class="custom-collapse-content">
+            
+            <!-- 🌟 折叠标题：显示用户昵称与ID -->
+            <view slot="title" class="customer-title">
+              <van-icon name="user-circle-o" size="40rpx" color="#94A48C"/>
+              <text class="c-name">{{ item.nickname }}</text>
+              <text class="c-id">(ID: {{ item.user_id }})</text>
+            </view>
+
+            <!-- 🌟 展开内容：高级质感的项目卡片与预约按钮 -->
+            <view class="asset-card glass-panel" wx:for="{{ item.projects }}" wx:for-item="proj" wx:key="id">
+              <image class="project-img" src="{{ proj.project_image || '/images/bg/default_project.png' }}" mode="aspectFill"></image>
+              
+              <view class="asset-info">
+                <view class="project-name">{{ proj.project_name }}</view>
+                
+                <view class="asset-meta">
+                  <text class="times-label">剩余可用：</text>
+                  <text class="times-val">{{ proj.remain_times }}</text>
+                  <text class="total-val">/ 共{{ proj.total_times }}次</text>
+                </view>
+                
+                <view class="action-row">
+                  <van-button round type="primary" color="#94A48C" size="small" data-uid="{{item.user_id}}" data-pid="{{proj.project}}" bindtap="openTimePicker">
+                    预约服务时间
+                  </van-button>
+                </view>
+              </view>
+            </view>
+            
+          </van-collapse-item>
+        </van-collapse>
+        
+        <view class="empty-state" wx:if="{{ !groupedCustomers.length }}">
+          <text>暂无客户数据</text>
+        </view>
+      </view>
+    </van-tab>
+
+    <!-- ================= 🌟 栏目二：服务工作台 ================= -->
+    <van-tab title="服务台" name="records">
+      <view class="sub-tabs-wrapper">
+        <van-tabs active="{{ subActiveTab }}" bind:change="onSubTabChange" type="card" color="#94A48C">
+          
+          <!-- 💡 子Tab：等待核销 -->
+          <van-tab title="等待核销" name="pending">
+            <view class="list-container sub-list">
+              <block wx:for="{{ allRecords }}" wx:key="id">
+                <view class="record-card glass-panel" wx:if="{{ item.status === 0 || item.status === 1 }}">
+                  <view class="card-header">
+                    <view class="user-info">
+                      <text class="u-name">{{ item.customer_nickname }}</text>
+                      <text class="u-id">ID:{{ item.member_id }}</text>
+                    </view>
+                    <text class="status-tag pending">待客户核销</text>
+                  </view>
+                  <view class="record-body">
+                    <view class="p-name">{{ item.project_name }}</view>
+                    <view class="p-desc">设定预约时间：{{ item.appointment_time || '未设定' }}</view>
+                  </view>
+                  
+                  <view class="card-footer">
+                    <view class="tip-text" style="color: #7d9781;">服务完成后，请提醒客户在手机端确认扣次</view>
+                  </view>
+                </view>
+              </block>
+              <view class="empty-state" wx:if="{{ !allRecords.length }}"><text>暂无待处理的服务</text></view>
+            </view>
+          </van-tab>
+
+          <!-- 💡 子Tab：已完成 (查看评价) -->
+          <van-tab title="已完成" name="completed">
+            <view class="list-container sub-list">
+              <block wx:for="{{ allRecords }}" wx:key="id">
+                <view class="record-card glass-panel" wx:if="{{ item.status === 2 }}">
+                  <view class="card-header">
+                    <view class="user-info">
+                      <text class="u-name">{{ item.customer_nickname }}</text>
+                      <text class="u-id">ID:{{ item.member_id }}</text>
+                    </view>
+                    <text class="status-tag done">已完成</text>
+                  </view>
+                  <view class="record-body" style="padding-bottom: 10rpx;">
+                    <view class="p-name">{{ item.project_name }}</view>
+                    <view class="p-desc">核销时间：{{ item.confirm_time || '未记录' }}</view>
+                  </view>
+                  
+                  <!-- 🌟 查阅评价区域 -->
+                  <view class="review-box" wx:if="{{ item.rating }}">
+                    <view class="review-header">
+                      <text class="r-title">客户评分</text>
+                      <van-rate value="{{ item.rating }}" readonly size="14px" color="#F59E0B" />
+                    </view>
+                    
+                    <view class="r-content" wx:if="{{ item.review_content }}">{{ item.review_content }}</view>
+                    
+                    <view class="r-imgs" wx:if="{{ item.review_images && item.review_images.length > 0 }}">
+                      <image 
+                        class="r-img-item" 
+                        wx:for="{{ item.review_images }}" 
+                        wx:for-item="imgUrl" 
+                        wx:key="*this" 
+                        src="{{ imgUrl }}" 
+                        mode="aspectFill"
+                        data-current="{{ imgUrl }}"
+                        data-urls="{{ item.review_images }}"
+                        bindtap="previewReviewImage"
+                      ></image>
+                    </view>
+                  </view>
+                  <view class="card-footer" wx:else>
+                    <view class="tip-text">该客户暂未留下文字评价</view>
+                  </view>
+                </view>
+              </block>
+            </view>
+          </van-tab>
+
+        </van-tabs>
+      </view>
+    </van-tab>
+
+  </van-tabs>
+</view>
+
+<!-- 预约时间选择弹窗 -->
+<van-popup show="{{ showTimePicker }}" position="bottom" bind:close="closeTimePicker" custom-style="border-radius: 32rpx 32rpx 0 0; overflow: hidden; background: #ffffff;">
+  <view class="custom-picker-toolbar">
+    <text class="toolbar-btn cancel" bindtap="closeTimePicker">取消</text>
+    <text class="toolbar-title">设定预约时间</text>
+    <text class="toolbar-btn confirm" bindtap="onPickerConfirm">确定</text>
+  </view>
+  <view class="picker-columns-tips">
+    <view class="tip-col">年</view>
+    <view class="tip-col">月</view>
+    <view class="tip-col">日</view>
+    <view class="tip-col">时</view>
+    <view class="tip-col">分</view>
+  </view>
+  <van-datetime-picker type="datetime" value="{{ currentDate }}" min-date="{{ minDate }}" show-toolbar="{{ false }}" bind:input="onPickerChange" />
+</van-popup>
+
+<van-toast id="van-toast" />
