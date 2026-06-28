@@ -3750,7 +3750,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from .models import Order
-
+import urllib.error  # 引入用于捕获真实报错的模块
 # ===================== 公共签名函数（全局复用） =====================
 def jd_sign(algorithm: str, data: bytes, secret: bytes) -> str:
     if algorithm == "md5-salt":
@@ -3768,6 +3768,7 @@ def jd_sign(algorithm: str, data: bytes, secret: bytes) -> str:
     raise NotImplementedError("Algorithm " + algorithm + " not supported yet")
 
 # ===================== 1. 京东预校验接口 =====================
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def jd_order_precheck(request):
@@ -3778,8 +3779,17 @@ def jd_order_precheck(request):
         receiver = req_data.get("receiver", {})
         quantity = req_data.get("quantity", 1)
 
+        # 🌟 获取前端传来的包裹动态数据（兜底默认值为你原本设定的 0.5kg 和 0.001体积）
+        cargo_name = req_data.get("cargo_name", "护肤品")
+        try:
+            cargo_weight = float(req_data.get("cargo_weight", 0.5))
+            cargo_volume = float(req_data.get("cargo_volume", 0.001))
+        except (ValueError, TypeError):
+            cargo_weight = 0.5
+            cargo_volume = 0.001
+
         config = settings.JD_LOGISTICS
-        base_uri = config["UAT_API"]
+        base_uri = config["UAT_API"]  # 🌟 修复：改回你原本正确的 UAT 测试环境
         app_key = config["APP_KEY"]
         app_secret = config["APP_SECRET"]
         access_token = config["ACCESS_TOKEN"]
@@ -3789,6 +3799,7 @@ def jd_order_precheck(request):
         version = config["VERSION"]
         path = "/ecap/v1/orders/precheck"
 
+        # 🌟 保持你原本完全正确的数据结构，仅替换 cargoes 里的值
         body = json.dumps([{
             "orderId": order_sn,
             "senderContact": {
@@ -3806,10 +3817,10 @@ def jd_order_precheck(request):
             "productsReq": {"productCode": "ed-m-0001"},
             "settleType": 3,
             "cargoes": [{
-                "name": "护肤品",
+                "name": cargo_name,  # 动态提取
                 "quantity": quantity,
-                "weight": 0.5,
-                "volume": 0.001
+                "weight": cargo_weight,  # 动态提取
+                "volume": cargo_volume  # 动态提取
             }]
         }], ensure_ascii=False)
 
@@ -3842,13 +3853,35 @@ def jd_order_precheck(request):
         resp = opener.open(req, timeout=10)
         jd_res = json.loads(resp.read().decode("utf-8"))
 
-        return JsonResponse({
-            "code": 200,
-            "data": {
-                "success": jd_res.get("success", False),
-                "error_msg": jd_res.get("msg", jd_res.get("error_response", {}).get("zh_desc", ""))
-            }
-        })
+        # 🌟 提取预估运费并返回给前端
+        if jd_res.get("success") is True:
+            total_freight = jd_res.get("data", {}).get("totalFreightStandard", 0)
+            print("=" * 50)
+            print(f"📦 订单 {order_sn} 京东预校验成功！预估运费：{total_freight} 元")
+            print("=" * 50)
+
+            return JsonResponse({
+                "code": 200,
+                "data": {
+                    "success": True,
+                    "freight": total_freight,
+                    "error_msg": ""
+                }
+            })
+        else:
+            return JsonResponse({
+                "code": 200,
+                "data": {
+                    "success": False,
+                    "error_msg": jd_res.get("msg", jd_res.get("error_response", {}).get("zh_desc", ""))
+                }
+            })
+
+    # 依然保留 HTTPError 捕获，以防以后真遇到过期或签名错误时能看到详细原因
+    except urllib.error.HTTPError as http_err:
+        error_body = http_err.read().decode("utf-8")
+        print("❌ 京东API报错:", error_body)
+        return JsonResponse({"code": 500, "msg": f"接口鉴权失败：{error_body}", "data": None})
 
     except Exception as e:
         return JsonResponse({"code": 500, "msg": str(e), "data": None})
@@ -3864,6 +3897,21 @@ def jd_create_waybill(request):
         receiver = req_data.get("receiver", {})
         quantity = req_data.get("quantity", 1)
 
+        # 🌟 1. 动态接收前端传递的包裹三要素（带有严谨的类型转换与安全兜底）
+        cargo_name = req_data.get("cargo_name", "护肤品")
+        try:
+            cargo_weight = float(req_data.get("cargo_weight", 1.0))
+        except (ValueError, TypeError):
+            cargo_weight = 1.0
+
+        try:
+            cargo_volume = float(req_data.get("cargo_volume", 10.0))
+        except (ValueError, TypeError):
+            cargo_volume = 10.0
+
+        print(f"====== 收到发起京东物流申请 ======")
+        print(f"订单：{order_sn} | 物品：{cargo_name} | 重量：{cargo_weight}kg | 体积：{cargo_volume}cm³")
+
         if not all([order_sn, sender, receiver]):
             return JsonResponse({"code": 400, "msg": "参数不完整", "data": None})
 
@@ -3878,53 +3926,70 @@ def jd_create_waybill(request):
         version = config["VERSION"]
         path = "/ecap/v1/orders/create"
 
-        # 京东下单请求体
+        # 🌟 2. 将动态提取的参数，完美组装进京东官方 cargoes 报文中
         body = json.dumps([{
             "orderId": order_sn,
-            "senderContact": {"name": sender.get('name', ''), "mobile": sender.get('mobile', ''),
-                              "fullAddress": sender.get('fullAddress', '')},
-            "receiverContact": {"name": receiver.get('name', ''), "mobile": receiver.get('mobile', ''),
-                                "fullAddress": receiver.get('fullAddress', '')},
+            "senderContact": {
+                "name": sender.get('name', ''),
+                "mobile": sender.get('mobile', ''),
+                "fullAddress": sender.get('fullAddress', '')
+            },
+            "receiverContact": {
+                "name": receiver.get('name', ''),
+                "mobile": receiver.get('mobile', ''),
+                "fullAddress": receiver.get('fullAddress', '')
+            },
             "orderOrigin": 1,
             "customerCode": customer_code,
             "productsReq": {"productCode": "ed-m-0001"},
             "settleType": 3,
-            "cargoes": [{"name": "护肤品", "quantity": quantity, "weight": 0.5, "volume": 0.001}]
+            "cargoes": [{
+                "name": cargo_name,       # 🌟 动态物品名称
+                "quantity": quantity,
+                "weight": cargo_weight,   # 🌟 动态重量
+                "volume": cargo_volume    # 🌟 动态体积
+            }]
         }], ensure_ascii=False)
 
-        # 签名
+        # 签名运算（保持你原有的逻辑完全不变）
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sign_content = "".join(
-            [app_secret, "access_token", access_token, "app_key", app_key, "method", path, "param_json", body,
-             "timestamp", timestamp, "v", version, app_secret])
+        sign_content = "".join([
+            app_secret, "access_token", access_token, "app_key", app_key, "method", path, "param_json", body,
+            "timestamp", timestamp, "v", version, app_secret
+        ])
         sign_result = jd_sign(algorithm, sign_content.encode("utf-8"), app_secret.encode("utf-8"))
 
-        # 请求
-        queries = {"LOP-DN": domain, "app_key": app_key, "access_token": access_token, "timestamp": timestamp,
-                   "v": version, "sign": sign_result, "algorithm": algorithm}
+        # 发起通信请求（保持完全不变）
+        queries = {
+            "LOP-DN": domain, "app_key": app_key, "access_token": access_token,
+            "timestamp": timestamp, "v": version, "sign": sign_result, "algorithm": algorithm
+        }
         url = f"{base_uri}{path}?{urlencode(queries)}"
-        headers = {"lop-tz": str(int(-time.timezone / 3600)), "User-Agent": "lop-http/python3",
-                   "content-type": "application/json;charset=utf-8"}
+        headers = {
+            "lop-tz": str(int(-time.timezone / 3600)), "User-Agent": "lop-http/python3",
+            "content-type": "application/json;charset=utf-8"
+        }
 
         opener = urllib.request.build_opener()
         req = urllib.request.Request(url=url, data=body.encode("utf-8"), headers=headers)
         resp = opener.open(req, timeout=15)
         jd_result = json.loads(resp.read().decode("utf-8"))
 
-        # ✅ 保存：京东返回的运单号、订单号 + 所有查询/取消关键字段
+        # 保存并关联本地订单状态变更（保持不变）
         if jd_result.get("success") is True:
             waybill_code = jd_result.get("data", {}).get("waybillCode", "")
-            jd_order_code = jd_result.get("data", {}).get("orderCode", "")  # 京东订单号
+            jd_order_code = jd_result.get("data", {}).get("orderCode", "")
             freight = jd_result.get("data", {}).get("totalFreightStandard", 0)
 
+            # 更新本地订单表状态为：已发货/待收货(2)
+            # 注意：此处顺手更新为你之前统一定义的 1=待发货，2=待收货 状态机规范
             Order.objects.filter(order_sn=order_sn).update(
                 logistics_no=waybill_code,
                 logistics_company="京东物流",
                 jd_freight=freight,
                 jd_order_status="created",
                 jd_create_time=datetime.now(),
-                status=1,
-                # 👇 核心：保存取消/轨迹必需全部字段
+                status=2,  # 🌟 确保发货动作直接推动状态变成 2(待收货)
                 jd_waybill_code=waybill_code,
                 jd_order_code=jd_order_code,
                 jd_order_origin=1,
@@ -3935,12 +4000,17 @@ def jd_create_waybill(request):
                 sender_address=sender.get('fullAddress', '')
             )
 
-            return JsonResponse(
-                {"code": 200, "msg": "下单成功", "data": {"waybill_code": waybill_code, "order_code": jd_order_code}})
+            return JsonResponse({
+                "code": 200,
+                "msg": "下单成功",
+                "data": {"waybill_code": waybill_code, "order_code": jd_order_code}
+            })
         else:
             return JsonResponse({"code": 500, "msg": jd_result.get("msg", "下单失败"), "data": None})
 
     except Exception as e:
+        import traceback
+        traceback.print_exc() # 保持良好的排错打印习惯
         return JsonResponse({"code": 500, "msg": f"异常：{str(e)}", "data": None})
 
 

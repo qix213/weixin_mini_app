@@ -22,7 +22,7 @@ from django.conf import settings
 from app01.views import CustomTokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('ming_ai26/', admin.site.urls),
     path('index/', index),
     path('app01/', include('app01.urls')),
     path('media/<path:path>', serve,{'document_root': settings.MEDIA_ROOT}),
