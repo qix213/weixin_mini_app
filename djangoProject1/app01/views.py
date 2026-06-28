@@ -2694,6 +2694,25 @@ class WechatPayCallbackView(APIView):
                 order.actual_pay_money = total_fee
                 order.save(update_fields=['status', 'pay_method', 'pay_no', 'pay_time', 'actual_pay_money'])
 
+                # ================= 推荐返佣（10%）=================
+                parent = request.user.parent_user
+
+                if parent and not order.rebate_done:
+
+                    pay_amount = Decimal(str(order.actual_pay_money or 0))
+
+                    cashback = (pay_amount * Decimal("0.10")).quantize(Decimal("0.01"))
+
+                    if cashback > 0:
+                        parent.balance += cashback
+                        parent.save(update_fields=["balance"])
+
+                        print(f"推荐返佣成功：{parent.member_id} +{cashback}")
+
+                    # 防止重复返佣
+                    order.rebate_done = True
+                    order.save(update_fields=["rebate_done"])
+
                 # ================= 业务 2: 扣除使用的抵扣积分 =================
                 deduct_point = order.point_deduct or 0
                 if deduct_point > 0 and not PointsRecord.objects.filter(
