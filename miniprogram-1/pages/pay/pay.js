@@ -19,11 +19,6 @@ Page({
     orderId: '',
     memberId: '', 
     phone: '',    
-    payMethods: [        
-      { id: 1, name: '微信支付', icon: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wechat.svg', selected: true },
-      { id: 2, name: '支付宝支付', icon: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/alipay.svg', selected: false }
-    ],
-    selectedPayMethod: 1,
     payLoading: false,
     couponList: [],
     couponDropdownOptions: [{ label: '不使用优惠券', value: -1 }],
@@ -94,14 +89,6 @@ Page({
   },
 
   // ================= 2. 支付方式与基础功能 =================
-  switchPayMethod(e) {
-    const id = e.currentTarget.dataset.methodid;
-    const methods = this.data.payMethods.map(m => ({
-      ...m,
-      selected: m.id === id
-    }));
-    this.setData({ payMethods: methods, selectedPayMethod: id });
-  },
 
   formatDate(dateStr) {
     if (!dateStr) return '';
@@ -151,7 +138,6 @@ Page({
     this.setData({ actualAmount: finalRmb.toFixed(2) });
   },
 
-  // ================= 4. 优惠券相关逻辑 =================
 // ================= 4. 优惠券相关逻辑 =================
 getCouponList() {
   const token = wx.getStorageSync('accessToken');
@@ -280,65 +266,112 @@ getCouponList() {
     });
   },
 
-  // ================= 6. 支付主干流程 =================
-  handleCancel() {
-    wx.navigateBack({ delta: 1 });
-  },
+// ================= 6. 支付主干流程 (接入真实微信支付) =================
+handleCancel() {
+  wx.navigateBack({ delta: 1 });
+},
 
-  handlePay() {
-    const { payLoading, orderId, scene, originalAmount, actualAmount, isPointGoods } = this.data;
-    if (payLoading) return;
+handlePay() {
+  const { payLoading, orderId, scene, originalAmount, actualAmount, isPointGoods, selectedCoupon, pointDeductPoints } = this.data;
+  if (payLoading) return;
 
-    if (!orderId && scene !== 'member' && scene !== 'shop') {
-      console.warn('测试阶段：订单ID为空，继续支付流程');
-    }
+  if (!orderId && scene !== 'member' && scene !== 'shop') {
+    wx.showToast({ title: '订单异常，缺少ID', icon: 'none' });
+    return;
+  }
 
-    // 免支付判断
-    if (Number(originalAmount) === 0 || Number(actualAmount) === 0) {
-      wx.showToast({ title: '0元免支付，正在处理...', icon: 'success' });
-      setTimeout(() => {
-        this.paySuccess(orderId, this.data.selectedCoupon);
-      }, 1000);
-      return;
-    }
+  // 0元免支付判断 (全额抵扣)
+  if (Number(originalAmount) === 0 || Number(actualAmount) === 0) {
+    wx.showToast({ title: '0元免支付，正在处理...', icon: 'success' });
+    // 0元单不需要调微信支付，直接走本地成功逻辑
+    setTimeout(() => { this.paySuccess(orderId); }, 1000);
+    return;
+  }
 
-    if (isPointGoods && (this.data.exchangePoints === 0 || Number(actualAmount) < 0)) {
-      wx.showToast({ title: '积分商品异常', icon: 'none' }); return;
-    } else if (!isPointGoods && Number(actualAmount) <= 0) {
-      wx.showToast({ title: '支付金额异常', icon: 'none' }); return;
-    }
+  if (isPointGoods && (this.data.exchangePoints === 0 || Number(actualAmount) < 0)) {
+    wx.showToast({ title: '积分商品异常', icon: 'none' }); return;
+  } else if (!isPointGoods && Number(actualAmount) <= 0) {
+    wx.showToast({ title: '支付金额异常', icon: 'none' }); return;
+  }
 
-    this.setData({ payLoading: true });
-    const selectedMethodName = this.data.payMethods.find(m => m.id === this.data.selectedPayMethod).name;
+  this.setData({ payLoading: true });
+  wx.showLoading({ title: '正在拉起支付...' });
+  const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
 
-    // TODO: 这里将来要替换成真实的 wx.requestPayment
-    setTimeout(() => {
+  // 🌟 1. 向 Django 后端请求预支付参数 (JSAPI下单)
+  wx.request({
+    url: `${app.globalData.baseUrl}/app01/order/wechat_prepay/`, // ⚠️ 需要你在后端写一个下单接口
+    method: 'POST',
+    header: { 
+      'Authorization': `Bearer ${token}`,
+      'content-type': 'application/json' 
+    },
+    data: {
+      order_id: orderId,
+      scene: scene,
+      coupon_id: selectedCoupon ? selectedCoupon.value : null,
+      point_deduct: pointDeductPoints || 0
+    },
+    success: (res) => {
+      wx.hideLoading();
+      if (res.data.code === 200) {
+        const payParams = res.data.data; // 后端生成的包含 prepay_id 和签名的五个参数
+        
+        // 🌟 2. 唤起微信原生密码/指纹支付键盘
+        wx.requestPayment({
+          timeStamp: payParams.timeStamp,
+          nonceStr: payParams.nonceStr,
+          package: payParams.package,
+          signType: payParams.signType || 'RSA', // V3 接口必须是 RSA
+          paySign: payParams.paySign,
+          success: (payRes) => {
+            this.setData({ payLoading: false });
+            wx.showToast({ title: '支付成功', icon: 'success', duration: 1500 });
+            
+            // 🌟 3. 支付成功，执行前端清理跳转逻辑
+            this.paySuccess(orderId); 
+          },
+          fail: (err) => {
+            this.setData({ payLoading: false });
+            if (err.errMsg.indexOf('cancel') > -1) {
+              wx.showToast({ title: '您已取消支付', icon: 'none' });
+            } else {
+              wx.showToast({ title: '支付失败，请重试', icon: 'none' });
+            }
+          }
+        });
+      } else {
+        this.setData({ payLoading: false });
+        wx.showToast({ title: res.data.msg || '支付发起失败', icon: 'none' });
+      }
+    },
+    fail: () => {
+      wx.hideLoading();
       this.setData({ payLoading: false });
-      wx.showToast({ title: `${selectedMethodName}支付成功`, icon: 'success', duration: 1500 });
-      this.paySuccess(orderId, this.data.selectedCoupon);
-    }, 1500);
-  },
+      wx.showToast({ title: '网络异常，无法拉起支付', icon: 'none' });
+    }
+  });
+},
 
-// ================= 7. 支付成功分流逻辑 =================
-paySuccess(orderId, selectedCoupon) {
-  const { scene, pointDeductPoints, isOfflineProject } = this.data; 
+// ================= 7. 支付成功分流逻辑 (极简版) =================
+paySuccess(orderId) {
+  const { scene, isOfflineProject } = this.data; 
   const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
   
   // 【拦截器】非注册场景必须有登录态
   if (scene !== 'member' && scene !== 'shop' && !accessToken) {
-    wx.showToast({ title: '请先登录再完成支付', icon: 'none' });
+    wx.showToast({ title: '请先登录', icon: 'none' });
     return;
   }
 
   // ================= 🌟 场景 A：新用户注册缴费开通 =================
   if (scene === 'member' || scene === 'shop') {
     wx.showLoading({ title: '开通专属会籍中...' });
-    
+    // 这里的逻辑保持不变，因为涉及到首次写入用户信息
     this.saveMemberInfoAndLogin().then(() => {
       const newAccessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
       const avatarUrl = this.data.pendingRegisterData.avatarUrl; 
       
-      // 如果有暂存头像，静默上传
       if (avatarUrl && newAccessToken) {
         wx.uploadFile({
           url: app.globalData.baseUrl + '/app01/member/upload_avatar/', 
@@ -347,18 +380,17 @@ paySuccess(orderId, selectedCoupon) {
           header: { 'Authorization': `Bearer ${newAccessToken}` },
           success: () => {
             wx.hideLoading();
-            wx.showToast({ title: '开通成功', icon: 'success', duration: 2000 });
+            wx.showToast({ title: '开通成功', icon: 'success' });
             setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
           },
           fail: () => {
             wx.hideLoading();
-            wx.showToast({ title: '开通成功，头像稍后生效', icon: 'none', duration: 2000 });
             setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
           }
         });
       } else {
         wx.hideLoading();
-        wx.showToast({ title: '开通成功', icon: 'success', duration: 2000 });
+        wx.showToast({ title: '开通成功', icon: 'success' });
         setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
       }
     }).catch((errMsg) => {
@@ -368,113 +400,36 @@ paySuccess(orderId, selectedCoupon) {
     return;
   }
 
-  // ================= 🌟 场景 B：老会员提升等级 =================
-  if (scene === 'upgrade') {
-    wx.showLoading({ title: '正在更新会籍...' });
-    wx.request({
-      url: `${app.globalData.baseUrl}/app01/member/upgrade_success/`,
-      method: 'POST',
-      header: {
-        'content-type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      data: { out_trade_no: orderId }, 
-      success: (res) => {
-        wx.hideLoading();
-        if (res.data.code === 200) {
-          wx.showToast({ title: '升级成功！', icon: 'success', duration: 2000 });
-          if (res.data.data) {
-              app.globalData.memberInfo = res.data.data;
-              wx.setStorageSync('memberInfo', res.data.data);
-          }
-          setTimeout(() => { wx.switchTab({ url: '/pages/my/my' }); }, 1500);
-        } else {
-          wx.showToast({ title: '状态更新延迟，请稍后查看', icon: 'none' });
-          setTimeout(() => { wx.switchTab({ url: '/pages/my/my' }); }, 1500);
-        }
-      },
-      fail: () => {
-        wx.hideLoading();
-        wx.showToast({ title: '网络异常，请联系客服', icon: 'none' });
-      }
-    });
-    return;
-  }
-// ================= 🌟 场景 D：线下项目直接购买/预约 =================
-if (isOfflineProject || scene === 'offline') {
-  wx.showLoading({ title: '正在下发项目资产...' });
-  
+  // ================= 🌟 场景 B & D & C：常规跳转逻辑 =================
+  // 对于升级、线下项目、普通商城订单，后端的 Webhook 已经把数据改好了
+  // 前端只需要清空购物车缓存，然后跳到对应的页面即可
+
+  wx.showLoading({ title: '处理中...' });
+
+  // 无论什么订单，统一请求一次清空后端和本地的购物车（因为可能包含了购物车里的商品）
   wx.request({
-    // ⚠️ 配合这个逻辑，你需要在 Django 的 OfflineServiceViewSet 写一个 buy_project 接口
-    url: `${app.globalData.baseUrl}/app01/offline_services/buy_project/`, 
+    url: `${app.globalData.baseUrl}/app01/cart/clear/`,
     method: 'POST',
-    header: {
-      'content-type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    },
-    data: {
-      goods_id: orderId, // 对于线下项目，前一个页面传过来的 orderId 实际上应该是商品的 ID
-      pay_amount: this.data.actualAmount
-    },
-    success: (res) => {
+    header: { 'Authorization': `Bearer ${accessToken}` },
+    complete: () => {
+      wx.removeStorageSync('cart');
       wx.hideLoading();
-      if (res.data.code === 200 || res.data.code === 201) {
-        wx.showToast({ title: '购买成功！', icon: 'success', duration: 2000 });
-        
-        // 购买成功后，直接跳转到刚刚写好的线下项目中心！
-        setTimeout(() => {
-          wx.navigateTo({ url: '/pages/my/offline_project' }); 
-        }, 1500);
-      } else {
-        wx.showToast({ title: res.data.msg || '资产下发异常，请联系客服', icon: 'none' });
+      
+      // 根绝场景跳转到不同的结果页
+      if (scene === 'upgrade') {
+        wx.showToast({ title: '升级成功！', icon: 'success' });
+        setTimeout(() => { wx.switchTab({ url: '/pages/my/my' }); }, 1500);
+      } 
+      else if (isOfflineProject || scene === 'offline') {
+        wx.showToast({ title: '购买成功！', icon: 'success' });
+        setTimeout(() => { wx.navigateTo({ url: '/pages/my/offline_project' }); }, 1500);
+      } 
+      else {
+        // 普通商城订单
+        wx.showToast({ title: '支付成功，订单已成', icon: 'success' });
+        setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
       }
-    },
-    fail: () => {
-      wx.hideLoading();
-      wx.showToast({ title: '网络异常，请稍后确认', icon: 'none' });
     }
   });
-  return;
-}
-
-// ================= 🌟 场景 C：普通商城订单 =================
-wx.showLoading({ title: '正在同步订单状态...' });
-
-wx.request({
-  url: `${app.globalData.baseUrl}/app01/order/pay_success/`,
-  method: 'POST',
-  header: {
-    'content-type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`
-  },
-  data: {
-    order_id: orderId,
-    coupon_user_id: selectedCoupon ? selectedCoupon.value : null,
-    point_deduct: pointDeductPoints || 0
-  },
-  success: (res) => {
-    if (res.data.code === 200 || res.data.code === 201) {
-      wx.request({
-        url: `${app.globalData.baseUrl}/app01/cart/clear/`,
-        method: 'POST',
-        header: { 'Authorization': `Bearer ${accessToken}` },
-        complete: () => {
-          wx.removeStorageSync('cart');
-          wx.hideLoading();
-          wx.showToast({ title: '支付成功，订单已成', icon: 'success', duration: 2000 });
-          setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
-        }
-      });
-    } else {
-      wx.hideLoading();
-      wx.showToast({ title: res.data.msg || '订单状态更新延迟', icon: 'none' });
-      setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1500);
-    }
-  },
-  fail: () => {
-    wx.hideLoading();
-    wx.showToast({ title: '网络异常，请在我的订单中确认', icon: 'none' });
-  }
-});
 }
 });

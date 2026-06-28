@@ -141,87 +141,107 @@ page {
 
 .no-goods { font-size: 24rpx; color: #8A8E88; font-style: italic; }
 
-/* ================= 底部：金额与操作 ================= */
+/* ================= 订单底部操作区 ================= */
 .order-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-top: 20rpx;
-  border-top: 1px solid rgba(148, 164, 140, 0.1);
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx dashed #E2E7DF; /* 带有一丝植物绿调的温和虚线 */
 }
 
+/* 时间独占一行 */
 .time-text {
   font-size: 24rpx;
-  color: #8A8E88;
-  margin-bottom: 4rpx;
+  color: #8A9684; /* 融入主色调的低饱和度灰色 */
+  margin-bottom: 20rpx; 
+  display: block; 
 }
 
+/* 横向两端对齐容器 */
 .action-area {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 24rpx;
+  width: 100%;
 }
 
+/* 价格展示区（左侧） */
 .price-area {
   display: flex;
   align-items: baseline;
+  color: #2E3529; /* 深苔绿黑，替代死板的纯黑，视觉更高级 */
+  flex-shrink: 0; 
+}
+.price-area .label {
+  font-size: 24rpx;
+  color: #6B7566; /* 次级文本绿灰 */
+  margin-right: 8rpx;
+}
+.price-area .unit {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+.price-area .price-val {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+/* 积分数字与主色调完美呼应 */
+.price-area .point-val {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #94A48C; /* 主色调显现 */
 }
 
-.price-area .label { font-size: 24rpx; color: #8A8E88; margin-right: 8rpx; }
-.price-area .unit { font-size: 24rpx; color: #2C3327; font-weight: 600; }
-.price-area .price-val { 
-  font-size: 38rpx; 
-  color: #2C3327; 
-  font-weight: bold; 
-  font-family: 'DIN Alternate', sans-serif;
-  letter-spacing: -1rpx;
-}
-.price-area .point-val { color: #94A48C; } /* 积分数字用主色绿 */
-
-/* ================= 按钮组 (高级排版) ================= */
+/* ================= 按钮组容器（右侧） ================= */
 .btn-group {
   display: flex;
   align-items: center;
-  gap: 20rpx; /* 增加按钮间距让呼吸感更强 */
+  justify-content: flex-end;
+  gap: 16rpx;
+  flex-wrap: nowrap;
 }
 
-/* 主操作按钮：去支付 (渐变绸缎绿) */
+/* 统一按钮基础 */
+.btn-group button {
+  margin: 0 !important; 
+  padding: 0 32rpx !important;
+  height: 58rpx;
+  line-height: 58rpx;
+  font-size: 24rpx;
+  border-radius: 30rpx;
+  font-weight: 500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+/* 1. 主操作：立即支付 (鼠尾草色块) */
 .pay-btn {
-  margin: 0;
-  padding: 0 40rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  font-size: 26rpx;
-  font-weight: 500;
-  color: #fff;
-  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
-  border-radius: 32rpx;
-  box-shadow: 0 8rpx 16rpx rgba(148, 164, 140, 0.25);
+  background: #94A48C !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.2);
 }
 
-.pay-btn:active { transform: scale(0.96); }
-
-/* 次操作按钮：查看物流 (轻奢线框) */
+/* 2. 核心区分：查看物流 (奶油色底，实线边框，代表常用功能) */
 .logistics-btn {
-  margin: 0;
-  padding: 0 38rpx;
-  height: 64rpx;
-  line-height: 60rpx;
-  font-size: 26rpx;
-  font-weight: 500;
-  color: #7A8B72;
-  background: transparent; 
-  border: 1px solid #94A48C; 
-  border-radius: 32rpx;
-  transition: all 0.3s ease;
+  background: #F5F2EB !important;
+  color: #5C6656 !important;
+  border: 2rpx solid #D2D8CE !important;
 }
 
-.logistics-btn:active {
-  background: rgba(148, 164, 140, 0.05);
+/* 3. 核心区分：删除订单 (无底色，仅灰色细线，表示低优先级/破坏性操作) */
+.delete-btn {
+  background: transparent !important;
+  color: #B4B9AE !important; /* 更灰的苔绿色，降低视觉权重 */
+  border: 2rpx solid #E2E7DF !important; /* 非常细的边框 */
+  padding: 0 24rpx !important; /* 宽度稍微缩窄 */
 }
 
-.pay-btn::after, .logistics-btn::after { display: none; }
-
+.delete-btn:active {
+  background: #fdfdfd !important;
+  color: #94A48C !important; /* 点击时微显主色调，给予删除确认感 */
+}
 /* ================= 空状态 & 加载态 ================= */
 .empty-state {
   display: flex;

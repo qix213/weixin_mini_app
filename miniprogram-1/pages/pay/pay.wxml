@@ -67,27 +67,12 @@
     </view>
   </view>
 
-  <view class="pay-methods-title">选择支付方式</view>
-  <view class="pay-methods-container">
-    <block wx:for="{{payMethods}}" wx:key="id">
-      <view 
-        class="pay-method-item {{item.selected ? 'pay-method-selected' : ''}}"
-        data-methodid="{{item.id}}"
-        bindtap="switchPayMethod"
-      >
-        <image class="pay-method-icon" src="{{item.icon}}" mode="aspectFit"></image>
-        <text class="pay-method-name">{{item.name}}</text>
-        <view class="pay-method-check {{item.selected ? 'check-visible' : ''}}">✓</view>
-      </view>
-    </block>
-  </view>
-
   <view class="action-footer">
     <button class="pay-btn" bindtap="handlePay" loading="{{payLoading}}" disabled="{{payLoading}}">
-      {{payLoading ? '支付中...' : '确认支付 ¥' + (actualAmount || '0.00')}}
+      {{payLoading ? '支付拉起中...' : '微信支付 ¥' + (actualAmount || '0.00')}}
     </button>
     <button class="cancel-btn" bindtap="handleCancel" disabled="{{payLoading}}">
-      取消支付
+      取消并返回
     </button>
   </view>
 </view>

@@ -26,7 +26,7 @@ Page({
       { name: '我要开店', id: 1 }
     ],
     memberTypeList: [
-      { value: 1, name: '蓝朋友 0星', amount: 0 },
+      { value: 1, name: '蓝朋友 0星', amount: 1 },
       { value: 2, name: '蓝朋友 1星', amount: 980 },
       { value: 3, name: '蓝朋友 2星', amount: 3980 },
       { value: 4, name: '蓝朋友 3星', amount: 9800 }
