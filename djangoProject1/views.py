@@ -1705,6 +1705,25 @@ class OrderPaySuccessView(APIView):
                 order.save(update_fields=['status', 'pay_method', 'pay_no', 'pay_time'])
                 print(f"订单状态已更新为待发货（1）")
 
+                # ================= 推荐返佣（10%）=================
+                parent = request.user.parent_user
+
+                if parent and not order.rebate_done:
+
+                    pay_amount = Decimal(str(order.actual_pay_money or 0))
+
+                    cashback = (pay_amount * Decimal("0.10")).quantize(Decimal("0.01"))
+
+                    if cashback > 0:
+                        parent.balance += cashback
+                        parent.save(update_fields=["balance"])
+
+                        print(f"推荐返佣成功：{parent.member_id} +{cashback}")
+
+                    # 防止重复返佣
+                    order.rebate_done = True
+                    order.save(update_fields=["rebate_done"])
+
                 # 仅当有可赠送积分且未赠送过时，才赠送
                 if give_points_calc > 0 and not has_given:
                     print(f"调用add_points前，用户积分：{request.user.points}")
