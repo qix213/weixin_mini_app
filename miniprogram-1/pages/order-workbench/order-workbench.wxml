@@ -90,26 +90,39 @@
             </view>
           </view>
           <view class="action-bar">
+  <button class="action-btn primary" 
+    wx:if="{{item.showConfirmReadyBtn}}" 
+    catchtap="handleConfirmReady" 
+    data-sn="{{item.orderSn}}"
+  >备货完成</button>
   
   <button class="action-btn primary" 
-          wx:if="{{item.showPreOrderBtn}}" 
-          catchtap="goToPreOrder" data-sn="{{item.orderSn}}">预约下单</button>
+    wx:if="{{item.showPreOrderBtn}}" 
+    catchtap="goToPreOrder" 
+    data-sn="{{item.orderSn}}"
+  >预约下单</button>
   
-  <button class="action-btn" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;" 
-          wx:if="{{item.showWaitCollectBtn}}">等待揽收</button>
+  <button class="action-btn wait-btn" 
+    wx:if="{{item.showWaitCollectBtn}}"
+  >等待揽收</button>
   
   <button class="action-btn" 
-          wx:if="{{item.showModifyBtn}}" 
-          catchtap="goToModifyOrder" data-sn="{{item.orderSn}}">修改订单</button>
+    wx:if="{{item.showModifyBtn}}" 
+    catchtap="goToModifyOrder" 
+    data-sn="{{item.orderSn}}"
+  >修改订单</button>
   
   <button class="action-btn danger" 
-          wx:if="{{item.showCancelBtn}}" 
-          catchtap="goToCancelOrder" data-sn="{{item.orderSn}}">取消订单</button>
+    wx:if="{{item.showCancelBtn}}" 
+    catchtap="goToCancelOrder" 
+    data-sn="{{item.orderSn}}"
+  >取消订单</button>
   
   <button class="action-btn" 
-          wx:if="{{item.showLogisticsBtn}}" 
-          catchtap="goToLogistics" data-sn="{{item.orderSn}}">物流查询</button>
-          
+    wx:if="{{item.showLogisticsBtn}}" 
+    catchtap="goToLogistics" 
+    data-sn="{{item.orderSn}}"
+  >物流查询</button>
 </view>
         </view>
       </view>

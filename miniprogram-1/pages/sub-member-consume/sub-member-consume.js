@@ -1,22 +1,283 @@
+const app = getApp();
 Page({
   data: {
     loading: true,
-    consumeList: [], // 原始消费记录列表（备用）
-    memberList: [], // 分组后的会员列表（真实会员信息）
-    currentMemberId: '', // 当前选中的会员ID（默认空=全部收起）
-    currentMemberInfo: {}, // 当前选中会员的完整信息
-    currentLevel: 0, // 当前会员等级
-    totalAllConsume: '0.00' // 新增：所有会员总消费
+    consumeList: [],
+    memberList: [],
+    currentMemberId: '',
+    currentMemberInfo: {},
+    currentLevel: 0,
+    totalAllConsume: '0.00',
+    totalCommission: '0.00', // 可提现余额
+    frozenCommission: '0.00', // 冻结中余额
+    showWithdrawModal: false, // 控制弹窗显示
+    withdrawAmount: '', // 用户输入的提现金额
+    showCommissionList: false,
+    showConsumeList: false,
+    withdrawStatus: -1, // -1:无记录/可提现, 0:审核中, 1:待确认, 2:已成功
+    packageInfo: '', // 后端传来的微信收款包
+    mchId: '1747481772', // 替换为你的微信支付商户号
+    appId: 'wx8c245b48cd8672b3' // 替换为你的小程序APPID    
   },
 
   onLoad(options) {
-    this.setData({
-      currentLevel: options.currentLevel || 0
+    // 页面加载时弹出一个转圈提示
+    wx.showLoading({
+      title: '加载中...'
     });
+    // 🌟 1. 拉取钱包余额
+    this.fetchWalletData();
+    // 🌟 2. 补上拉取下级消费列表的方法！
     this.getSubMemberConsumeList();
+    // 每次进入页面，拉取最新状态
+    this.fetchWithdrawStatus();
+
   },
 
-  // 核心：请求下级消费记录接口（适配新数据结构）
+  onShow() {
+    // 每次回到页面都刷新一下余额，防止数据不一致
+    this.fetchWalletData();
+    // 🌟 修改点 2：每次回到页面，也必须刷新提现按钮状态！
+    this.fetchWithdrawStatus();
+  },
+  // 🌟 新增：切换佣金明细折叠状态
+  toggleCommissionList() {
+    this.setData({
+      showCommissionList: !this.data.showCommissionList
+    });
+  },
+
+  // 🌟 新增：切换消费明细折叠状态
+  toggleConsumeList() {
+    this.setData({
+      showConsumeList: !this.data.showConsumeList
+    });
+  },
+  // 统一下发请求
+  fetchWalletData() {
+    const app = getApp();
+    app.request({
+      url: '/app01/user/wallet/',
+      method: 'GET'
+    }).then(res => {
+      // 🌟 核心：只要接口返回了，就立刻关掉转圈！
+      wx.hideLoading();
+
+      const result = res.data ? res.data : res;
+      if (result.code === 200) {
+        this.setData({
+          totalCommission: parseFloat(result.data.withdrawable_balance || 0).toFixed(2),
+          frozenCommission: parseFloat(result.data.frozen_balance || 0).toFixed(2),
+          walletDetails: result.data.details || [] // 🌟 确保这行存在，WXML才能渲染出列表
+        });
+      }
+    }).catch(err => {
+      // 🌟 核心：接口报错了也要关掉转圈，不然页面就卡死了！
+      wx.hideLoading();
+      console.error("获取资产失败", err);
+    });
+  },
+
+// 1. 确保在获取状态时，把单号 out_bill_no 也存进 data 变量里
+fetchWithdrawStatus() {
+  const app = getApp();
+  app.request({
+    url: '/app01/withdraw/status/', 
+    method: 'GET'
+  }).then(res => {
+    const result = res.data ? res.data : res;
+    if (result.status !== undefined) {
+      this.setData({
+        withdrawStatus: result.status,
+        packageInfo: result.package_info || '',
+        outBillNo: result.out_bill_no || '' // 🌟 核心修复：必须把单号存起来！
+      });
+    }
+  }).catch(err => {
+    console.error("获取提现状态失败", err);
+  });
+},
+
+// 2. 确认收款逻辑
+handleConfirmReceipt() {
+  const that = this;
+  const packageStr = this.data.packageInfo;
+  const outBillNo = this.data.outBillNo; // 🌟 拿到刚才存的单号
+
+  if (!packageStr) {
+    wx.showToast({ title: '收款信息有误，请联系客服', icon: 'none' });
+    return;
+  }
+  if (!outBillNo) {
+    wx.showToast({ title: '缺少内部单号，请重新进入页面', icon: 'none' });
+    return;
+  }
+
+  wx.requestMerchantTransfer({
+    mchId: this.data.mchId,
+    appId: this.data.appId,
+    package: packageStr,
+    success(res) {
+      console.log('微信收银台返回收款成功', res);
+      
+      // 弹出加载圈，防止用户多次点击
+      wx.showLoading({ title: '同步状态中...', mask: true });
+
+      // 🌟 向 Django 发送同步请求
+      const app = getApp();
+      app.request({
+        url: '/app01/withdraw/confirm_success/', 
+        method: 'POST',
+        data: {
+          out_bill_no: outBillNo // 🌟 此时单号一定有值了！
+        }
+      }).then(backendRes => {
+        wx.hideLoading();
+        const result = backendRes.data ? backendRes.data : backendRes;
+        
+        if (result.code === 200) {
+          wx.showToast({ title: '收款成功！', icon: 'success', duration: 2000 });
+          
+          // 🌟 状态强行转为 2，按钮瞬间变回“提现”
+          that.setData({ withdrawStatus: 2 }); 
+          
+          // 重新拉取最新的钱包余额和单据状态
+          that.fetchWalletData();       
+          that.fetchWithdrawStatus();   
+        } else {
+          wx.showToast({ title: result.msg || '状态同步失败', icon: 'none' });
+        }
+      }).catch(err => {
+        wx.hideLoading();
+        console.error("同步后端状态网络异常", err);
+        wx.showToast({ title: '网络异常，请重试', icon: 'none' });
+      });
+    },
+    fail(err) {
+      console.log('收款失败或取消', err);
+      if (err.errMsg.indexOf('cancel') === -1) {
+        wx.showToast({ title: '拉起收银台失败', icon: 'none' });
+      }
+    }
+  });
+},
+
+  handleWithdraw() {
+    if (parseFloat(this.data.totalCommission) < 0.1) {
+      return wx.showToast({
+        title: '余额满 0.1 元方可提现',
+        icon: 'none'
+      });
+    }
+    this.setData({
+      showWithdrawModal: true,
+      withdrawAmount: '' // 打开时清空输入框
+    });
+  },
+
+  // 🌟 3. 关闭弹窗
+  closeWithdrawModal() {
+    this.setData({
+      showWithdrawModal: false
+    });
+  },
+
+  // 🌟 4. 监听输入金额
+  onWithdrawInput(e) {
+    let val = e.detail.value;
+    // 限制只能输入两位小数
+    if (val.indexOf('.') !== -1) {
+      let arr = val.split('.');
+      if (arr[1].length > 2) {
+        val = arr[0] + '.' + arr[1].substr(0, 2);
+      }
+    }
+    this.setData({
+      withdrawAmount: val
+    });
+  },
+  // 点击最低提现
+  onWithdrawMin() {
+    this.setData({
+      withdrawAmount: '0.10'
+    });
+  },
+  // 🌟 5. 点击全部提现
+  onWithdrawMax() {
+    this.setData({
+      withdrawAmount: this.data.totalCommission
+    });
+  },
+
+  // 🌟 6. 点击确认提现，提交给后端
+  submitWithdraw() {
+    const amount = parseFloat(this.data.withdrawAmount);
+    const maxAmount = parseFloat(this.data.totalCommission);
+
+    if (isNaN(amount) || amount <= 0) {
+      return wx.showToast({
+        title: '请输入提现金额',
+        icon: 'none'
+      });
+    }
+    if (amount < 0.1) {
+      return wx.showToast({
+        title: '单笔提现最低 0.1 元',
+        icon: 'none'
+      });
+    }
+    if (amount > maxAmount) {
+      return wx.showToast({
+        title: '输入金额超过可提现余额',
+        icon: 'none'
+      });
+    }
+
+    wx.showLoading({
+      title: '提交申请中...',
+      mask: true
+    });
+
+    app.request({
+      url: '/app01/wallet/withdraw/', // 🌟 请确保后端你的提现接口是这个路由
+      method: 'POST',
+      data: {
+        amount: amount
+      }
+    }).then(res => {
+      wx.hideLoading();
+      const result = res.data ? res.data : res;
+
+      if (result.code === 200) {
+        wx.showToast({
+          title: '提现申请已提交',
+          icon: 'success',
+          duration: 2000
+        });
+        this.closeWithdrawModal();
+        // 🌟 修改点 3：不仅要刷新余额，还要手动把状态改成 0 (待审核)，或者重新请求状态接口
+        this.setData({
+          withdrawStatus: 0 
+        });
+        this.fetchWalletData();
+        this.fetchWithdrawStatus(); // 重新向后端确认最新状态
+      } else {
+        // 如果触发了本月只能提现一次的限制，后端会返回错误msg，直接弹出
+        wx.showToast({
+          title: result.msg || '提现失败',
+          icon: 'none',
+          duration: 3000
+        });
+      }
+    }).catch(err => {
+      wx.hideLoading();
+      wx.showToast({
+        title: '网络异常',
+        icon: 'none'
+      });
+    });
+  },
+  // --- 以下为你原有的核心逻辑，保持不变 ---
   getSubMemberConsumeList() {
     const app = getApp();
     const header = app.getRequestHeader();
@@ -29,39 +290,32 @@ Page({
         current_level: this.data.currentLevel
       },
       success: (res) => {
-        this.setData({ loading: false });
-        console.log("后端返回数据：", res.data); // 打印日志便于调试
+        wx.hideLoading();
+        this.setData({
+          loading: false
+        });
         if (res.data.code === 200) {
-          // 1. 初始化会员映射表（按真实会员ID分组）
           const memberMap = {};
-          // 临时存储所有消费记录（备用）
           let allConsumeList = [];
-          // 新增：累计所有会员总消费
           let totalAllConsume = 0;
 
-          // 遍历后端返回的每个会员数据
           res.data.data.forEach(memberItem => {
-            // 提取会员基础信息（兜底处理，避免字段缺失）
             const memberInfo = memberItem.member_info || {};
-            const memberId = memberInfo.id || `sub_${Math.random().toString(36).substr(2, 8)}`; // 兜底ID
+            const memberId = memberInfo.id || `sub_${Math.random().toString(36).substr(2, 8)}`;
             const memberNickname = memberInfo.nickname || '未知会员';
             const memberType = memberInfo.user_type || 0;
             const memberTypeName = memberInfo.user_type_name || '普通会员';
             const memberStarLevel = memberInfo.star_level || 0;
-            const memberCode = memberInfo.member_id || ''; // 会员编号
+            const memberCode = memberInfo.member_id || '';
 
-            // 处理该会员的所有订单
             const memberOrders = memberItem.orders || [];
-            // 格式化该会员的订单列表
             const formatOrders = memberOrders.map(order => {
-              // 订单基础信息格式化
               const orderSn = order.order_sn || '';
               const status = order.status || 0;
               const statusName = order.status_name || '未知状态';
               const orderPrice = this.safeToNumber(order.total_price || 0);
               const createTime = order.create_time || '';
 
-              // 格式化商品列表
               const goodsList = order.goods_list || [];
               const formatGoods = goodsList.map(good => {
                 return {
@@ -72,75 +326,68 @@ Page({
                 };
               });
 
-              // 组装单条订单数据
               const formatOrder = {
-                id: orderSn, // 用订单编号作为唯一ID
+                id: orderSn,
                 order_sn: orderSn,
                 status: status,
                 status_name: statusName,
                 total_price: orderPrice,
                 create_time: this.formatDate(createTime),
-                goods: formatGoods // 前端WXML绑定的goods字段
+                goods: formatGoods
               };
-              // 加入全局消费记录列表
               allConsumeList.push(formatOrder);
               return formatOrder;
             });
 
-            // 计算该会员的合计消费金额
-            const memberTotalConsume = formatOrders.reduce((sum, item) => {
-              return sum + item.total_price;
-            }, 0);
-            // 累加至总消费
+            const memberTotalConsume = formatOrders.reduce((sum, item) => sum + item.total_price, 0);
             totalAllConsume += memberTotalConsume;
 
-            // 将该会员加入映射表
             memberMap[memberId] = {
-              id: memberId, // 会员ID（唯一）
-              member_code: memberCode, // 会员编号
-              nickname: memberNickname, // 真实昵称
-              level: memberType, // 会员等级码
-              level_name: memberTypeName, // 会员等级名称
-              star_level: memberStarLevel, // 星级
-              consumeRecords: formatOrders, // 该会员的订单列表
-              totalConsume: memberTotalConsume.toFixed(2) // 单个会员合计（保留2位小数）
+              id: memberId,
+              member_code: memberCode,
+              nickname: memberNickname,
+              level: memberType,
+              level_name: memberTypeName,
+              star_level: memberStarLevel,
+              consumeRecords: formatOrders,
+              totalConsume: memberTotalConsume.toFixed(2)
             };
           });
 
-          // 2. 转换为会员列表（供前端渲染）
           const memberList = Object.values(memberMap);
 
-          // 3. 核心修改：默认全部收起（不选中任何会员）
-          let defaultMemberId = ''; // 空=默认收起
-          let defaultMemberInfo = {};
-
-          // 4. 更新页面数据（包含总消费）
           this.setData({
             consumeList: allConsumeList,
             memberList: memberList,
-            currentMemberId: defaultMemberId,
-            currentMemberInfo: defaultMemberInfo,
-            totalAllConsume: totalAllConsume.toFixed(2) // 所有会员总消费（保留2位小数）
+            currentMemberId: '',
+            currentMemberInfo: {},
+            totalAllConsume: totalAllConsume.toFixed(2)
           });
         } else {
-          wx.showToast({ title: res.data.msg || '获取消费记录失败', icon: 'none' });
+          wx.showToast({
+            title: res.data.msg || '获取记录失败',
+            icon: 'none'
+          });
         }
       },
       fail: (err) => {
-        this.setData({ loading: false });
-        console.error('请求失败：', err);
-        wx.showToast({ title: '网络请求失败', icon: 'none' });
+        wx.hideLoading();
+        this.setData({
+          loading: false
+        });
+        wx.showToast({
+          title: '网络请求失败',
+          icon: 'none'
+        });
       }
     });
   },
 
-  // 安全转换数字（兜底NaN）
   safeToNumber(value) {
     const num = parseFloat(value);
     return isNaN(num) ? 0 : num;
   },
 
-  // 格式化时间（兜底）
   formatDate(dateStr) {
     if (!dateStr) return '未知时间';
     try {
@@ -156,13 +403,13 @@ Page({
     }
   },
 
-  // 点击会员切换选中状态（每个会员独立展开/收起）
   onMemberClick(e) {
     const memberId = e.currentTarget.dataset.memberId;
-    const { memberList } = this.data;
+    const {
+      memberList
+    } = this.data;
 
     if (this.data.currentMemberId === memberId) {
-      // 点击已选中的会员，收起
       this.setData({
         currentMemberId: '',
         currentMemberInfo: {}
@@ -170,7 +417,6 @@ Page({
       return;
     }
 
-    // 查找选中的会员信息
     const currentMemberInfo = memberList.find(item => item.id === memberId) || {
       nickname: '未知会员',
       level_name: '普通会员',
@@ -180,14 +426,6 @@ Page({
     this.setData({
       currentMemberId: memberId,
       currentMemberInfo: currentMemberInfo
-    });
-  },
-
-  // 清空选中状态
-  clearCurrentMember() {
-    this.setData({
-      currentMemberId: '',
-      currentMemberInfo: {}
     });
   }
 });

@@ -218,59 +218,77 @@ Page({
   },
 
   // ======== 🌟 全新第二步：上传照片 ========
-  uploadPhoto() {
-    const { subjectName } = this.data;
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      sizeType: ['compressed'], 
-      camera: 'front',
-      success: (res) => {
-        const tempPath = res.tempFiles[0].tempFilePath;
-        
-        this.setData({
-          messages: [...this.data.messages, { 
-            id: Date.now(), 
-            role: 'user', 
-            content: `（已上传面部照片）`, 
-            image: tempPath 
-          }],
-          currentStep: 2 // 转向第三步：报告分析
-        });
-        this.scrollToBottom();
+// ======== 🌟 全新第二步：上传照片 (支持多图并发上传) ========
+uploadPhoto() {
+  const { subjectName } = this.data;
+  wx.chooseMedia({
+    count: 10, // 🔥 修改点 1：将 1 改为 10，允许最多选 10 张
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+    sizeType: ['compressed'],
+    // camera: 'front', // 💡 建议注释掉：既然允许多张，用户可能需要用后置摄像头拍侧脸或局部细节
+    success: (res) => {
+      const tempFiles = res.tempFiles; // 现在这是一个数组
+      const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
 
-        /* 原视觉分析逻辑 (已注释，待后期有 GPU 后恢复)
-        wx.getFileSystemManager().readFile({
-          filePath: tempPath, encoding: 'base64',
-          success: (fsRes) => { this.requestAIStream('analyze_image', '请描述皮肤状况', fsRes.data); }
-        });
-        */
+      // 🔥 修改点 2：将所有选中的照片转化为多条气泡消息
+      const newMessages = tempFiles.map((file, index) => ({
+        id: Date.now() + index, // 确保 key 唯一
+        role: 'user',
+        content: tempFiles.length > 1 ? `（已上传第 ${index + 1}/${tempFiles.length} 张照片）` : '（已上传面部照片）',
+        image: file.tempFilePath
+      }));
 
-        const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-        wx.uploadFile({
-          url: `${app.globalData.baseUrl}/app01/api/save_skin_photo/`,
-          filePath: tempPath,
-          name: 'file',
-          formData: { 'subject_name': subjectName },
-          header: { 'Authorization': `Bearer ${token}` },
-          success: () => { console.log('照片已成功提交到后端归档'); }
-        });
+      this.setData({
+        messages: [...this.data.messages, ...newMessages],
+        currentStep: 2 // 转向第三步：报告分析
+      });
+      this.scrollToBottom();
 
-        // 根据是否跳过问卷，给出不同的提示
-        setTimeout(() => {
-          const aiMsg = this.data.isQuestionnaireSkipped 
-            ? '照片已为您存档入库！\n\n⚠️ 蓝博士发现您跳过了问卷，需要补充问卷数据才能出具精准分析报告哦~' 
-            : '照片已为您存档入库！\n\n第三步：点击下方按钮生成深度肤质报告。';
-          
-          this.setData({
-             messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }]
+      // 增加全屏 Loading 防护，避免上传过程中用户乱点别的按钮
+      wx.showLoading({ title: '照片加密上传中...', mask: true });
+
+      // 🔥 修改点 3：利用 Promise.all 解决 wx.uploadFile 只能单张上传的痛点
+      const uploadTasks = tempFiles.map(file => {
+        return new Promise((resolve, reject) => {
+          wx.uploadFile({
+            url: `${app.globalData.baseUrl}/app01/api/save_skin_photo/`,
+            filePath: file.tempFilePath,
+            name: 'file',
+            formData: { 'subject_name': subjectName },
+            header: { 'Authorization': `Bearer ${token}` },
+            success: (uploadRes) => resolve(uploadRes),
+            fail: (err) => reject(err)
           });
-          this.scrollToBottom();
-        }, 500);
-      }
-    });
-  },
+        });
+      });
+
+      // 等待所有照片都上传完毕
+      Promise.all(uploadTasks)
+        .then(() => {
+          wx.hideLoading();
+          console.log(`INFO: ${tempFiles.length} 张照片已全部成功提交到后端`);
+
+          // 根据是否跳过问卷，给出不同的提示
+          setTimeout(() => {
+            const aiMsg = this.data.isQuestionnaireSkipped 
+              ? `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n⚠️ 蓝博士发现您跳过了问卷，需要补充问卷数据才能出具精准分析报告哦~` 
+              : `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n第三步：点击下方按钮生成深度肤质报告。`;
+            
+            this.setData({
+              messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }]
+            });
+            this.scrollToBottom();
+          }, 500);
+        })
+        .catch((err) => {
+          wx.hideLoading();
+          console.error('ERROR: 部分或全部照片上传失败', err);
+          wx.showToast({ title: '网络波动，部分照片上传失败', icon: 'none' });
+        });
+    }
+  });
+},
 
   skipPhoto() {
     this.setData({

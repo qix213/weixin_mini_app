@@ -9,10 +9,10 @@ Page({
     
     // 全部的升级配置（前端写死展示用，安全性由后端兜底）
     allLevels: [
-      { id: 2, name: '蓝朋友1星', price: 980, desc: '解锁基础分销与专属护肤指导' },
-      { id: 3, name: '蓝朋友2星', price: 3980, desc: '解锁高级分销与线下沙龙名额' },
-      { id: 4, name: '蓝朋友3星', price: 9800, desc: '尊享区域代理权与全系产品折扣' },
-      { id: 5, name: 'Ta创+', price: 39800, desc: '顶级合伙人，共享品牌城市分红' }
+      { id: 2, name: '蓝朋友1星', price: 0.1, desc: '解锁基础分销与专属护肤指导' },
+      { id: 3, name: '蓝朋友2星', price: 0.2, desc: '解锁高级分销与线下沙龙名额' },
+      { id: 4, name: '蓝朋友3星', price: 0.3, desc: '尊享区域代理权与全系产品折扣' },
+      { id: 5, name: 'Ta创+', price: 0.4, desc: '顶级合伙人，共享品牌城市分红' }
     ],
     availableLevels: [] // 实际可升级的列表
   },
@@ -60,12 +60,22 @@ Page({
       success: (res) => {
         wx.hideLoading();
         if (res.data.code === 200) {
-          const orderId = res.data.data.order_id; // 后端返回的订单号
-          const amount = res.data.data.amount;
+          const resData = res.data.data || res.data;
           
-          // 跳转到公共支付页
+          const orderId = resData.order_id || resData.order_sn || '';
+          const amount = resData.amount || resData.total_price || '0.00';
+          
+          // 🌟 核心修复：直接拿你 data 里定义的 selectedLevelId
+          const target_level = this.data.selectedLevelId; 
+        
+          if (!target_level) {
+            wx.showToast({ title: '前端未获取到选中的等级数据', icon: 'none' });
+            return;
+          }
+        
+          // 带着真实的等级数据，硬核跳往收银台！
           wx.navigateTo({
-            url: `/pages/pay/pay?orderId=${orderId}&actualAmount=${amount}&typeName=会员升级订单`
+            url: `/pages/pay/pay?scene=upgrade&orderId=${orderId}&actualAmount=${amount}&typeName=会员升级订单&target_level=${target_level}`
           });
         } else {
           wx.showToast({ title: res.data.msg || '创建失败', icon: 'none' });

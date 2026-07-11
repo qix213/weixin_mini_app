@@ -1,0 +1,171 @@
+page {
+  /* 辅助色：奶油可可白 作为全局背景 */
+  background-color: #FAF7F2; 
+  box-sizing: border-box;
+}
+
+.service-page {
+  padding: 30rpx;
+  padding-bottom: 80rpx;
+}
+
+/* 顶部卡片 */
+.header-card {
+  /* 主色调：#94A48C 作为卡片渐变背景 */
+  background: linear-gradient(135deg, #94A48C, #A7B69F);
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  color: #FFFFFF;
+  box-shadow: 0 12rpx 24rpx rgba(148, 164, 140, 0.25);
+  margin-bottom: 40rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-card::after {
+  content: '';
+  position: absolute;
+  right: -20rpx;
+  bottom: -40rpx;
+  width: 150rpx;
+  height: 150rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.header-card .title {
+  font-size: 40rpx;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+  letter-spacing: 2rpx;
+}
+
+.header-card .subtitle {
+  font-size: 24rpx;
+  opacity: 0.85;
+}
+
+/* 快捷联络操作区 */
+.action-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 50rpx;
+}
+
+.action-card {
+  width: 47%;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 40rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.card-hover {
+  transform: scale(0.97);
+  background: #fdfdfd;
+}
+
+.icon-wrap {
+  width: 90rpx;
+  height: 90rpx;
+  background-color: rgba(148, 164, 140, 0.1); /* 主色调10%透明度 */
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.action-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 8rpx;
+}
+
+.action-desc {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+/* 常见问题区 */
+.faq-section {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 30rpx;
+  padding-left: 20rpx;
+  position: relative;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 28rpx;
+  background-color: #94A48C; /* 主色调小竖条 */
+  border-radius: 4rpx;
+}
+
+/* FAQ 列表项 */
+.faq-item {
+  border-bottom: 1px solid #f5f5f5;
+  padding: 24rpx 0;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.q-icon {
+  color: #94A48C;
+  font-weight: bold;
+  margin-right: 8rpx;
+}
+
+.faq-answer {
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.faq-answer-show {
+  height: auto;
+  margin-top: 20rpx;
+  padding: 20rpx;
+  background-color: #FAF7F2; /* 奶油可可白 背景 */
+  border-radius: 12rpx;
+}
+
+.footer-tips {
+  text-align: center;
+  margin-top: 60rpx;
+  font-size: 22rpx;
+  color: #cccccc;
+}

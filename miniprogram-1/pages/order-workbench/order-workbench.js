@@ -21,28 +21,30 @@ Page({
       activeTabName: this.data.orderStatusTabs[0].name,
       currentLevel: options.currentLevel || 0
     });
-    // onLoad 里就不调用获取列表了，交给 onShow 去做，防止请求两次
   },
+
   onShow() {
     if (!this.data.loading) {
       this.setData({ loading: true });
     }
-    
     this.fetchOrderList().catch(err => {
       console.error("刷新列表失败:", err);
     });
   },
 
+  /**
+   * 核心修复：适配后端全新的扁平化订单列表架构
+   */
   fetchOrderList() {
     return new Promise((resolve, reject) => {
       const app = getApp();
       const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
-  
+
       const requestData = { 
         current_level: this.data.currentLevel,
-        sync_logistics: 1  // 强制写死1
+        sync_logistics: 1 
       };
-  
+
       wx.request({
         url: `${app.globalData.baseUrl}/app01/member/sub-consume/`,
         method: "GET",
@@ -51,27 +53,26 @@ Page({
         success: (res) => {
           if (res.data?.code === 200) {
             let allOrders = [];
-            const rawOrderData = res.data.data || [];
+            // 🌟 核心破局点：现在的 res.data.data 直接就是订单数组，不需要再解析外层会员结构
+            const rawOrders = res.data.data || [];
             
-            rawOrderData.forEach((memberItem) => {
-              const memberNickname = memberItem.member_info?.nickname || '未知会员';
-              const memberOrders = memberItem.orders || [];
-  
-              memberOrders.forEach((order) => {
-                let formatted = this.formatOrderData(order, memberNickname);
-                allOrders.push(formatted);
-              });
+            rawOrders.forEach((order) => {
+              // 直接从订单字典里提取内嵌的买家昵称
+              const memberNickname = order.buyer_info?.nickname || '未知会员';
+              let formatted = this.formatOrderData(order, memberNickname);
+              allOrders.push(formatted);
             });
-  
+
+            // 过滤未付款记录
             const validOrders = allOrders.filter(o => o.status !== 0);
             
+            // 批量追踪物流轨迹
             this.fetchExpressList(validOrders).then(() => {
               const cleanedOrders = validOrders.map(order => {
-                // 现在前端 100% 信任后端传来的 currentStatus！
                 let currentStatus = Number(order.status);
                 const hasLogistics = order.expressList && order.expressList.length > 0;
                 
-                // 1. 确定 Tab 分类
+                // 强制纠正分类 Tab 映射
                 if (currentStatus === 4) {
                   order.statusKey = 'cancelled';
                 } else {
@@ -79,33 +80,45 @@ Page({
                 }
 
                 // =========================================================
-                // 🌟 2. 按钮显隐终极逻辑 (精准判断，绝不冲突)
+                // 🌟 工作台按钮显隐状态机分流
                 // =========================================================
-                
-                // 【预约下单】：仅在后端说是待发货 (1)，且完全没有物流单号时显示
-                order.showPreOrderBtn = (currentStatus === 1 && !hasLogistics);
-                
-                // 【等待揽收】：后端说是待发货 (1)，但已经有单号了 (预约成功，等小哥上门)
-                order.showWaitCollectBtn = (currentStatus === 1 && hasLogistics);
-                
-                order.showModifyBtn = (currentStatus === 1);
-                order.showCancelBtn = (currentStatus === 1);
-                
-                // 【物流查询】：只要状态是已发货(2)及以上，或者虽然待发货但已经有了运单号，都可以查
-                order.showLogisticsBtn = (currentStatus > 1 || hasLogistics);
+                if (order.isPickUp) {
+                  // A 轨：到店自取业务线
+                  order.showConfirmReadyBtn = (currentStatus === 1); 
+                  order.showConfirmReceiptBtn = (currentStatus === 2); 
+                  order.showModifyBtn = false; // 自取单屏蔽修改收货地址
+                  order.showCancelBtn = (currentStatus === 1 || currentStatus === 2);
+                  order.showPreOrderBtn = false;
+                  order.showWaitCollectBtn = false;
+                  order.showLogisticsBtn = false;
+                } else {
+                  // B 轨：普通快递物流业务线
+                  order.showConfirmReadyBtn = false;
+                  order.showConfirmReceiptBtn = (currentStatus === 2);
+                  order.showPreOrderBtn = (currentStatus === 1 && !hasLogistics);
+                  order.showWaitCollectBtn = (currentStatus === 1 && hasLogistics);
+                  order.showModifyBtn = (currentStatus === 1);
+                  order.showCancelBtn = (currentStatus === 1);
+                  order.showLogisticsBtn = (currentStatus > 1 || hasLogistics);
+                }
 
                 return order;
               });
-  
+
+              // 智能计算并刷新当前 Tab 下的订单子集
+              let targetTab = this.data.activeTab;
               this.setData({
                 loading: false,
                 allOrders: cleanedOrders,
-                filteredOrders: this.data.activeTab === 'all' 
+                filteredOrders: targetTab === 'all' 
                   ? cleanedOrders 
-                  : cleanedOrders.filter(o => o.statusKey === this.data.activeTab)
+                  : cleanedOrders.filter(o => o.statusKey === targetTab)
               });
               resolve();
             });
+          } else {
+            this.setData({ loading: false });
+            resolve();
           }
         },
         fail: (err) => {
@@ -119,10 +132,7 @@ Page({
   fetchExpressList(orders) {
     return new Promise((resolve) => {
       const app = getApp();
-      const header = app.getRequestHeader ? app.getRequestHeader() : {
-        'Content-Type': 'application/json'
-      };
-
+      const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
       const orderSns = [...new Set(orders.map(o => o.orderSn).filter(Boolean))];
 
       if (orderSns.length === 0) {
@@ -149,7 +159,7 @@ Page({
               if (!orderSn) return;
 
               if (!expressMap[orderSn]) expressMap[orderSn] = [];
-              const formattedExpress = {
+              expressMap[orderSn].push({
                 logisticsNo: express.logistics_no || '未知运单号',
                 logisticsCompany: express.logistics_company || '未知物流公司',
                 logisticsTime: express.logistics_time || '未知时间',
@@ -157,8 +167,7 @@ Page({
                 logisticsStatusName: express.logistics_status_name || '未知状态',
                 courierName: express.courier_name || '未知派件人',
                 courierPhone: express.courier_phone || '未知电话'
-              };
-              expressMap[orderSn].push(formattedExpress);
+              });
             });
 
             orders.forEach((order) => {
@@ -171,7 +180,7 @@ Page({
           }
           resolve();
         },
-        fail: (err) => {
+        fail: () => {
           orders.forEach(order => { order.expressList = []; order.latestExpress = {}; });
           resolve();
         }
@@ -179,58 +188,75 @@ Page({
     });
   },
 
+  /**
+   * 核心重塑：完美消解单品对象数组与大老板端平铺文本字段的冲突
+   */
   formatOrderData(order, memberNickname) {
     const orderSn = order.order_sn || `order_${Math.random().toString(36).substr(2,8)}`;
-    
-    // 🌟 核心还原：因为是 sub-consume 接口，确实就是传的 status，而不是 status_code！
     let status = this.safeToNumber(order.status || 0); 
     
-    // 优先判断已取消状态，禁止被物流状态覆盖
-    let statusKey;
-    if (status === 4) {
-      statusKey = 'cancelled';
-    } else {
-      statusKey = this.getStatusKeyByCode(status);
-      const logisticsStatus = order.latest_express?.logistics_status_name || '';
-      if (logisticsStatus.indexOf('已签收') !== -1 || logisticsStatus === '已完成') {
-        statusKey = 'completed';
-      }
+    const deliveryType = order.delivery_type || 1;
+    const isPickUp = Number(deliveryType) === 2;
+
+    let statusName = order.status_name || this.data.statusMap[status] || '未知状态';
+    
+    let statusKey = 'all';
+    if (status === 1) statusKey = 'pending';
+    else if (status === 2) statusKey = 'shipped';
+    else if (status === 3) statusKey = 'completed';
+    else if (status === 4) statusKey = 'cancelled';
+
+    // 动态向下兼容解析商品列表
+    let formattedGoodsList = [];
+    if (order.goods_list && order.goods_list.length > 0) {
+      formattedGoodsList = order.goods_list.map(g => ({
+        goodsName: g.goods_name || '未知商品',
+        num: this.safeToNumber(g.num || 1),
+        price: this.safeToNumber(g.price || 0).toFixed(2),
+        totalPrice: this.safeToNumber(g.total_price || 0).toFixed(2)
+      }));
+    } else if (order.goods_names) {
+      // 🌟 高级包装：将大老板端的平铺字符串虚拟封装为 WXML 支持的 wx:for 结构
+      formattedGoodsList = [{
+        goodsName: order.goods_names, 
+        num: this.safeToNumber(order.goods_count || 1),
+        price: this.safeToNumber(order.actual_pay_money || order.total_price || 0).toFixed(2),
+        totalPrice: this.safeToNumber(order.actual_pay_money || order.total_price || 0).toFixed(2)
+      }];
     }
 
     return {
-      id: orderSn,
+      id: order.id || orderSn,
       orderSn: orderSn,
       status: status,
-      statusName: order.status_name || this.data.statusMap[status],
+      statusName: statusName,
       statusKey: statusKey,
-      totalPrice: this.safeToNumber(order.total_price || 0).toFixed(2),
+      isPickUp: isPickUp,     
+      totalPrice: this.safeToNumber(order.actual_pay_money || order.total_price || 0).toFixed(2),
       createTime: order.create_time || '未知时间',
+      pickUpStoreName: order.pick_up_store_name || '', 
+      goodsList: formattedGoodsList,
+      memberNickname: order.buyer_info ? order.buyer_info.nickname : (memberNickname || '未知买家'),
+      memberPhone: order.buyer_info ? order.buyer_info.phone : '',
       expressList: [],
       latestExpress: {},
       trackExpanded: false,
-      expanded: false,
-      goodsList: (order.goods_list||[]).map(g=>({
-        goodsName: g.goods_name||'未知商品',
-        num: this.safeToNumber(g.num||1),
-        price: this.safeToNumber(g.price||0).toFixed(2),
-        totalPrice: this.safeToNumber(g.total_price||0).toFixed(2)
-      })),
-      memberNickname: memberNickname
+      expanded: false
     };
   },
 
   getStatusKeyByCode(s) {
-    const map = {1:'pending',2:'shipped',3:'completed',4:'cancelled'};
-    return map[s]||'all';
+    const map = { 1: 'pending', 2: 'shipped', 3: 'completed', 4: 'cancelled' };
+    return map[s] || 'all';
   },
 
   onTabChange(e) {
     const key = e.currentTarget.dataset.key;
-    const tab = this.data.orderStatusTabs.find(t=>t.key===key);
+    const tab = this.data.orderStatusTabs.find(t => t.key === key);
     this.setData({
       activeTab: key,
-      activeTabName: tab?.name||'全部订单',
-      filteredOrders: key==='all' ? this.data.allOrders : this.data.allOrders.filter(o=>o.statusKey===key)
+      activeTabName: tab?.name || '全部订单',
+      filteredOrders: key === 'all' ? this.data.allOrders : this.data.allOrders.filter(o => o.statusKey === key)
     });
   },
 
@@ -253,41 +279,68 @@ Page({
     return isNaN(n) ? 0 : n;
   },
 
-  formatDate(str) {
-    if(!str) return '未知时间';
-    try { return str.replace(' ','T'); } catch(e){ return str; }
+  onPullDownRefresh() {
+    this.setData({ loading: true });
+    this.fetchOrderList().finally(() => {
+      wx.stopPullDownRefresh();
+    });
   },
 
-  onPullDownRefresh() {
-    this.setData({loading:true});
-    this.fetchOrderList().finally(()=>{
-      wx.stopPullDownRefresh();
+  handleConfirmReady(e) {
+    const orderSn = e.currentTarget.dataset.sn;
+    wx.showModal({
+      title: '备货确认',
+      content: `确定订单 ${orderSn} 已备货完成，通知客户提货吗？`,
+      success: (modalRes) => {
+        if (modalRes.confirm) {
+          wx.showLoading({ title: '正在提交状态...', mask: true });
+          const app = getApp();
+          const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
+          
+          wx.request({
+            url: `${app.globalData.baseUrl}/app01/order/confirm_ready/`, 
+            method: 'POST',
+            header: header,
+            data: { order_sn: orderSn },
+            success: (res) => {
+              wx.hideLoading();
+              if (res.data?.code === 200) {
+                wx.showToast({ title: '已变更为待取货', icon: 'success' });
+                this.fetchOrderList().catch(err => console.error(err));
+              } else {
+                wx.showToast({ title: res.data?.msg || '操作失败', icon: 'none' });
+              }
+            },
+            fail: () => {
+              wx.hideLoading();
+              wx.showToast({ title: '网络异常，请重试', icon: 'none' });
+            }
+          });
+        }
+      }
     });
   },
 
   goToPreOrder(e) {
     const orderSn = e.currentTarget.dataset.sn;
-    // 1. 查找到当前点击的订单数据
     const order = this.data.allOrders.find(o => o.orderSn === orderSn);
-    // 2. 状态拦截：只有 "待发货" (status === 1) 的订单才能预约下单
     if (order && order.status !== 1) {
-      wx.showToast({ 
-        title: '该订单已处理，无法重复预约', 
-        icon: 'none' 
-      });
+      wx.showToast({ title: '该订单已处理，无法重复预约', icon: 'none' });
       return;
     }
-    // 3. 状态通过，正常跳转
     wx.navigateTo({ url: `/pages/order-workbench/preOrder?order_sn=${orderSn}` });
   },
+
   goToModifyOrder(e) {
     const orderSn = e.currentTarget.dataset.sn;
     wx.navigateTo({ url: `/pages/order-workbench/modify?order_sn=${orderSn}` });
   },
+
   goToCancelOrder(e) {
     const orderSn = e.currentTarget.dataset.sn;
     wx.navigateTo({ url: `/pages/order-workbench/cancel?order_sn=${orderSn}` });
   },
+
   goToLogistics(e) {
     const orderSn = e.currentTarget.dataset.sn;
     wx.navigateTo({ url: `/pages/order-workbench/logistics?order_sn=${orderSn}` });

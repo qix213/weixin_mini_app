@@ -1,0 +1,52 @@
+<view class="service-page">
+  
+  <view class="header-card">
+    <view class="title">您好，很高兴为您服务</view>
+    <view class="subtitle">工作时间: 周一至周日 09:00 - 18:00</view>
+  </view>
+
+  <view class="action-section">
+    <view class="action-card" bindtap="openWechatService" hover-class="card-hover">
+      <view class="icon-wrap">
+        <van-icon name="chat-o" size="32px" color="#94A48C" />
+      </view>
+      <text class="action-title">在线客服</text>
+      <text class="action-desc">企微极速响应</text>
+    </view>
+
+    <view class="action-card" bindtap="callServicePhone" hover-class="card-hover">
+      <view class="icon-wrap">
+        <van-icon name="phone-o" size="32px" color="#94A48C" />
+      </view>
+      <text class="action-title">电话热线</text>
+      <text class="action-desc">400-123-4567</text>
+    </view>
+  </view>
+
+  <view class="faq-section">
+    <view class="section-title">常见问题</view>
+    
+    <view class="faq-list">
+      <view 
+        class="faq-item" 
+        wx:for="{{faqList}}" 
+        wx:key="index" 
+        bindtap="toggleFaq" 
+        data-index="{{index}}"
+      >
+        <view class="faq-question">
+          <view class="q-text"><text class="q-icon">Q.</text> {{item.question}}</view>
+          <van-icon name="{{item.isOpen ? 'arrow-up' : 'arrow-down'}}" color="#94A48C" size="16px"/>
+        </view>
+        <view class="faq-answer {{item.isOpen ? 'faq-answer-show' : ''}}">
+          <text class="a-text">{{item.answer}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-tips">
+    <text>— 感谢您对我们的支持与信任 —</text>
+  </view>
+
+</view>

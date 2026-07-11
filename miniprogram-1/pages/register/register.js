@@ -26,13 +26,13 @@ Page({
       { name: '我要开店', id: 1 }
     ],
     memberTypeList: [
-      { value: 1, name: '蓝朋友 0星', amount: 1 },
-      { value: 2, name: '蓝朋友 1星', amount: 980 },
-      { value: 3, name: '蓝朋友 2星', amount: 3980 },
-      { value: 4, name: '蓝朋友 3星', amount: 9800 }
+      { value: 1, name: '蓝朋友 0星', amount: 0.1 },
+      { value: 2, name: '蓝朋友 1星', amount: 0.1 },
+      { value: 3, name: '蓝朋友 2星', amount: 0.1 },
+      { value: 4, name: '蓝朋友 3星', amount: 0.1 }
     ],
     shopTypeList: [
-      { value: 5, name: 'Ta创+', amount: 39800 }
+      { value: 5, name: 'Ta创+', amount: 0.1 }
     ],
     userTypeIndex: 0,    
     selectedUserType: {}, 
@@ -167,14 +167,31 @@ Page({
 
     wx.showLoading({ title: '安全校验中...' });
 
-    // 5. 获取用于换取 openid 的 login code
-    wx.login({
-      success: (res) => {
-        wx.hideLoading();
-        if (res.code) {
-          const loginCode = res.code;
+// 5. 获取用于换取 openid 的 login code
+wx.login({
+  success: (res) => {
+    if (!res.code) {
+      wx.hideLoading();
+      return wx.showToast({ title: '微信登录失败', icon: 'none' });
+    }
+    const loginCode = res.code;
 
-          // 6. 构建全新的注册数据结构（彻底抛弃明文 phone 和 verifyCode）
+    // 🌟 核心修改：跳转收银台前，先发给后端做校验和解密！
+    wx.request({
+      url: `${app.globalData.baseUrl}/app01/register/pre_check/`,
+      method: 'POST',
+      data: {
+        recommender_id: recommenderId,
+        phone_code: phoneCode
+      },
+      success: (checkRes) => {
+        wx.hideLoading();
+        // console.log("【后端预校验返回完整数据】:", checkRes.data); // 🌟 加上这行
+        if (checkRes.data.code === 200) {
+          // 校验通过！拿到后端解密出来的真实手机号
+          const realPhone = checkRes.data.data.real_phone;
+
+          // 6. 构建数据，注意：这里存的是 real_phone，彻底丢弃 phone_code！
           const registerData = {
             memberId: memberId,
             nickname: nickname,
@@ -182,33 +199,38 @@ Page({
             password: password,
             password_confirm: passwordConfirm,
             user_type: selectedUserType.value,
-            recommender_id: recommenderId, // 必填的推荐人ID
+            recommender_id: recommenderId,
             birth_date: birthDate,
-            phone_code: phoneCode,         // 传给后端去换取真实手机号
-            login_code: loginCode          // 传给后端去换取 openid
+            real_phone: realPhone, // 🌟 传明文手机号给暂存区
+            login_code: loginCode  
           };
           
           app.globalData.pendingRegisterData = registerData;
           wx.setStorageSync('pendingRegisterData', registerData);
 
-          // 7. 跳转支付页
+          // 7. 安全放行，跳转支付页
           const scene = activeTab === 0 ? 'member' : 'shop';
-          wx.showToast({ title: '授权成功，即将前往支付', icon: 'success', duration: 1500 });
+          wx.showToast({ title: '校验通过，前往支付', icon: 'success', duration: 1000 });
           
           setTimeout(() => {
             wx.navigateTo({
-              // phone 字段传入占位文字，实际手机号由后端解析生成
-              url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(selectedUserType.name)}&amount=${selectedUserType.amount}&phone=微信授权手机号&memberId=${memberId}`,
+              // 把真实的手机号展示在收银台页面
+              url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(selectedUserType.name)}&amount=${selectedUserType.amount}&phone=${realPhone}&memberId=${memberId}`,
             });
           }, 1000);
         } else {
-          wx.showToast({ title: '微信登录失败', icon: 'none' });
+          // 拦截器生效：推荐人不对、手机号已经注册过、授权失败等，直接弹窗阻止跳转
+          console.error("【业务拦截报错】:", checkRes.data.msg);
+          wx.showToast({ title: checkRes.data.msg, icon: 'none', duration: 3000 });
         }
       },
       fail: () => {
         wx.hideLoading();
-        wx.showToast({ title: '网络异常', icon: 'none' });
+        console.error("【前端网络请求彻底失败】:", err);
+        wx.showToast({ title: '网络异常，校验失败', icon: 'none' });
       }
     });
+  }
+});
   }
 });

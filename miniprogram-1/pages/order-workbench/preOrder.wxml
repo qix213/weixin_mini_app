@@ -90,6 +90,16 @@
     <text style="width: 160rpx; color: #64748b;">包裹体积(cm³)：</text>
     <input type="number" style="flex: 1; border-bottom: 1rpx solid #e2e8f0; padding: 4rpx 0;" value="{{cargoVolume}}" bindinput="onCargoVolumeInput" placeholder="请输入包裹体积"/>
   </view>
+  <view class="input-item" style="display: flex; align-items: center; font-size: 26rpx; margin-top: 12rpx;">
+    <text style="width: 160rpx; color: #64748b;">上门时间：</text>
+    <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange" style="flex: 1;">
+      <view style="border-bottom: 1rpx solid #e2e8f0; padding: 4rpx 0; display: flex; justify-content: space-between; align-items: center;">
+        <text style="color: {{pickupStartTime ? '#333' : '#999'}};">{{pickupTimeLabel}}</text>
+        <text wx:if="{{pickupStartTime}}" style="color: #e64340; font-size: 24rpx; padding-left: 20rpx;" catchtap="clearPickupTime">清除</text>
+        <text wx:else style="color: #ccc; font-size: 24rpx;">▼</text>
+      </view>
+    </picker>
+  </view>
 </view>
     <!-- 底部按钮 -->
     <view class="bottom-bar">

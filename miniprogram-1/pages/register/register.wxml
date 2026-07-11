@@ -11,7 +11,7 @@
       
       <view class="avatar-register-box">
         <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image class="avatar-img" src="{{avatarUrl || '/images/bg/avator.webp'}}" mode="aspectFit"></image>
+          <image class="avatar-img" src="{{avatarUrl || '/images/bg/AI蓝博士头像.jpg'}}" mode="aspectFit"></image>
           <view class="avatar-tip">点击设置头像</view>
         </button>
       </view>
@@ -77,7 +77,7 @@
       </view>
 
       <view class="input-item">
-        <label class="input-label">推荐人ID</label>
+        <label class="input-label">权益码</label>
         <input class="input-content" placeholder="必填，请输入上级会员ID" placeholder-class="ph-style" bindinput="handleRecommenderIdInput" value="{{recommenderId}}" maxlength="8" />
       </view>
 

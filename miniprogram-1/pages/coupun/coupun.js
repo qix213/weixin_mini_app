@@ -39,7 +39,7 @@ Page({
     // 2. 发起请求
     this.setData({ loading: true });
     wx.request({
-      url: `${app.globalData.baseUrl}/app01/member/coupons/`, // 后端优惠券列表接口
+      url: `${app.globalData.baseUrl}/app01/user/coupons/`, // 后端优惠券列表接口
       method: 'GET',
       header: {
         'Content-Type': 'application/json',

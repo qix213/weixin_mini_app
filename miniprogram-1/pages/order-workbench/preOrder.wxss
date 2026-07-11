@@ -340,3 +340,22 @@ page {
   box-shadow: none !important;
   opacity: 1 !important;
 }
+
+/* 时间选择器清除按钮 */
+.clear-btn {
+  font-size: 24rpx;
+  color: #e64340; /* 红色警告色 */
+  padding: 4rpx 16rpx;
+  background-color: rgba(230, 67, 64, 0.1);
+  border-radius: 20rpx;
+  margin-left: auto; /* 推到最右边 */
+  z-index: 10;
+}
+
+/* 确保第一页的 picker-value 内容两端对齐 */
+.picker-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}

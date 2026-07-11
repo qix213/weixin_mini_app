@@ -2,17 +2,19 @@ page {
   background-color: #FAF8F5; /* 奶油可可白底色 */
   height: 100vh;
   display: flex;
+  overflow: hidden;
   flex-direction: column;
 }
 
 .mall-container {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 /* ================= 搜索栏 (加入轻微毛玻璃效果) ================= */
 .search-header {
+  flex-shrink: 0;
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -45,10 +47,10 @@ page {
 
 /* ================= 主内容区：左右分栏 ================= */
 .main-content {
-  display: flex;
   flex: 1;
-  overflow: hidden;
-  background-color: transparent; /* 让 page 的奶油可可白透出来 */
+  display: flex;
+  flex-direction: row;
+  overflow: hidden; /* 🌟 核心魔法：限制内部元素不能把容器撑开 */
 }
 
 /* ================= 左侧分类侧边栏 ================= */

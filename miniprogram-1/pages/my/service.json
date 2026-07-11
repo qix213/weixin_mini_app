@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "专属客服中心",
+  "navigationBarBackgroundColor": "#94A48C",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#FAF7F2",
+  "usingComponents": {
+    "van-icon": "@vant/weapp/icon/index"
+  }
+}

@@ -30,7 +30,7 @@
       </view>
     </scroll-view>
 
-    <scroll-view class="goods-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <scroll-view class="goods-scroll" scroll-y enhanced show-scrollbar="{{false}}" bindscrolltolower="loadMoreGoods">
       
       <view class="skeleton-wrap" wx:if="{{loading}}">
         <van-skeleton title row="3" custom-class="sk-item" />
@@ -38,7 +38,7 @@
       </view>
       
       <view class="goods-grid" wx:else>
-        <view class="goods-card" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}">
+        <view class="goods-card" wx:for="{{goodsList}}" wx:key="id" bindtap="toGoodsDetail" data-id="{{item.id}}" data-type="{{item.goods_type}}">
           
           <view class="img-wrap">
             <image class="goods-img" src="{{item.image_url}}" mode="aspectFill" lazy-load></image>

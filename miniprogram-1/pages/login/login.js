@@ -3,12 +3,132 @@ const app = getApp();
 
 Page({
   data: {
-    // 之前所有的手动输入变量都被清理掉了，体验极致轻量
+    // 登录方式
+    loginType: "wechat",
+  
+    // 用户名密码登录
+    username: "",
+    password: ""
   },
 
   onLoad() {
     // 进入登录页时，为了安全，可以先清理一下旧的登录态
     app.clearLoginState && app.clearLoginState();
+  },
+
+// 切换登录方式
+changeTab(e) {
+  this.setData({
+    loginType: e.currentTarget.dataset.type
+  });
+},
+
+// 用户名输入
+onUsernameInput(e) {
+  this.setData({
+    username: e.detail.value
+  });
+},
+
+// 密码输入
+onPasswordInput(e) {
+  this.setData({
+    password: e.detail.value
+  });
+},
+
+// 用户名密码登录
+handleAccountLogin() {
+
+  const { username, password } = this.data;
+
+  if (!username) {
+    wx.showToast({
+      title: '请输入用户名',
+      icon: 'none'
+    });
+    return;
+  }
+
+  if (!password) {
+    wx.showToast({
+      title: '请输入密码',
+      icon: 'none'
+    });
+    return;
+  }
+
+  wx.showLoading({
+    title: '登录中...',
+    mask: true
+  });
+
+  wx.request({
+    url: app.globalData.baseUrl + '/app01/login/',
+    method: 'POST',
+    header: {
+      'Content-Type': 'application/json'
+    },
+    data: {
+      username,
+      password
+    },
+
+    success: (res) => {
+
+      console.log("status:", res.statusCode);
+      console.log("data:", res.data);
+    
+      wx.hideLoading();
+    
+      const resData = res.data;
+    
+      // ✅ 统一判断后端结构
+      if (res.statusCode === 200 && resData.code === 200 && resData.data?.access) {
+    
+        const { access, refresh, user_info } = resData.data;
+    
+        // 存储 token
+        wx.setStorageSync('accessToken', access);
+        wx.setStorageSync('refreshToken', refresh);
+        wx.setStorageSync('isLogin', true);
+        wx.setStorageSync('memberInfo', user_info || {});
+    
+        // 全局变量
+        app.globalData.isLogin = true;
+        app.globalData.accessToken = access;
+        app.globalData.refreshToken = refresh;
+        app.globalData.memberInfo = user_info || {};
+    
+        wx.showToast({
+          title: resData.msg || '登录成功',
+          icon: 'success'
+        });
+    
+        setTimeout(() => {
+          wx.switchTab({
+            url: '/pages/index/index'
+          });
+        }, 1200);
+    
+      } else {
+    
+        wx.showToast({
+          title: resData.msg || '账号或密码错误',
+          icon: 'none'
+        });
+    
+      }
+    },
+    fail: (err) => {
+      wx.hideLoading();
+      console.error(err);
+      wx.showToast({
+          title: '网络异常',
+          icon: 'none'
+      });
+  }
+  });
   },
 
   // ================= 🌟 核心：一键手机号授权登录 =================

@@ -1,343 +1,247 @@
-/* ================= 全局与背景 (轻奢奶油风) ================= */
-page {
-  background: #FAF8F5; /* 奶油可可白 */
-  min-height: 100vh;
-  color: #2C3327;
-}
-
+/* 页面基础：全面适配奶油可可白 */
 .pay-container {
-  position: relative;
-  padding: 40rpx 30rpx;
   min-height: 100vh;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+  padding-bottom: 240rpx; 
+  background-color: #F7F5F0; /* 🌟 核心：奶油可可白底色，温润高雅 */
 }
 
+/* 动态渐变背景层：采用 #94A48C 灰绿向柔和浅灰绿过渡 */
 .dynamic-bg {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  z-index: -1;
-  /* 温润的白绿交织微渐变 */
-  background: linear-gradient(-45deg, #FAF8F5, #FFFFFF, #F4F6F2, #F8F9F5);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
+  height: 420rpx;
+  background: linear-gradient(135deg, #94A48C 0%, #A7B6A0 100%);
+  border-bottom-left-radius: 40rpx;
+  border-bottom-right-radius: 40rpx;
+  z-index: 0;
 }
 
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ================= 订单信息卡片 (高透玻璃质感) ================= */
-.order-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(148, 164, 140, 0.15); /* 莫兰迪绿极细边框 */
-  border-radius: 24rpx; /* 收敛圆角，显得更精致 */
+.content-wrapper {
+  position: relative;
+  z-index: 1;
   padding: 40rpx 30rpx;
-  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.05); /* 轻柔弥散阴影 */
-  margin-bottom: 50rpx;
 }
 
+/* 带有微弱奶油色温的玻璃质感面板 */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(15px);
+  border-radius: 28rpx;
+  padding: 35rpx 30rpx;
+  box-shadow: 0 12rpx 40rpx rgba(148, 164, 140, 0.08); /* 灰绿色调的柔和阴影 */
+  margin-bottom: 30rpx;
+}
+
+/* 订单卡片内部 */
 .order-title {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #2C3327;
-  text-align: center;
+  color: #3E443A; /* 深灰绿，替代纯黑，提升质感 */
   margin-bottom: 40rpx;
-  padding-bottom: 30rpx;
-  border-bottom: 1px solid rgba(148, 164, 140, 0.1); /* 摒弃虚线，改用高级细实线 */
-  letter-spacing: 2rpx;
+  text-align: center;
 }
 
 .order-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 30rpx;
-}
-
-.label {
-  color: #8A8E88; /* 柔和的高级灰 */
-  width: 180rpx;
+  margin-bottom: 32rpx;
   font-size: 28rpx;
-  font-weight: 500;
+  color: #6E756A; /* 灰绿中间色 */
 }
 
 .amount {
-  color: #7A8B72; /* 沉稳的草木绿 */
-  font-size: 36rpx;
-  font-weight: bold;
-  font-family: 'DIN Alternate', 'PingFang SC', sans-serif;
+  font-weight: 500;
+  color: #3E443A;
 }
 
-.highlight-blue {
-  color: #94A48C !important; /* 替换原有的蓝色高亮为品牌绿 */
-  font-weight: bold;
+.divider {
+  height: 2rpx;
+  background-color: #EAE6DF; /* 淡淡的可可色分割线 */
+  margin: 30rpx 0;
 }
 
-.amount-item {
-  justify-content: space-between;
-  margin-top: 40rpx;
-  margin-bottom: 0;
-  padding: 30rpx;
-  background: rgba(148, 164, 140, 0.04); /* 极淡的底色包裹 */
-  border-radius: 16rpx;
-  border: 1px solid rgba(148, 164, 140, 0.1);
+.amount-item .label {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #3E443A;
 }
 
+/* 实付金额：使用深琥珀/深焦糖色或深植物绿突出，这里采用呼应色调的深暖色，避免艳红破坏高级感 */
 .final-amount {
   font-size: 48rpx;
-  color: #2C3327; /* 最终金额用深色，显得庄重 */
   font-weight: bold;
-  font-family: 'DIN Alternate', sans-serif;
+  color: #826E59; /* 优雅的可可深咖色，与奶油白、灰绿绝配 */
 }
 
-/* ================= 优惠券下拉框 ================= */
-.coupon-dropdown {
-  justify-content: space-between;
-  padding-bottom: 24rpx;
-  border-bottom: 1px solid rgba(148, 164, 140, 0.1);
-}
-
+/* 优惠券选择器 */
 .native-picker {
   flex: 1;
+  text-align: right;
 }
 
 .picker-text {
-  font-size: 28rpx;
-  color: #7A8B72;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.picker-val {
+  color: #A3A9A0;
+}
+.val-active {
+  color: #826E59; /* 激活时变为深可可色 */
+  font-weight: 500;
+}
+
+.picker-arrow {
+  font-size: 20rpx;
+  color: #C2C7BF;
+  margin-left: 10rpx;
+}
+
+/* 支付方式选择面板 */
+.section-title {
+  font-size: 30rpx;
   font-weight: 600;
+  color: #3E443A;
+  margin-bottom: 24rpx;
+}
+
+.method-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 32rpx 10rpx;
+  border-bottom: 2rpx solid #F2EFE9;
+  transition: all 0.3s;
+}
+.method-item:last-child {
+  border-bottom: none;
 }
 
-.picker-val { flex: 1; text-align: right; }
-.picker-arrow { font-size: 20rpx; color: #CBD5E1; margin-left: 10rpx; }
-
-/* ================= 积分抵扣区域 ================= */
-.point-operate-area {
-  margin: 30rpx 0;
-  padding: 30rpx 0;
-  border-top: 1px solid rgba(148, 164, 140, 0.1);
-  border-bottom: 1px solid rgba(148, 164, 140, 0.1);
+/* 选中某种支付方式时的优雅微亮包裹块 */
+.method-item.item-active {
+  background-color: rgba(148, 164, 140, 0.05); /* 极淡的灰绿呼吸感底色 */
+  border-radius: 16rpx;
 }
 
-.point-info {
+.item-left {
   display: flex;
   align-items: center;
-  margin-bottom: 30rpx;
 }
 
-.max-tip {
-  margin-left: auto;
-  font-size: 22rpx;
-  color: #94A48C;
-  background: rgba(148, 164, 140, 0.1);
-  padding: 4rpx 14rpx;
-  border-radius: 8rpx;
-  font-weight: 500;
-}
-
-.point-deduct-op {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  margin-bottom: 20rpx;
-}
-
-.stepper-glass {
-  display: flex;
-  align-items: center;
-  background: #F8F9F5;
-  border: 1px solid rgba(148, 164, 140, 0.15);
-  border-radius: 12rpx;
-  overflow: hidden;
-  height: 60rpx;
-}
-
-.btn-minus, .btn-plus {
-  width: 60rpx;
-  height: 60rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32rpx;
-  color: #6B7067;
-  background: transparent;
-}
-
-.btn-minus:active, .btn-plus:active { background: rgba(148, 164, 140, 0.1); }
-
-.point-input {
-  width: 100rpx;
-  height: 60rpx;
-  text-align: center;
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #2C3327;
-  border-left: 1px solid rgba(148, 164, 140, 0.15);
-  border-right: 1px solid rgba(148, 164, 140, 0.15);
-}
-
-.btn-all {
-  height: 60rpx;
-  padding: 0 28rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24rpx;
-  font-weight: 500;
-  background: transparent;
-  color: #7A8B72;
-  border: 1px solid #94A48C;
-  border-radius: 30rpx; /* 胶囊形按钮 */
-  transition: all 0.2s;
-}
-
-.btn-all:active {
-  background: rgba(148, 164, 140, 0.1);
-}
-
-.point-deduct-tip {
-  font-size: 24rpx;
-  color: #8A8E88;
-  padding-left: 180rpx;
-}
-
-/* ================= 支付方式选择模块 ================= */
-.pay-methods-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2C3327;
-  margin-bottom: 24rpx;
-  padding-left: 10rpx;
-}
-
-.pay-methods-container {
-  display: flex;
-  gap: 20rpx;
-  margin-bottom: 60rpx;
-}
-
-.pay-method-item {
-  flex: 1;
-  background: #FFFFFF;
-  border: 1px solid rgba(148, 164, 140, 0.1);
-  border-radius: 20rpx;
-  padding: 30rpx 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16rpx;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4rpx 16rpx rgba(148, 164, 140, 0.03);
-}
-
-/* 选中状态：莫兰迪绿微光 */
-.pay-method-selected {
-  border-color: #94A48C !important;
-  background: rgba(148, 164, 140, 0.04) !important;
-  box-shadow: 0 8rpx 20rpx rgba(148, 164, 140, 0.1) !important;
-  transform: translateY(-2rpx);
-}
-
-.pay-method-icon {
-  width: 56rpx;
-  height: 56rpx;
-}
-
-.pay-method-name {
-  font-size: 26rpx;
-  color: #4A4F48;
-  font-weight: 500;
-}
-
-.pay-method-check {
-  position: absolute;
-  top: -12rpx;
-  right: -12rpx;
-  width: 40rpx;
-  height: 40rpx;
+.icon-box {
+  width: 52rpx;
+  height: 52rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
-  color: #fff;
-  font-size: 22rpx;
-  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transform: scale(0.5);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* 优雅的回弹动效 */
-  box-shadow: 0 4rpx 10rpx rgba(148, 164, 140, 0.4);
+  color: #fff;
+  font-weight: bold;
+  margin-right: 24rpx;
+  font-size: 26rpx;
+}
+/* 微信图标和小程序图标统一融入高定色系 */
+.wx-color { background-color: #809078; } 
+.wallet-color { background: linear-gradient(135deg, #94A48C, #7A8A73); }
+
+.name {
+  font-size: 29rpx;
+  color: #3E443A;
 }
 
-.check-visible {
-  opacity: 1;
-  transform: scale(1);
+.balance-tag {
+  font-size: 25rpx;
+  color: #8A9285;
+  margin-left: 12rpx;
 }
 
-/* ================= 底部操作按钮 ================= */
+/* 底部操作区 */
 .action-footer {
-  margin-top: auto;
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 24rpx 40rpx 64rpx;
+  background-color: #FAF9F6; /* 奶油质感底色 */
+  box-shadow: 0 -6rpx 30rpx rgba(148, 164, 140, 0.05);
+  box-sizing: border-box;
+  z-index: 10;
 }
 
-/* 支付按钮：绸缎绿渐变 */
 .pay-btn {
   width: 100%;
   height: 96rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
-  color: #FFFFFF;
+  line-height: 96rpx;
+  border-radius: 48rpx;
+  color: #fff;
   font-size: 32rpx;
   font-weight: 600;
-  letter-spacing: 4rpx; /* 增加呼吸感 */
-  border-radius: 48rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 10rpx 24rpx rgba(148, 164, 140, 0.3);
-  transition: all 0.2s;
   border: none;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(148, 164, 140, 0.2);
 }
 
-.pay-btn::after { display: none; }
+/* 微信和钱包统一采用主调灰绿及其深色延展，完美告别突兀的亮蓝色 */
+.btn-wechat { background: #809078; }
+.btn-wallet { background: linear-gradient(135deg, #94A48C, #7A8A73); }
 
-.pay-btn:active { 
-  transform: scale(0.97); 
-  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15);
-}
-
-/* 取消按钮：轻盈线框 */
 .cancel-btn {
   width: 100%;
   height: 96rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: #94A48C;
-  font-size: 32rpx;
-  font-weight: 500;
-  letter-spacing: 4rpx;
+  line-height: 96rpx;
   border-radius: 48rpx;
-  border: 1px solid #94A48C;
-  transition: all 0.2s;
+  background-color: #EFECE6; /* 淡淡的奶油可可灰白 */
+  color: #7A8075;
+  font-size: 28rpx;
+  border: none;
 }
 
-.cancel-btn::after { display: none; }
+.cancel-btn::after, .pay-btn::after {
+  border: none;
+}
 
-.cancel-btn:active { 
-  background: rgba(148, 164, 140, 0.05); 
+/* 积分步进器（完美融入新皮肤） */
+.stepper-glass {
+  display: flex;
+  align-items: center;
+  background: #EFECE6;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+.btn-minus, .btn-plus {
+  width: 64rpx;
+  height: 56rpx;
+  text-align: center;
+  line-height: 56rpx;
+  color: #5E655A;
+  font-weight: bold;
+}
+.point-input {
+  width: 104rpx;
+  text-align: center;
+  font-size: 26rpx;
+  background: #fff;
+  height: 56rpx;
+  color: #3E443A;
+}
+.btn-all {
+  font-size: 26rpx;
+  color: #94A48C;
+  margin-left: 16rpx;
+  font-weight: 500;
+}
+.highlight-theme {
+  color: #7A8A73; /* 主题高亮灰绿 */
+  font-weight: 500;
+}
+.max-tip {
+  font-size: 22rpx;
+  color: #A3A9A0;
+  margin-left: 12rpx;
 }

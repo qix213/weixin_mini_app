@@ -7,19 +7,69 @@
   </view>
 
   <view class="glass-card action-box">
-    
-    <button 
-      class="login-btn" 
-      open-type="getPhoneNumber" 
-      bindgetphonenumber="handleWechatLogin"
-    >
-      微信手机号快捷登录
-    </button>
-    
+
+    <!-- 登录方式切换 -->
+    <view class="login-tabs">
+      <view
+        class="tab {{loginType=='wechat'?'active':''}}"
+        data-type="wechat"
+        bindtap="changeTab">
+        微信登录
+      </view>
+
+      <view
+        class="tab {{loginType=='account'?'active':''}}"
+        data-type="account"
+        bindtap="changeTab">
+        账号登录
+      </view>
+    </view>
+
+    <!-- 微信登录 -->
+    <view wx:if="{{loginType=='wechat'}}">
+
+      <button
+        class="login-btn"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="handleWechatLogin">
+        微信手机号快捷登录
+      </button>
+
+    </view>
+
+    <!-- 用户名密码登录 -->
+    <view wx:if="{{loginType=='account'}}">
+
+      <input
+        class="login-input"
+        placeholder="请输入用户名"
+        value="{{username}}"
+        bindinput="onUsernameInput"/>
+
+      <input
+        class="login-input"
+        password="true"
+        placeholder="请输入密码"
+        value="{{password}}"
+        bindinput="onPasswordInput"/>
+
+      <button
+        class="login-btn"
+        bindtap="handleAccountLogin">
+        登录
+      </button>
+
+    </view>
+
+    <!-- 注册 -->
     <view class="to-register-wrap">
       <text class="normal-text">探索新视界？</text>
-      <text class="register-btn" bindtap="goToRegister">立即注册</text>
+      <text
+        class="register-btn"
+        bindtap="goToRegister">
+        立即注册
+      </text>
     </view>
-    
+
   </view>
 </view>

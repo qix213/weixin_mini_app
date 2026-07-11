@@ -168,47 +168,54 @@
 .empty-icon { font-size: 100rpx; margin-bottom: 30rpx; opacity: 0.3; filter: grayscale(100%); }
 .empty-state text { color: #8A8E88; font-size: 28rpx; }
 
-/* ================= 高级感工作台按钮 ================= */
+/* ================== 订单操作栏样式 ================== */
 .action-bar {
   display: flex;
-  gap: 16rpx; /* 稍微拉开间距，增加透气感 */
-  padding-top: 24rpx;
+  justify-content: flex-end; /* 按钮整体靠右对齐 */
+  align-items: center;
+  flex-wrap: wrap;           /* 如果按钮太多，自动换行而不挤压 */
+  gap: 20rpx;                /* 按钮之间的间距 */
   margin-top: 24rpx;
-  border-top: 1px solid #F2F4F0;
-  width: 100%;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #F2EFE9; /* 淡淡的奶油色分割线 */
 }
 
+/* 按钮基础骨架：清除小程序原生样式，统一样式底座 */
 .action-btn {
-  flex: 1; 
   margin: 0 !important;
-  font-size: 24rpx !important;
-  padding: 16rpx 0 !important; 
-  border-radius: 8rpx;
-  background-color: #F4F6F2; /* 品牌色的极浅背景 */
-  color: #7A8F70; /* 略深一点的品牌绿，保证可读性 */
-  line-height: 1.4;
-  font-weight: 500;
-  border: 1px solid transparent; /* 移除廉价的强描边，用纯净底色代替 */
-  transition: all 0.2s ease;
+  padding: 0 32rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: 26rpx;
+  border-radius: 30rpx;      /* 优雅的半圆角 */
+  background-color: #fff;
+  color: #5E655A;            /* 默认深灰绿色字体 */
+  border: 1rpx solid #C2C7BF; /* 默认灰绿色边框 */
+  box-sizing: border-box;
 }
 
-/* 主色调按钮 (预约下单) */
+/* 消除小程序默认边框 */
+.action-btn::after {
+  border: none;
+}
+
+/* 🌟 主操作按钮 (备货完成、预约下单)：高级灰绿主题 */
 .action-btn.primary {
   background-color: #94A48C;
   color: #fff;
-  border: none;
-  box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.3); /* 主按钮加一点呼吸感阴影 */
+  border: 1rpx solid #94A48C;
 }
 
-/* 取消按钮 (使用莫兰迪色系中的柔和豆沙红/玫瑰红) */
+/* 🌟 警告按钮 (取消订单)：警示红 */
 .action-btn.danger {
-  color: #B5736B; 
-  background-color: #F9EFEF;
-  border-color: transparent;
+  background-color: #fff;
+  color: #FF4D4F;
+  border: 1rpx solid #FF4D4F;
 }
 
-/* 按钮点击反馈 */
-.action-btn:active {
-  transform: scale(0.97); /* 按压微缩放，比单纯的透明度改变更显高级 */
-  opacity: 0.9;
+/* 🌟 置灰等待按钮 (等待揽收) */
+.action-btn.wait-btn {
+  background-color: #F8F9FA;
+  color: #9CA3AF;
+  border: 1rpx solid #E5E7EB;
 }

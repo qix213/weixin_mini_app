@@ -1,8 +1,8 @@
 {
   "usingComponents": {
-    "van-icon": "@vant/weapp/icon/index"
   },
-  "navigationBarTitleText": "推荐会员消费记录",
+  "navigationBarTitleText": "积分兑换京东快递",
+  "enablePullDownRefresh": true,
   "navigationBarBackgroundColor": "#94A48C",
   "navigationBarTextStyle": "white"
 }

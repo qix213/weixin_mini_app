@@ -216,30 +216,11 @@ Page({
   executeBuyNow() {
     const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
     this.closePopup();
-
+  
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     if (!token) return Toast('请先登录后结算');
-
-    // ================= 🌟 核心拦截：线下项目专属特快通道 =================
-    // 如果是线下项目，不加购物车，不进结算页，直接去支付！
-    if (goodsDetail.goods_type == 2) {
-      // 计算总价 (单价 × 购买数量)
-      const price = Number(goodsDetail.member_price || goodsDetail.original_price || 0);
-      const totalAmount = (price * cartNum).toFixed(2);
-      
-      Toast.loading({ message: '正在前往预约...', forbidClick: true });
-      
-      setTimeout(() => {
-        // 直接跳去支付页，带上 isOfflineProject 标识、商品ID和金额
-        wx.navigateTo({
-          url: `/pages/pay/pay?isOfflineProject=true&orderId=${goodsDetail.id}&actualAmount=${totalAmount}&typeName=${goodsDetail.name}`
-        });
-      }, 800);
-      
-      return; // 🛑 极其关键：拦截完成，必须 return，阻止下方购物车代码执行
-    }
-
-    // ================= 🛒 以下为原有的实体商品逻辑 (加购物车 -> 去结算页) =================
+  
+    // 移除线下商品直达支付逻辑，所有商品统一跳转结算页
     app.request({
       url: '/app01/cart/add/',
       method: 'POST',
@@ -248,6 +229,7 @@ Page({
       if (res.data?.code === 200) {
         Toast.success(isPointGoods ? `即将结算\n需${pointPrice * cartNum}积分` : `即将结算 x${cartNum}`);
         setTimeout(() => {
+          // 统一跳结算页面，由结算页创建正式订单
           wx.navigateTo({
             url: `/pages/checkout/checkout?goodsId=${goodsDetail.id}&num=${cartNum}`,
             fail: () => wx.switchTab({ url: '/pages/cart/cart' })

@@ -1,97 +1,183 @@
 <view class="consume-container">
+  
   <view class="loading" wx:if="{{loading}}">
-    <view class="loading-icon"></view>
+    <view class="spinner"></view>
     <text>数据加载中...</text>
   </view>
 
-  <view class="empty" wx:if="{{!loading && memberList.length === 0}}">
-    <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
-    <text>暂无推荐会员消费记录</text>
-  </view>
-
-  <view class="main-content" wx:if="{{!loading && memberList.length > 0}}">
+  <view class="main-content" wx:if="{{!loading}}">
     
-    <view class="total-all-card">
-      <view class="card-bg-circle"></view>
-      <text class="total-all-label">所有推荐会员合计消费</text>
-      <view class="total-all-amount-wrap">
-        <text class="symbol">¥</text>
-        <text class="total-all-amount">{{totalAllConsume}}</text>
-      </view>
+    <view class="asset-card">
+  <view class="asset-info">
+    <text class="asset-label">可提现金额 (元)</text>
+    <text class="asset-amount">{{totalCommission}}</text>
+  </view>
+  
+  <view class="asset-action">
+    <view class="withdraw-btn" 
+          wx:if="{{withdrawStatus === -1 || withdrawStatus === 2 || withdrawStatus === 3}}" 
+          bindtap="handleWithdraw">
+      提现
     </view>
 
-    <view class="member-list">
-      <view wx:for="{{memberList}}" wx:key="id" class="member-card {{currentMemberId === item.id ? 'is-expanded' : ''}}">
-        
-        <view class="member-header" bindtap="onMemberClick" data-member-id="{{item.id}}">
-          <view class="member-info">
-            <view class="member-title-row">
-              <text class="member-nickname">{{item.nickname}}</text>
-              <text class="member-tag" wx:if="{{item.level_name}}">{{item.level_name}} V{{item.star_level}}</text>
+    <view class="withdraw-btn disabled" 
+          wx:elif="{{withdrawStatus === 0}}">
+      等待财务审核
+    </view>
+
+    <view class="withdraw-btn confirm-btn" 
+          wx:elif="{{withdrawStatus === 1}}" 
+          bindtap="handleConfirmReceipt">
+      确认收款
+    </view>
+  </view>
+</view>
+
+    <view class="modal-mask {{showWithdrawModal ? 'show' : ''}}" bindtap="closeWithdrawModal"></view>
+    <view class="withdraw-bottom-sheet {{showWithdrawModal ? 'show' : ''}}">
+      <view class="modal-header">
+        <text class="modal-title">提取金额</text>
+        <van-icon name="cross" class="close-icon" bindtap="closeWithdrawModal" />
+      </view>
+      
+      <view class="input-container">
+        <text class="currency-symbol">￥</text>
+        <input 
+          type="digit" 
+          class="amount-input" 
+          placeholder="0.00" 
+          value="{{withdrawAmount}}" 
+          bindinput="onWithdrawInput" 
+        />
+      </view>
+
+      <view class="quick-action-bar">
+        <text class="balance-text">当前可提现 ￥{{totalCommission}}</text>
+        <view class="action-btns">
+          <text class="quick-btn" catchtap="onWithdrawMin">最低0.1</text>
+          <text class="quick-btn max" catchtap="onWithdrawMax">全部提现</text>
+        </view>
+      </view>
+
+      <button class="confirm-withdraw-btn" catchtap="submitWithdraw">确认提现</button>
+      <view class="safe-area-bottom"></view>
+    </view>
+
+    <view class="foldable-section">
+      <view class="section-header-bar" bindtap="toggleCommissionList">
+        <text class="section-title">关联订单收益明细</text>
+        <view class="section-right">
+          <text class="summary-text text-muted" wx:if="{{walletDetails && walletDetails.length}}">共 {{walletDetails.length}} 笔</text>
+          <van-icon name="{{showCommissionList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
+        </view>
+      </view>
+
+      <view class="section-body" wx:if="{{showCommissionList}}">
+        <view class="commission-list" wx:if="{{walletDetails && walletDetails.length > 0}}">
+          <view class="commission-card" wx:for="{{walletDetails}}" wx:key="id">
+            <view class="comm-top flex-between">
+              <view class="comm-desc-box">
+                <van-icon name="balance-o" color="#94A48C" size="32rpx" class="comm-icon" />
+                <text class="comm-desc">{{item.desc}}</text>
+              </view>
+              <text class="comm-money">+￥{{item.amount}}</text>
             </view>
-            <view class="member-subtitle" wx:if="{{item.member_code}}">ID: {{item.member_code}}</view>
-          </view>
-          
-          <view class="member-action">
-            <view class="member-total-box">
-              <text class="total-label">个人消费</text>
-              <text class="total-value">¥{{item.totalConsume}}</text>
-            </view>
-            <view class="toggle-icon">
-              <text class="arrow {{currentMemberId === item.id ? 'arrow-up' : 'arrow-down'}}"></text>
+            <view class="comm-divider"></view>
+            <view class="comm-bottom">
+              <view class="info-line">
+                <text class="info-label">关联单号：</text>
+                <text class="info-value font-mono">{{item.order_sn}}</text>
+              </view>
+              <view class="info-line">
+                <text class="info-label">订单实付：</text>
+                <text class="info-value">￥{{item.order_amount}}</text>
+              </view>
+              <view class="info-line">
+                <text class="info-label">买家账号：</text>
+                <text class="info-value">{{item.buyer_name}} <text class="text-muted">({{item.buyer_phone}})</text></text>
+              </view>
+              <view class="info-line">
+                <text class="info-label">记账时间：</text>
+                <text class="info-value text-muted">{{item.date}}</text>
+              </view>
             </view>
           </view>
         </view>
+        <view class="empty-state" wx:else>
+          <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
+          <text>暂无记账流水明细</text>
+        </view>
+      </view>
+    </view>
 
-        <view class="consume-detail-wrap" wx:if="{{currentMemberId === item.id}}">
-          <view class="consume-detail-inner">
-            
-            <view class="consume-list" wx:if="{{item.consumeRecords.length > 0}}">
-              <view class="order-item" wx:for="{{item.consumeRecords || []}}" wx:key="id">
-                
-                <view class="order-summary">
-                  <view class="summary-top">
-                    <text class="order-sn">单号：{{item.order_sn}}</text>
-                    <text class="order-status {{item.status_name === '已完成' ? 'status-success' : 'status-primary'}}">{{item.status_name || '未知状态'}}</text>
-                  </view>
-                  <view class="summary-bottom">
-                    <text class="order-date">{{item.create_time}}</text>
-                    <text class="order-total">订单金额：<text class="price-text">¥{{item.total_price}}</text></text>
-                  </view>
+    <view class="foldable-section">
+      <view class="section-header-bar" bindtap="toggleConsumeList">
+        <text class="section-title">关联订单消费明细</text>
+        <view class="section-right">
+          <text class="summary-text highlight-text">总消费: ¥{{totalAllConsume}}</text>
+          <van-icon name="{{showConsumeList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
+        </view>
+      </view>
+
+      <view class="section-body" wx:if="{{showConsumeList}}">
+        <view class="empty-state" wx:if="{{memberList.length === 0}}">
+          <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
+          <text>暂无下级会员消费记录</text>
+        </view>
+
+        <view class="member-list" wx:if="{{memberList.length > 0}}">
+          <view wx:for="{{memberList}}" wx:key="id" class="member-card {{currentMemberId === item.id ? 'is-expanded' : ''}}">
+            <view class="member-header" bindtap="onMemberClick" data-member-id="{{item.id}}">
+              <view class="member-info-col">
+                <view class="title-row">
+                  <text class="nickname">{{item.nickname}}</text>
+                  <text class="level-tag" wx:if="{{item.level_name}}">{{item.level_name}} V{{item.star_level}}</text>
                 </view>
+                <view class="subtitle" wx:if="{{item.member_code}}">ID: {{item.member_code}}</view>
+              </view>
+              <view class="member-action-col">
+                <view class="consume-sum">
+                  <text class="sum-label">累计</text>
+                  <text class="sum-val">¥{{item.totalConsume}}</text>
+                </view>
+                <van-icon name="{{currentMemberId === item.id ? 'arrow-up' : 'arrow-down'}}" color="#B4B9AE" size="32rpx" />
+              </view>
+            </view>
 
-                <view class="goods-table" wx:if="{{item.goods.length > 0}}">
-                  <view class="table-header">
-                    <view class="col-goods">商品信息</view>
-                    <view class="col-count">数量</view>
-                    <view class="col-price">单价</view>
-                    <view class="col-subtotal">小计</view>
+            <view class="consume-detail-wrap" wx:if="{{currentMemberId === item.id}}">
+              <view class="divider"></view>
+              <view class="order-list" wx:if="{{item.consumeRecords.length > 0}}">
+                <view class="order-item" wx:for="{{item.consumeRecords}}" wx:for-item="order" wx:key="id">
+                  <view class="order-summary">
+                    <view class="summary-top">
+                      <text class="order-sn">单号: {{order.order_sn}}</text>
+                      <text class="order-status {{order.status_name === '已完成' ? 'success' : ''}}">{{order.status_name || '未知'}}</text>
+                    </view>
+                    <view class="summary-bottom">
+                      <text class="order-date">{{order.create_time}}</text>
+                      <text class="order-total">合计: <text class="emphasis">¥{{order.total_price}}</text></text>
+                    </view>
                   </view>
-                  <view class="table-body">
-                    <view class="table-row" wx:for="{{item.goods}}" wx:for-item="goods" wx:key="goods_name">
-                      <view class="col-goods text-ellipsis">{{goods.goods_name}}</view>
-                      <view class="col-count">x{{goods.num}}</view>
-                      <view class="col-price">¥{{goods.price}}</view>
-                      <view class="col-subtotal emphasis">¥{{goods.total_price}}</view>
+                  <view class="goods-table" wx:if="{{order.goods.length > 0}}">
+                    <view class="t-head">
+                      <text class="t-col goods-name">商品</text>
+                      <text class="t-col num">数量</text>
+                      <text class="t-col price">单价</text>
+                    </view>
+                    <view class="t-row" wx:for="{{order.goods}}" wx:for-item="goods" wx:key="goods_name">
+                      <text class="t-col goods-name text-ellipsis">{{goods.goods_name}}</text>
+                      <text class="t-col num">x{{goods.num}}</text>
+                      <text class="t-col price">¥{{goods.price}}</text>
                     </view>
                   </view>
                 </view>
-                
-                <view class="no-goods" wx:else>
-                  <text>暂无商品明细</text>
-                </view>
-
               </view>
+              <view class="empty-order" wx:else>该会员暂无订单明细</view>
             </view>
-            
-            <view class="empty-order" wx:else>
-              <text>该会员暂无消费记录</text>
-            </view>
-            
           </view>
         </view>
-
       </view>
     </view>
+
   </view>
 </view>

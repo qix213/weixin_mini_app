@@ -9,12 +9,19 @@ Page({
     precheckLoading: false,
     "orderDetail.jd_precheck_status": null,
     "orderDetail.jd_error_msg": "",
+    timeRange: [],         // 供选择的二维数组：[ [日期], [小时], [分钟] ]
+    timeIndex: [0, 0, 0],  // 默认选中的索引
+    _dateActual: [],       // 后台隐藏计算用的真实日期(YYYY/MM/DD)
+    pickupTimeLabel: '立即上门（默认）', 
+    pickupStartTime: null, // 最终传给后端的毫秒时间戳
+    pickupEndTime: null,
     cargoName: '护肤品',
     cargoWeight: 1.0,
     cargoVolume: 10.0
   },
 
   onLoad(options) {
+    this.initTimePicker();
     const orderSn = options.order_sn;
     if (orderSn) {
       this.setData({ orderSn });
@@ -24,7 +31,76 @@ Page({
       setTimeout(() => wx.navigateBack(), 1500);
     }
   },
+  initTimePicker() {
+    const dates = [];
+    const dateActual = [];
+    const now = new Date();
+    
+    // 生成未来3天
+    for (let i = 0; i < 3; i++) {
+      let d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+      let month = (d.getMonth() + 1).toString().padStart(2, '0');
+      let day = d.getDate().toString().padStart(2, '0');
+      let suffix = i === 0 ? '(今天)' : i === 1 ? '(明天)' : '(后天)';
+      dates.push(`${month}月${day}日 ${suffix}`);
+      // ⚠️ 关键：必须用反斜杠 /，如果用 - 苹果手机会解析出 NaN 导致系统崩溃
+      dateActual.push(`${d.getFullYear()}/${month}/${day}`); 
+    }
 
+    // 生成小时 (9点 - 18点)
+    const hours = [];
+    for (let i = 9; i <= 18; i++) {
+      hours.push(`${i.toString().padStart(2, '0')}时`);
+    }
+
+    // 生成分钟 (00 - 50分)
+    const minutes = ['00分', '10分', '20分', '30分', '40分', '50分'];
+
+    this.setData({
+      timeRange: [dates, hours, minutes],
+      _dateActual: dateActual
+    });
+  },
+
+  // 2. 当用户滑动确认选择时间
+  onTimeChange(e) {
+    const val = e.detail.value;
+    
+    const dateStr = this.data._dateActual[val[0]];
+    const hourStr = this.data.timeRange[1][val[1]].replace('时', '');
+    const minStr = this.data.timeRange[2][val[2]].replace('分', '');
+
+    // 拼接成标准字符串并转为毫秒时间戳
+    const targetTime = new Date(`${dateStr} ${hourStr}:${minStr}:00`);
+    const startMs = targetTime.getTime();
+
+    // 拦截：不能选择过去的时间
+    if (startMs < new Date().getTime()) {
+      wx.showToast({
+        title: '不能预约过去的时间',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.setData({
+      timeIndex: val,
+      pickupTimeLabel: `${this.data.timeRange[0][val[0]].substring(0, 6)} ${hourStr}:${minStr}`,
+      pickupStartTime: startMs,
+      // 京东建议有一个揽收结束时间窗口，这里默认在开始时间上加 2 小时
+      pickupEndTime: startMs + (2 * 60 * 60 * 1000) 
+    });
+  },
+
+  // 3. 点击清除按钮，恢复默认“立即上门”
+  clearPickupTime() {
+    this.setData({
+      timeIndex: [0, 0, 0],
+      pickupTimeLabel: '立即上门（默认）',
+      pickupStartTime: null,
+      pickupEndTime: null
+    });
+  },
   onShow() {
     if (this.data.orderSn && !this.data.loading && Object.keys(this.data.sender).length === 0) {
       this.getDefaultSenderAddress();
@@ -240,7 +316,10 @@ Page({
 
   onSubmitJDExpress() {
     const { orderDetail, sender, precheckLoading } = this.data;
-
+    if (this.data.pickupStartTime) {
+      requestData.pickupStartTime = this.data.pickupStartTime;
+      requestData.pickupEndTime = this.data.pickupEndTime;
+    }
     if (precheckLoading) {
       wx.showToast({ title: '校验中，请稍候...', icon: 'loading' });
       return;

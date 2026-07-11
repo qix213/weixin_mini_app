@@ -1,0 +1,96 @@
+<view class="container">
+
+<view wx:if="{{precheckStatus !== null}}" class="status-banner slim {{precheckStatus === false ? 'error' : 'success'}}">
+  <van-icon name="{{precheckStatus === false ? 'warning' : 'checked'}}" size="32rpx" />
+  <text class="status-text">{{precheckStatus === false ? (errorMsg || '地址受限，前置校验未通过⚠️') : '地址符合京东揽收标准✅'}}</text>
+</view>
+
+<view class="card address-card">
+  <view class="address-item" bindtap="chooseSender">
+    <view class="icon-tag blue">寄</view>
+    <view class="info">
+      <view class="name-phone">
+        <text class="name">{{sender.name || '请选择寄件人'}}</text>
+        <text class="phone">{{sender.mobile || ''}}</text>
+      </view>
+      <text class="addr">{{sender.fullAddress || '点击选择或添加发货地址'}}</text>
+    </view>
+    <view class="arrow-right">></view>
+  </view>
+  
+  <view class="address-divider"></view>
+
+  <view class="address-item" bindtap="chooseReceiver">
+    <view class="icon-tag red">收</view>
+    <view class="info">
+      <view class="name-phone">
+        <text class="name">{{receiver.name || '请选择收件人'}}</text>
+        <text class="phone">{{receiver.mobile || ''}}</text>
+      </view>
+      <text class="addr">{{receiver.fullAddress || '点击选择或添加收件地址'}}</text>
+    </view>
+    <view class="arrow-right">></view>
+  </view>
+</view>
+
+<view class="card integrated-card">
+  
+  <view class="form-group">
+    <view class="label">物品内容</view>
+    <input class="picker-value" value="{{cargoName}}" bindinput="onCargoNameInput" placeholder="请输入内容" />
+  </view>
+
+  <view class="form-group">
+    <view class="label">包裹规格</view>
+    <picker mode="selector" range="{{packageSpecs}}" range-key="name" value="{{selectedSpecIndex}}" bindchange="onSpecChange">
+      <view class="picker-value">
+        <text class="spec-text">{{packageSpecs[selectedSpecIndex].name}}</text>
+        <text class="arrow">▼</text>
+      </view>
+    </picker>
+  </view>
+  <view class="form-group">
+    <view class="label">上门时间</view>
+    <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange">
+      <view class="picker-value">
+        <text class="spec-text" style="color: {{pickupStartTime ? '#2E3529' : '#999'}};">{{pickupTimeLabel}}</text>
+        <!-- 当选择了时间后，显示一个清除按钮（重置为立即上门） -->
+        <text wx:if="{{pickupStartTime}}" class="clear-btn" catchtap="clearPickupTime">清除</text>
+        <text wx:else class="arrow">▼</text>
+      </view>
+    </picker>
+  </view>
+  <block wx:if="{{precheckStatus !== null}}">
+    <view class="estimate-box">
+      <view class="row">
+        <text>预估运费</text>
+        <text class="val">¥ {{freight}}</text>
+      </view>
+      <view class="row highlight">
+        <text>需扣积分</text>
+        <text class="val points">- {{needPoints}} 分</text>
+      </view>
+      <view class="row balance">
+        <text>您的余额：<text style="color: {{userPoints >= needPoints ? '#94A48C' : '#e64340'}}">{{userPoints}}</text> 分</text>
+      </view>
+    </view>
+
+    <view class="mini-warning">
+      <van-icon name="info-o" color="#e64340" size="24rpx" />
+      <text>实际以京东小哥称重为准，差额系统将自动多退少补。</text>
+    </view>
+  </block>
+</view>
+
+<view style="height: 120rpx;"></view> <view class="bottom-bar">
+  <view class="price-info">
+    <text class="label">需扣除</text>
+    <text class="value" wx:if="{{precheckStatus !== null}}" style="color: #ff5722; font-size: 36rpx;">{{needPoints}} 积分</text>
+    <text class="value" wx:else style="font-size: 24rpx; font-weight: normal; color: #8A9684;">请先完善地址</text>
+  </view>
+  <button class="submit-btn" disabled="{{isSubmitting || precheckLoading || !precheckStatus}}" bindtap="onSubmitJDExpress">
+    {{isSubmitting ? '处理中...' : (precheckLoading ? '预估中...' : '确认消耗积分揽收')}}
+  </button>
+</view>
+
+</view>

@@ -2,14 +2,9 @@
   <view class="dynamic-bg"></view>
 
   <block wx:if="{{orderList.length > 0}}">
-    <view 
-      class="glass-card order-card" 
-      wx:for="{{orderList}}" 
-      wx:key="order_sn" 
-      bindtap="handleOrderClick" 
-      data-order="{{item}}"
-    >
-      
+    <view class="glass-card order-card" wx:for="{{orderList}}" wx:key="order_sn" bindtap="handleOrderClick"
+      data-order="{{item}}">
+
       <view class="order-header">
         <view class="sn-wrap">
           <text class="icon">🔖</text>
@@ -28,7 +23,7 @@
           <text class="goods-title">包含商品</text>
           <text class="point-tag" wx:if="{{item.isPointsExchange}}">积分兑换</text>
         </view>
-        
+
         <view class="goods-list">
           <view class="goods-item" wx:for="{{item.goodsList}}" wx:key="index" wx:for-item="goodsName">
             <text class="dot">·</text> {{goodsName}} <text class="goods-count">×1</text>
@@ -39,7 +34,7 @@
 
       <view class="order-footer">
         <text class="time-text">{{item.create_time}}</text>
-        
+
         <view class="action-area">
           <view class="price-area">
             <text class="label">实付</text>
@@ -55,40 +50,25 @@
           </view>
 
           <view class="btn-group">
-            <button 
-              wx:if="{{item.status_code === 0}}"
-              class="pay-btn"
-              catchtap="goToPay"
-              data-orderid="{{item.order_id}}" 
-              data-ordersn="{{item.order_sn}}"
-              data-totalprice="{{item.total_price}}"
-              data-actualpayprice="{{item.actual_pay_price}}" 
-            >立即支付</button>
+            <button wx:if="{{item.status_code === 0}}" class="pay-btn" catchtap="goToPay"
+              data-orderid="{{item.order_id}}" data-ordersn="{{item.order_sn}}" data-totalprice="{{item.total_price}}"
+              data-actualpayprice="{{item.actual_pay_price}}">立即支付</button>
 
-            <button 
-              wx:if="{{item.status_code === 4}}"
-              class="pay-btn"
-              catchtap="handleReactivateAndPay"
-              data-orderid="{{item.order_id}}" 
-              data-ordersn="{{item.order_sn}}"
-              data-totalprice="{{item.total_price}}"
-              data-actualpayprice="{{item.actual_pay_price}}" 
-            >重新支付</button>
+            <button wx:if="{{item.status_code === 4}}" class="pay-btn" catchtap="handleReactivateAndPay"
+              data-orderid="{{item.order_id}}" data-ordersn="{{item.order_sn}}" data-totalprice="{{item.total_price}}"
+              data-actualpayprice="{{item.actual_pay_price}}">重新支付</button>
 
-            <button 
-              wx:if="{{item.status_code === 4}}"
-              class="delete-btn" 
+            <button wx:if="{{item.status_code === 4}}" class="delete-btn"
               style="background: #f9fafb; color: #9ca3af; border: 1rpx solid #e5e7eb; margin-left: 16rpx;"
-              catchtap="handleDeleteOrder"
-              data-ordersn="{{item.order_sn}}"
-            >删除订单</button>
+              catchtap="handleDeleteOrder" data-ordersn="{{item.order_sn}}">删除订单</button>
 
-            <button 
-              wx:if="{{item.status_code !== 0 && item.status_code !== 4}}"
-              class="logistics-btn"
-              catchtap="goToLogistics"
-              data-ordersn="{{item.order_sn}}"
-            >查看物流</button>
+            <button
+              wx:if="{{item.status_code !== 0 && item.status_code !== 4 && item.delivery_info.delivery_type !== 2}}"
+              class="logistics-btn" catchtap="goToLogistics" data-ordersn="{{item.order_sn}}">查看物流</button>
+
+            <button wx:if="{{item.status_code == 2}}" class="confirm-btn" catchtap="handleConfirmReceipt"
+              data-sn="{{item.order_sn}}"
+              data-ispickup="{{item.delivery_info.delivery_type === 2}}">{{item.delivery_info.delivery_type === 2 ? '确认提货' : '确认收货'}}</button>
           </view>
 
         </view>

@@ -9,6 +9,9 @@ Page({
     goodsList: [],
     selectedCategoryId: '',
     userType: 1, 
+    page: 1,           // 当前请求的页码
+    hasMore: true,     // 后端是否还有更多数据
+    isFetching: false, // 接口防抖锁：是否正在请求中
   },
 
   async onLoad() {
@@ -64,12 +67,18 @@ Page({
   // ================= 2. 获取商品数据 =================
   getGoodsList() {
     return new Promise((resolve) => {
-      const { searchValue, selectedCategoryId, userType } = this.data; 
+      // 🌟 1. 触发请求前拦截：如果正在请求中，直接跳过，防止用户狂刷
+      if (this.data.isFetching) return resolve();
+      
+      const { searchValue, selectedCategoryId, userType, page } = this.data; 
       const params = { 
         keyword: searchValue.trim(),
-        user_type: userType 
+        user_type: userType,
+        page: page // 🌟 2. 把当前页码传给后端
       };
       if (selectedCategoryId) params.category_id = selectedCategoryId;
+
+      this.setData({ isFetching: true }); // 上锁
 
       wx.request({
         url: `${api.base}/app01/goods/`,
@@ -77,25 +86,50 @@ Page({
         data: params,
         header: { 'Content-Type': 'application/json' },
         success: (res) => {
-          let goodsList = [];
+          let newGoods = [];
           if (res.data && res.data.code === 200) {
-            goodsList = res.data.data.results || res.data.data || [];
+            newGoods = res.data.data.results || res.data.data || [];
           } else if (res.statusCode === 200) {
-            goodsList = res.data.results || res.data || [];
+            newGoods = res.data.results || res.data || [];
           }
 
-          this.setData({ goodsList, loading: false });
-          this.formatGoodsData(); // 格式化价格显示逻辑
-          resolve();
+          // 🌟 3. 判断是否还有下一页（通常后端默认一页10条，少于10条说明到底了）
+          const hasMore = newGoods.length === 10; 
+
+          // 🌟 4. 核心：如果是第1页就覆盖，如果是第2、3页就把新数据拼在后面
+          const currentList = this.data.page === 1 ? [] : this.data.goodsList;
+          const updatedList = [...currentList, ...newGoods];
+
+          this.setData({ 
+            goodsList: updatedList, 
+            loading: false,
+            isFetching: false, // 解锁
+            hasMore: hasMore   // 更新到底状态
+          }, () => {
+            // 放在 setData 的回调里执行格式化，确保拿到了最新拼接完的完整数组
+            this.formatGoodsData(); 
+            resolve();
+          });
         },
         fail: (err) => {
-          this.setData({ goodsList: [], loading: false });
+          // 哪怕失败了也要解锁，否则永远滑不动了
+          this.setData({ isFetching: false, loading: false });
           resolve();
         }
       });
     });
   },
-
+  // 🌟 滚动到底部时自动调用
+  loadMoreGoods() {
+    // 只有在“还有数据”且“当前没在请求”的时候才触发
+    if (this.data.hasMore && !this.data.isFetching) {
+      this.setData({
+        page: this.data.page + 1 // 页码递增
+      }, () => {
+        this.getGoodsList(); // 带着新页码去请求下一页
+      });
+    }
+  },
   // ================= 3. 价格展示逻辑 =================
   isPointGoods(item) {
     const pointField = item.isPointGoods || item.can_point_exchange || item.canPointExchange || false;
@@ -143,16 +177,51 @@ Page({
   // ================= 4. 其它交互逻辑 =================
   onSearchChange(e) { this.setData({ searchValue: e.detail.value }); },
   onSearch() {
-    this.setData({ loading: true, selectedCategoryId: '' });
-    this.getGoodsList();
+    this.setData({ 
+      // 顺手做个首尾去空格，防止用户误敲空格搜不出东西
+      searchValue: this.data.searchValue.trim(), 
+      loading: true, 
+      selectedCategoryId: '', // 搜索时通常是全局搜，所以清空左侧分类高亮
+      // 👇 核心新增：彻底重置分页状态
+      page: 1,         // 回到第1页
+      hasMore: true,   // 恢复可加载状态
+      goodsList: []    // 清空旧数据，给新搜索结果腾出干净的容器
+    }, () => {
+      // 确保状态全部清零后，再去请求数据
+      this.getGoodsList();
+    });
   },
   chooseCategory(e) {
-    this.setData({ selectedCategoryId: e.currentTarget.dataset.id, loading: true });
-    this.getGoodsList();
+    const id = e.currentTarget.dataset.id;
+    // 🌟 切换前先重置分页状态
+    this.setData({
+      selectedCategoryId: id,
+      page: 1,
+      hasMore: true,
+      goodsList: [], // 视觉上先清空旧数据体验更好
+      loading: true  // 重新展示骨架屏
+    }, () => {
+      this.getGoodsList();
+    });
   },
   toGoodsDetail(e) {
     const goodsId = e.currentTarget.dataset.id;
-    if (!goodsId) return;
-    wx.navigateTo({ url: `/pages/mall/detail?goods_id=${goodsId}` });
+    const goodsType = e.currentTarget.dataset.type; 
+    console.log("点击获取的 dataset:", e.currentTarget.dataset);
+    
+    // 你的原版安全校验，保留！
+    if (!goodsId) return; 
+    
+    if (goodsType == 3) {
+      // 🌟 新增的京东物流跳转逻辑 (建议这里也统一传 goods_id)
+      wx.navigateTo({
+        url: `/pages/mall/jdLogistics?goods_id=${goodsId}` 
+      });
+    } else {
+      // 🌟 修复：用回你原来的 goods_id！
+      wx.navigateTo({
+        url: `/pages/mall/detail?goods_id=${goodsId}`
+      });
+    }
   }
 });

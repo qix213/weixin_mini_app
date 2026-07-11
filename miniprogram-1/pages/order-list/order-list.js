@@ -203,7 +203,6 @@ Page({
             const newOrders = resData.data || [];
             const total = resData.total || 0;
             const now = Date.now();
-
             const processedOrders = newOrders.map(order => {
               let goodsList = [];
               if (order.goods_names && typeof order.goods_names === 'string') {
@@ -211,7 +210,6 @@ Page({
                   order.goods_names.split('、') :
                   order.goods_names.split(',');
               }
-
               const orderItem = {
                 goods_id: order.goods_id || '',
                 price: Number(order.total_price) || 0,
@@ -222,7 +220,7 @@ Page({
                 exchangeable: order.exchangeable || false,
                 pointPrice: order.point_summary?.point_deduct || 0
               };
-
+              console.log("【大侦探：订单真实数据结构】", processedOrders);
               const isPointsExchange = this.isPointGoods(orderItem);
               const exchangePoints = parseInt(order.point_summary?.point_deduct || 0);
               let expireTimeMs = 0;
@@ -352,6 +350,80 @@ handleReactivateAndPay(e) {
     }
   });
 },
+// 确认收货处理逻辑
+handleConfirmReceipt(e) {
+  // 🌟 1. 直接从点击事件中精准拿到单号和自取标识，绝不会报 undefined
+  const orderSn = e.currentTarget.dataset.sn;
+  const isPickUp = e.currentTarget.dataset.ispickup;
+  
+  if (!orderSn) {
+    wx.showToast({ title: '单号获取失败', icon: 'none' });
+    return;
+  }
+
+  wx.showModal({
+    title: isPickUp ? '提货确认' : '收货确认',
+    content: isPickUp ? `确定客户已到店，并完成订单 ${orderSn} 的提货核销吗？` : `确定收到订单 ${orderSn} 的商品了吗？`,
+    success: (modalRes) => {
+      if (modalRes.confirm) {
+        wx.showLoading({ title: '正在处理...', mask: true });
+        const app = getApp();
+        const header = app.getRequestHeader ? app.getRequestHeader() : { 'Content-Type': 'application/json' };
+        
+        wx.request({
+          url: `${app.globalData.baseUrl}/app01/order/confirm_receipt/${orderSn}/`, 
+          method: 'POST',
+          header: header,
+          success: (res) => {
+            wx.hideLoading();
+            if (res.data?.code === 200) {
+              wx.showToast({ title: '操作成功', icon: 'success' });
+              // 刷新列表，订单自动进入“已完成”
+              this.fetchOrders().catch(err => console.error(err));
+            } else {
+              wx.showToast({ title: res.data?.msg || '操作失败', icon: 'none' });
+            }
+          },
+          fail: () => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络异常，请重试', icon: 'none' });
+          }
+        });
+      }
+    }
+  });
+},
+
+// 提交确认收货到后端
+submitConfirmReceipt(orderSn) {
+  wx.showLoading({ title: '处理中...', mask: true });
+  const app = getApp();
+
+  app.request({
+    // 🌟 动态拼接这串订单号字符串 (例如：/app01/order/confirm_receipt/ORD202606292027367977/)
+    url: `/app01/order/confirm_receipt/${orderSn}/`, 
+    method: 'POST'
+  }).then(res => {
+    wx.hideLoading();
+    const result = res.data ? res.data : res;
+    
+    if (result.code === 200) {
+      wx.showToast({ title: '收货成功', icon: 'success', duration: 1500 });
+      setTimeout(() => {
+        // 刷新数据
+        if (typeof this.loadOrderList === 'function') this.loadOrderList(); 
+        else if (typeof this.fetchData === 'function') this.fetchData();
+        else this.onLoad(this.options); 
+      }, 1500);
+    } else {
+      wx.showToast({ title: result.msg || '操作失败', icon: 'none' });
+    }
+  }).catch(err => {
+    wx.hideLoading();
+    wx.showToast({ title: '网络异常，请重试', icon: 'none' });
+  });
+},
+
   startCountdown() {
     this.clearCountdown();
     this.timer = setInterval(() => {

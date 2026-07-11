@@ -75,12 +75,9 @@ Page({
 
       // 🌟 2. 详细地址安全抓取
       const detailAddr = address.detail || address.detail_address || '';
-
       const fullAddress = `${baseAddr} ${detailAddr}`.replace(/\s+/g, ' ').trim();
-
       const senderName = address.name || '';
       const senderPhone = address.phone || address.mobile || '';
-
       console.log("✈️ 准备同步回上一页的终极地址:", fullAddress);
 
       // 🌟 3. 双向同步上一页的变量，激活重新校验
@@ -94,13 +91,28 @@ Page({
         "orderDetail.sender_phone": senderPhone,
         "orderDetail.sender_address": fullAddress
       }, () => {
-        // 返回上一页后立即自动执行一次京东前置校验
-        if (prevPage.jdPreCheck) {
-          prevPage.jdPreCheck();
-        }
+        if (prevPage.jdPreCheck) prevPage.jdPreCheck();
       });
+      wx.navigateBack({ delta: 1 });
+      return;
     }
-  
+    // ================ 👆 原本代码结束 👆 ================
+
+    // ================ 👇 2. 新增：给物流页面开的无污染通道 👇 ================
+    if (prevRoute.includes('jdLogistics')) {
+      // 动态获取是从哪个按钮跳过来的（寄还是收）
+      const type = this.options.type || 'sender'; 
+      
+      // 直接调用物流页面里的接收函数
+      if (prevPage.setAddressFromSelect) {
+        prevPage.setAddressFromSelect(type, address);
+      }
+      wx.navigateBack({ delta: 1 });
+      return;
+    }
+    // ====================================================================
+
+    // 其他情况直接返回
     wx.navigateBack({ delta: 1 });
   },
 

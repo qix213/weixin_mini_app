@@ -6,13 +6,12 @@ Page({
     showQrcode: false,
     points: 0, 
     couponCount: 0, 
-    // 🌟 核心修改：移除 0星，坐标轴仅保留 1星、2星、3星
+    walletBalance: '0.00', // 🌟 1. 初始化定义钱包余额字段
     levelConfig: [
-      { value: 2, cost: 980, name: '蓝朋友1星', shortName: '1星' },
-      { value: 3, cost: 3980, name: '蓝朋友2星', shortName: '2星' },
-      { value: 4, cost: 9800, name: '蓝朋友3星', shortName: '3星' }
-    ]
-  },
+      {value:2,cost:980},
+      {value:3,cost:3980},
+      {value:4,cost:9800}
+    ]},
 
   onShow() {
     this.syncGlobalState();
@@ -21,7 +20,12 @@ Page({
       this.getValidCouponCount(); 
     }
   },
-
+// 🌟 2. 编写跳转到电子钱包明细页的方法
+goToWallet() {
+  wx.navigateTo({
+    url: '/pages/wallet/wallet' // 指向你的钱包账单明细页
+  });
+},
   checkLogin(redirectPage = '') {
     if (!this.data.isLogin) {
       wx.showModal({
@@ -80,10 +84,6 @@ Page({
 
   goToCoupon() {
     if (!this.checkLogin('/pages/my/my?action=coupon')) return;
-    if (this.data.couponCount === 0) {
-      wx.showToast({ title: '暂无可用优惠券', icon: 'none', duration: 1500 });
-      return; 
-    }
     wx.navigateTo({
       url: '/pages/coupun/coupun',
       fail: (err) => console.error('跳转失败：', err)
@@ -156,7 +156,7 @@ getMemberInfo() {
         }
 
         // 会员差额与会籍文本配置（同步支持5级：Ta创+）
-        const levelCosts = { 1: 0, 2: 980, 3: 3980, 4: 9800, 5: 39800 };
+        const levelCosts = { 1: 0.1, 2: 0.2, 3: 0.3, 4: 0.4, 5: 0.5 };
         const levelNames = { 1: '蓝朋友0星', 2: '蓝朋友1星', 3: '蓝朋友2星', 4: '蓝朋友3星', 5: 'Ta创+' };
 
         if (currentType < 5) {
@@ -174,6 +174,8 @@ getMemberInfo() {
         this.setData({
           memberInfo: memberInfo,
           points: memberInfo.points || 0,
+          couponCount: memberInfo.coupon_count || 0,
+          walletBalance: memberInfo.wallet_balance || '0.00', 
           isLogin: true
         });
       } else {
@@ -283,7 +285,7 @@ onChooseAvatar(e) {
 
   hideQrcode() { this.setData({ showQrcode: false }); },
 
-  goToCustomerService() { wx.navigateTo({ url: '/pages/service/service' }); },
+  goToCustomerService() { wx.navigateTo({ url: '/pages/my/service' }); },
 
   goToLogout() {
     const app = getApp();
@@ -307,6 +309,7 @@ onChooseAvatar(e) {
   goToOfflineProject() {
     const memberInfo = wx.getStorageSync('memberInfo') || app.globalData.memberInfo || {};
     const userType = Number(memberInfo.user_type || 1);
+    console.log(memberInfo)
 
     if (userType > 4) {
       // 🌟 店长/管理员去专业的管理台
@@ -320,4 +323,5 @@ onChooseAvatar(e) {
       });
     }
   },
+
 });

@@ -30,94 +30,105 @@ Page({
   },
 
   // 🚀 核心：前端启发式智能地址解析算法
-  smartParse() {
-    let text = this.data.smartText.trim();
-    if (!text) return wx.showToast({ title: '请粘贴地址文本', icon: 'none' });
+// 🚀 核心：前端启发式智能地址解析算法
+smartParse() {
+  let text = this.data.smartText.trim();
+  if (!text) return wx.showToast({ title: '请粘贴地址文本', icon: 'none' });
 
-    wx.showLoading({ title: '智能解析中...' });
+  wx.showLoading({ title: '智能解析中...' });
 
-    // 1. 提取手机号 (支持国内常见的11位手机号)
-    const phoneReg = /(1[3-9]\d{9})/g;
-    const phoneMatch = text.match(phoneReg);
-    let phone = phoneMatch ? phoneMatch[0] : '';
-    if (phone) {
-      text = text.replace(phone, ' '); // 挖去手机号，替换为空格
+  // 1. 提取手机号 (支持国内常见的11位手机号)
+  const phoneReg = /(1[3-9]\d{9})/g;
+  const phoneMatch = text.match(phoneReg);
+  let phone = phoneMatch ? phoneMatch[0] : '';
+  if (phone) {
+    text = text.replace(phone, ' '); // 挖去手机号，替换为空格
+  }
+
+  // 2. 剥离可能存在的邮编 (连续6位数字)
+  const zipReg = /\b\d{6}\b/g;
+  const zipMatch = text.match(zipReg);
+  if (zipMatch) text = text.replace(zipMatch[0], ' ');
+
+  // 3. 提取姓名 (根据空格或标点符号分段，寻找2-4个字的非地址段)
+  const parts = text.split(/[\s,，。、\n\t]+/);
+  let name = '';
+  let addressParts = [];
+  const addressKeywords = /省|市|区|县|盟|州|镇|街|路|道|村|号|栋|楼|单元|室/;
+
+  parts.forEach(part => {
+    if (!part) return;
+    // 如果还没找到名字，长度2-4，且不含常见地址后缀，大概率是名字
+    if (!name && part.length >= 2 && part.length <= 4 && !addressKeywords.test(part)) {
+      name = part;
+    } else {
+      addressParts.push(part);
     }
+  });
 
-    // 2. 剥离可能存在的邮编 (连续6位数字)
-    const zipReg = /\b\d{6}\b/g;
-    const zipMatch = text.match(zipReg);
-    if (zipMatch) text = text.replace(zipMatch[0], ' ');
+  // 如果上面规则没命中，且第一段较短，直接拿第一段当名字
+  if (!name && addressParts.length > 0 && addressParts[0].length <= 5) {
+    name = addressParts.shift();
+  }
 
-    // 3. 提取姓名 (根据空格或标点符号分段，寻找2-4个字的非地址段)
-    const parts = text.split(/[\s,，。、\n\t]+/);
-    let name = '';
-    let addressParts = [];
-    const addressKeywords = /省|市|区|县|盟|州|镇|街|路|道|村|号|栋|楼|单元|室/;
+  // 4. 解析省市区 (粗略切分)
+  let addressStr = addressParts.join('');
+  let province = '', city = '', district = '';
+  
+  // 匹配省
+  const provReg = /(.+?(省|自治区|北京市|天津市|上海市|重庆市|特别行政区))/;
+  const provMatch = addressStr.match(provReg);
+  if (provMatch) {
+    province = provMatch[1];
+    addressStr = addressStr.replace(province, '');
+  }
 
-    parts.forEach(part => {
-      if (!part) return;
-      // 如果还没找到名字，长度2-4，且不含常见地址后缀，大概率是名字
-      if (!name && part.length >= 2 && part.length <= 4 && !addressKeywords.test(part)) {
-        name = part;
-      } else {
-        addressParts.push(part);
-      }
-    });
+  // 匹配市
+  const cityReg = /(.+?(市|自治州|地区|盟))/;
+  const cityMatch = addressStr.match(cityReg);
+  if (cityMatch) {
+    city = cityMatch[1];
+    addressStr = addressStr.replace(city, '');
+  }
 
-    // 如果上面规则没命中，且第一段较短，直接拿第一段当名字
-    if (!name && addressParts.length > 0 && addressParts[0].length <= 5) {
-      name = addressParts.shift();
-    }
+  // 匹配区/县
+  const distReg = /(.+?(区|县|旗|海域|岛))/;
+  const distMatch = addressStr.match(distReg);
+  if (distMatch) {
+    district = distMatch[1];
+    addressStr = addressStr.replace(district, '');
+  }
 
-    // 4. 解析省市区 (粗略切分)
-    let addressStr = addressParts.join('');
-    let province = '', city = '', district = '';
-    
-    // 匹配省
-    const provReg = /(.+?(省|自治区|北京市|天津市|上海市|重庆市|特别行政区))/;
-    const provMatch = addressStr.match(provReg);
-    if (provMatch) {
-      province = provMatch[1];
-      addressStr = addressStr.replace(province, '');
-    }
+  // 🌟 新增逻辑：处理直辖市自动补齐
+  const directCities = ['北京市', '上海市', '天津市', '重庆市'];
+  if (directCities.includes(province) && !city) {
+    // 提取到了“北京市”作为省，但没提取到市，自动补齐市
+    city = province; 
+  } else if (!province && directCities.includes(city)) {
+    // 有时候用户没写省直接写的市（比如被市正则拦截了），自动补齐省
+    province = city; 
+  }
 
-    // 匹配市
-    const cityReg = /(.+?(市|自治州|地区|盟))/;
-    const cityMatch = addressStr.match(cityReg);
-    if (cityMatch) {
-      city = cityMatch[1];
-      addressStr = addressStr.replace(city, '');
-    }
+  // 组装回显数据
+  let region = [];
+  if (province) region.push(province);
+  if (city) region.push(city);
+  if (district) region.push(district);
 
-    // 匹配区/县
-    const distReg = /(.+?(区|县|旗|海域|岛))/;
-    const distMatch = addressStr.match(distReg);
-    if (distMatch) {
-      district = distMatch[1];
-      addressStr = addressStr.replace(district, '');
-    }
+  this.setData({
+    'formData.name': name,
+    'formData.phone': phone,
+    'formData.detail': addressStr.trim(),
+    'formData.province': province,
+    'formData.city': city,
+    'formData.district': district,
+    region: region.length > 0 ? region : this.data.region
+    // 🌟 删除了 smartText: '' ，保留文本框原内容
+  });
 
-    // 组装回显数据
-    let region = [];
-    if (province) region.push(province);
-    if (city) region.push(city);
-    if (district) region.push(district);
-
-    this.setData({
-      'formData.name': name,
-      'formData.phone': phone,
-      'formData.detail': addressStr.trim(),
-      'formData.province': province,
-      'formData.city': city,
-      'formData.district': district,
-      region: region.length > 0 ? region : this.data.region,
-      smartText: '' // 解析完自动清空输入框
-    });
-
-    wx.hideLoading();
-    wx.showToast({ title: '解析成功', icon: 'success' });
-  },
+  wx.hideLoading();
+  wx.showToast({ title: '解析成功', icon: 'success' });
+},
 
   // 常规数据绑定
   onInputChange(e) {

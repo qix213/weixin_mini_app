@@ -8,7 +8,7 @@
       <view class="avatar-area">
         
         <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image class="avatar" src="{{memberInfo.avatar_url || '/images/bg/avator.webp'}}" mode="aspectFit"></image>
+          <image class="avatar" src="{{memberInfo.avatar_url || '/images/bg/AI蓝博士头像.jpg'}}" mode="aspectFit"></image>
         </button>
 
         <view class="user-base-info">
@@ -72,11 +72,20 @@
 
   <!-- ========== 资产数据 ========== -->
   <view class="glass-panel asset-container" wx:if="{{isLogin}}">
+    <view class="asset-item" bindtap="goToWallet">
+      <view class="asset-title">钱包余额</view>
+      <view class="asset-value">￥{{walletBalance || '0.00'}}</view>
+    </view>
+    
+    <view class="asset-divider"></view>
+    
     <view class="asset-item" bindtap="goToPoints">
       <view class="asset-title">会员积分</view>
       <view class="asset-value">{{points || 0}}</view>
     </view>
+    
     <view class="asset-divider"></view>
+    
     <view class="asset-item" bindtap="goToCoupon">
       <view class="asset-title">优惠券</view>
       <view class="asset-value {{couponCount === 0 ? 'asset-value-gray' : ''}}">{{couponCount || 0}}</view>

@@ -98,16 +98,13 @@ Page({
     }).then(res => {
       const list = res.data?.data || [];
       
-      
       let sumCash = 0;   
       let sumPoints = 0; 
       let hasExchangeGoods = false;
       
       const formatCart = list.map((item, index) => {
-
-        // 执行识别
+        const goodsType = item.goods_type || item.goods?.goods_type || 0; 
         const isPoint = this.isPointGoods(item);
-
         const cashPrice = Number(item.member_price || item.price || item.goods_price || item.goods?.price || 0);
         const num = Number(item.num || 1);
         
@@ -118,11 +115,9 @@ Page({
           hasExchangeGoods = true;
           let pointPrice = Number(item.point_price || item.goods?.point_price || 0);
           if (pointPrice <= 0) pointPrice = Math.floor(cashPrice * 100); 
-          
           sumPoints += pointPrice * num;
           showUnit = '积分';
           showPrice = pointPrice; 
-          
           item.isPointGoods = true;
           item.pointPrice = pointPrice;
         } else {
@@ -130,8 +125,11 @@ Page({
           item.isPointGoods = false;
         }
 
-        return { ...item, showUnit, showPrice };
+        return { ...item, goods_type: goodsType, showUnit, showPrice };
       });
+
+      // 🌟 核心新增：在写入本地变量前，提前算出是不是线下项目
+      const isOfflineProject = formatCart.some(item => Number(item.goods_type) === 2);
 
       this.setData({
         cartList: formatCart,
@@ -140,10 +138,21 @@ Page({
         hasExchangeGoods: hasExchangeGoods
       }, () => {
         const maxLimit = Math.min(this.data.totalPointPrice, this.data.userPoints);
-        this.setData({
-          maxDeductPoint: maxLimit,
-          deductPoint: maxLimit 
-        });
+        
+        // 🌟 核心修改：如果是线下项目，初始强制把配送方式切到 2 (到店自提)，且清空地址引用
+        if (isOfflineProject) {
+          this.setData({
+            deliveryType: 2,
+            defaultAddress: null,
+            maxDeductPoint: maxLimit,
+            deductPoint: maxLimit 
+          });
+        } else {
+          this.setData({
+            maxDeductPoint: maxLimit,
+            deductPoint: maxLimit 
+          });
+        }
         this.calcMoney();
       });
       
@@ -194,6 +203,18 @@ Page({
 
   switchDeliveryType(e) {
     const t = Number(e.currentTarget.dataset.type);
+    
+    // 🌟 核心新增：防御性强拦截
+    const isOfflineProject = this.data.cartList.some(item => Number(item.goods_type) === 2);
+    if (isOfflineProject && t === 1) {
+      return wx.showToast({
+        title: '服务项目仅支持到店核销，无法选择快递上门',
+        icon: 'none',
+        duration: 2000
+      });
+    }
+
+    // 原有切换逻辑保持不变
     if (t === 1) {
       this.setData({ deliveryType: 1, selectedStore: null, storeShow: false });
       this.getAddress();
@@ -235,44 +256,43 @@ Page({
     const { deliveryType, defaultAddress, selectedStore, cartList, deductPoint, totalCashPrice, actualPayMoney } = this.data;
     
     if (cartList.length === 0) return;
-
-    // ================= 🌟 统一改为 == 2，确保字符串和数字都能完美拦截 =================
-    const isOfflineProject = cartList.some(item => item.goods_type == 2 || item.goodsType == 2);
-
-    if (isOfflineProject) {
-      // 1. 线下项目不需要发货，直接提取商品 ID 和名称
-      const goodsId = cartList[0].goods_id || cartList[0].id;
-      const typeName = cartList[0].name || cartList[0].goods_name || '线下项目预约';
-
-      // 2. 绕过传统的订单生成接口，直接跳去 pay.js 走我们的场景 D 支付！
-      wx.navigateTo({ 
-        url: `/pages/pay/pay?isOfflineProject=true&orderId=${goodsId}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}&typeName=${typeName}` 
-      });
-      
-      return; // 拦截成功，直接 return，不往下走常规订单逻辑
+  
+    // 🌟 1. 识别是否为线下项目
+    const isOfflineProject = cartList.some(item => Number(item.goods_type) === 2);
+    
+    console.log("【最终判定】是否为线下项目:", isOfflineProject);
+ 
+    // 🌟 2. 强校验：线下项目必须选门店
+    if (isOfflineProject && !selectedStore) {
+      return wx.showToast({ title: '请选择要核销的服务门店', icon: 'none' });
     }
-
-
-    // ================= 🛒 以下为原有的实体商品常规订单逻辑 =================
-    if (deliveryType === 1 && !defaultAddress) { this.toAddressPage(); return; }
-    if (deliveryType === 2 && !selectedStore) return;
+    // 普通实物校验
+    if (!isOfflineProject) {
+      if (deliveryType === 1 && !defaultAddress) { this.toAddressPage(); return; }
+      if (deliveryType === 2 && !selectedStore) return wx.showToast({ title: '请选择自提门店', icon: 'none' });
+    }
   
     const goodsList = cartList.map(item => ({
       cart_id: Number(item.id) || 0,
-      num: parseInt(item.num, 10) || 1,
-      is_point_goods: item.isPointGoods,
-      point_price: item.isPointGoods ? item.pointPrice : 0
+      num: parseInt(item.num, 10) || 1
     }));
   
     const orderData = {
-      delivery_type: Number(deliveryType),
-      address_id: deliveryType === 1 ? Number(defaultAddress.id) : null,
-      pick_up_store_id: deliveryType === 2 ? Number(selectedStore.id) : null,
+      order_type: isOfflineProject ? 2 : 1, // 告诉后端订单类型
+      
+      // 🌟 核心对齐：你的后端代码里 if delivery_type == 1 走快递，else 走门店。
+      // 所以线下项目这里我们直接传 2，触发你后端的 pick_up_store 逻辑
+      delivery_type: isOfflineProject ? 2 : Number(deliveryType), 
+      
+      address_id: (deliveryType === 1 && !isOfflineProject) ? Number(defaultAddress.id) : null,
+      pick_up_store_id: (isOfflineProject || deliveryType === 2) ? Number(selectedStore.id) : null,
+      
       total_price: parseFloat(totalCashPrice) || 0, 
       deduct_point: deductPoint,
       cash_pay_money: parseFloat(actualPayMoney) || 0,
       goods_list: goodsList
     };
+    console.log("=========", orderData)
   
     wx.showLoading({ title: '提交中...' });
     app.request({
@@ -285,12 +305,15 @@ Page({
       data: orderData
     }).then(res => {
       wx.hideLoading();
-      if (res.data.code === 200) {
+      const result = res.data ? res.data : res; // 兼容包装
+      if (result.code === 200) {
+        // 🌟 确保单号拿的是正确的字段，有些后端返回的是 order_sn，有些是 id
+        const orderSn = result.data.order_sn || result.data.id;
         wx.navigateTo({ 
-          url: `/pages/pay/pay?orderId=${res.data.data.order_id}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}` 
+          url: `/pages/pay/pay?orderId=${orderSn}&actualAmount=${parseFloat(actualPayMoney).toFixed(2)}&deduct_point=${deductPoint}&isOfflineProject=${isOfflineProject}` 
         });
       } else {
-        wx.showToast({ title: res.data.msg || '订单提交失败', icon: 'none' });
+        wx.showToast({ title: result.msg || '订单提交失败', icon: 'none' });
       }
     }).catch(() => {
       wx.hideLoading();

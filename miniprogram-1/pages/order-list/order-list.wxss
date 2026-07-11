@@ -194,10 +194,36 @@ page {
 /* ================= 按钮组容器（右侧） ================= */
 .btn-group {
   display: flex;
+  justify-content: flex-end; /* 按钮靠右对齐 */
   align-items: center;
-  justify-content: flex-end;
-  gap: 16rpx;
-  flex-wrap: nowrap;
+  margin-top: 24rpx;
+  gap: 24rpx;
+}
+/* 🌟 新增：确认收货按钮样式 */
+.confirm-btn {
+  background: linear-gradient(135deg, #94A48C, #7A8B72); /* 品牌轻奢绿渐变 */
+  color: #FFFFFF;
+  border: none;
+  margin-left: 16rpx; /* 与左边按钮保持间距 */
+  
+  /* 以下为基础按钮统一样式，若你的父级已有公共类可酌情删减 */
+  font-size: 26rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 32rpx;
+  border-radius: 28rpx;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 16rpx rgba(148, 164, 140, 0.3);
+  transition: all 0.2s;
+}
+
+/* 按钮按压反馈 */
+.confirm-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 6rpx rgba(148, 164, 140, 0.15);
 }
 
 /* 统一按钮基础 */
