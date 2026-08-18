@@ -15,10 +15,6 @@ SERVER_BASE_URL = 'https://www.lansik2026.com'
 SECRET_KEY = 'django-insecure-6j)67*2#nahe40s-*y#p32vlwpa6)h4vrp!hw_o#=(oel98*w='
 DEBUG = True
 
-# 微信小程序配置
-WX_APP_ID = 'wx8c245b48cd8672b3'
-WX_APP_SECRET = '8a95ce504d765a9753b33ec930a8cc1a'
-
 ALLOWED_HOSTS = [
     'www.lansik2026.com',
     'lansik2026.com',
@@ -228,10 +224,20 @@ except json.JSONDecodeError as e:
 
 # ================= 3. 将解析出的配置赋值给 Django 变量 =================
 # 你甚至可以把 Django 原生的 SECRET_KEY 也搬到 JSON 里
-SECRET_KEY = secrets.get('DJANGO_SECRET_KEY', 'default-unsafe-key-for-dev')
+WECHAT_CUS= secrets.get('WECHAT_CUS', {})
 
 # 提取微信支付大字典 (如果 JSON 里没写，默认给个空字典防崩溃)
 WECHAT_PAY = secrets.get('WECHAT_PAY', {})
 
 # 提取京东物流大字典
 JD_LOGISTICS = secrets.get('JD_LOGISTICS', {})
+
+# ==========================================
+# 微信支付调试开关
+# True: 开启虚拟支付（不拉起真实微信收银台，直接返回成功）
+# False: 开启真实支付（生产环境必须为 False）
+# ==========================================
+DEBUG_PAY = False
+
+ACTIVE_AI_PROVIDER = secrets.get("ACTIVE_AI_PROVIDER", "doubao")
+AI_PROVIDERS = secrets.get("AI_PROVIDERS", {})

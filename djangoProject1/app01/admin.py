@@ -2,9 +2,11 @@ from django.contrib import admin
 
 # Register your models here.
 from .models import (Welcome, Banner, Notice, Index_Annonce, UserInfo, Area, Category, Goods,
- VideoCourse, StudyCheckIn, ExamQuestion, ExamRecord, Certification, User, Cart, Recipient,
-Address, Order,GoodsImage,Coupon,ExpressLogistics, UserSkinProfile, SkinPhotoRecord,
-CourseCategory, VideoCourse, MemberPrivilege, UserOfflineProject, OfflineServiceRecord)
+                     StudyCheckIn, ExamQuestion, ExamRecord, User, Cart, Recipient,
+                     Address, Order, GoodsImage, Coupon, ExpressLogistics, UserSkinProfile, SkinPhotoRecord,
+                     CourseCategory, VideoCourse, MemberPrivilege, UserOfflineProject, OfflineServiceRecord, CommissionRecord,
+WithdrawRecord, UserWallet, WalletTransaction,UserCoupon, EnterpriseProfile,OfflineCertification
+                     )
 
 admin.site.register(Welcome)
 admin.site.register(Banner)
@@ -12,19 +14,22 @@ admin.site.register(Notice)
 admin.site.register(Index_Annonce)
 admin.site.register(UserInfo)
 admin.site.register(Area)
-# admin.site.register(Category)
-# admin.site.register(Goods)
+admin.site.register(UserCoupon)
+admin.site.register(OfflineCertification)
 admin.site.register(GoodsImage)
 admin.site.register(StudyCheckIn)
 admin.site.register(ExamQuestion)
 admin.site.register(ExamRecord)
-admin.site.register(Certification)
+# admin.site.register(Certification)
 admin.site.register(Cart)
 admin.site.register(Recipient)
 admin.site.register(Address)
 admin.site.register(Order)
 admin.site.register(Coupon)
 admin.site.register(ExpressLogistics)
+admin.site.register(CommissionRecord)
+admin.site.register(WithdrawRecord)
+admin.site.register(EnterpriseProfile)
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # 后台列表显示的字段
@@ -122,3 +127,35 @@ class VideoCourseAdmin(admin.ModelAdmin):
 class MemberPrivilegeAdmin(admin.ModelAdmin):
     list_display = ['title', 'is_active', 'update_time']
     list_filter = ['is_active']
+
+
+@admin.register(UserWallet)
+class UserWalletAdmin(admin.ModelAdmin):
+    list_display = ['user', 'total_balance', 'principal', 'bonus', 'status', 'update_time']
+    search_fields = ['user__phone', 'user__nickname', 'user__member_id']
+    list_filter = ['status']
+
+    # 🌟 财务红线：禁止在后台直接手敲修改余额数字！
+    # 想要加钱或扣钱，必须去“资金流水表”里新增一条“后台修改”的流水记录。
+    # readonly_fields = ['principal', 'bonus', 'total_balance', 'update_time']
+
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(admin.ModelAdmin):
+    list_display = ['trade_no', 'get_user', 'transaction_type', 'amount', 'after_balance', 'create_time']
+    search_fields = ['trade_no', 'order_sn', 'wallet__user__phone', 'remark']
+    list_filter = ['transaction_type', 'create_time']
+    readonly_fields = ['create_time']
+
+    # 优化展示：在流水列表里直接显示是哪个用户的
+    def get_user(self, obj):
+        return f"{obj.wallet.user.nickname} ({obj.wallet.user.phone})"
+
+    get_user.short_description = '所属用户'
+
+    # # 🌟 安全防御：资金流水一旦生成，绝对不允许在后台删除或修改！只能查看！
+    # def has_change_permission(self, request, obj=None):
+    #     return False
+    #
+    # def has_delete_permission(self, request, obj=None):
+    #     return False

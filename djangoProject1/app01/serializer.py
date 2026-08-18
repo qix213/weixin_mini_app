@@ -216,14 +216,33 @@ from .models import Cart, Recipient
 class CartSerializer(serializers.ModelSerializer):
     goods = GoodsSerializer(read_only=True)  # 嵌套商品信息
     total_price = serializers.SerializerMethodField()  # 计算商品总价（数量*单价）
+    goods_type = serializers.IntegerField(source='goods.goods_type', read_only=True)
+    goods_name = serializers.CharField(source='goods.name', read_only=True)
 
     class Meta:
         model = Cart
-        fields = ['id', 'goods', 'num', 'total_price']
+        fields = ['id', 'goods', 'num', 'goods_type', 'total_price', 'goods_name']
 
     def get_total_price(self, obj):
-        """计算单个商品总价"""
-        return round(obj.num * obj.goods.member_price, 2)
+        """根据用户等级，动态计算单个商品总价"""
+        # 1. 获取当前发请求的用户
+        request = self.context.get('request')
+        user_type = 1  # 默认视为 0星/普通用户
+
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            # 安全获取 user_type，如果没有该属性则兜底为 1
+            user_type = getattr(request.user, 'user_type', 1)
+
+        # 2. 动态决定单价
+        if user_type <= 1:
+            # 0星用户：优先取零售价 original_price，如果后台没填零售价，被迫兜底取 member_price
+            price = obj.goods.original_price if obj.goods.original_price else obj.goods.member_price
+        else:
+            # 星级用户：直接取会员价
+            price = obj.goods.member_price
+
+        # 3. 返回正确的总价
+        return round(obj.num * price, 2)
 
 
 class CartAddSerializer(serializers.Serializer):
@@ -283,7 +302,7 @@ class CourseCategorySerializer(serializers.ModelSerializer):
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
-from .models import StudyCheckIn, ExamQuestion, ExamRecord, Certification
+from .models import StudyCheckIn, ExamQuestion, ExamRecord
 from django.core.validators import RegexValidator
 
 User = get_user_model()  # 自动获取settings.py中配置的User模型
@@ -452,15 +471,15 @@ class ExamRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
 
-class CertificationSerializer(serializers.ModelSerializer):
-    cert_type_name = serializers.CharField(source='get_cert_type_display', read_only=True)
-    status_name = serializers.CharField(source='status_display', read_only=True)
-    user_nickname = serializers.CharField(source='user.nickname', read_only=True)
-
-    class Meta:
-        model = Certification
-        fields = '__all__'
-        read_only_fields = ['user', 'status', 'review_time']
+# class CertificationSerializer(serializers.ModelSerializer):
+#     cert_type_name = serializers.CharField(source='get_cert_type_display', read_only=True)
+#     status_name = serializers.CharField(source='status_display', read_only=True)
+#     user_nickname = serializers.CharField(source='user.nickname', read_only=True)
+#
+#     class Meta:
+#         model = Certification
+#         fields = '__all__'
+#         read_only_fields = ['user', 'status', 'review_time']
 
 
 class MemberInfoSerializer(serializers.ModelSerializer):
@@ -474,7 +493,7 @@ class MemberInfoSerializer(serializers.ModelSerializer):
         fields = [
             'member_id', 'nickname', 'phone', 'birth_date',
             'user_type', 'user_type_text', 'star_level', 'points',
-            'coupon_count', 'create_time', 'expire_time', 'avatar'
+            'coupon_count', 'create_time', 'expire_time', 'avatar','wallet_balance',
         ]
 
 
@@ -613,6 +632,7 @@ class OrderAddSerializer(serializers.Serializer):
 
 # ========== 订单项/订单序列化器 ==========
 class OrderItemSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = OrderItem
         fields = ['goods_name', 'num', 'price', 'total_price', 'weight', 'volume']
@@ -650,7 +670,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
             # 🌟 新增：发件人信息与京东物流前置校验结果 🌟
             'sender_name', 'sender_phone', 'sender_address',
-            'jd_precheck_status', 'jd_error_msg'
+            'jd_precheck_status', 'jd_error_msg', 'delivery_type'
         ]
 
     # 优化权限逻辑：

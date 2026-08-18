@@ -1,6 +1,8 @@
-from django.db import models
 import uuid
-# Create your models here
+
+from django.db import models
+from decimal import Decimal
+from django.conf import settings
 
 class Welcome(models.Model):
     img = models.ImageField(upload_to='welcome',default='welcome_fRb2uKK.png',verbose_name='图片')
@@ -65,27 +67,80 @@ class MemberPrivilege(models.Model):
         status = "【使用中】" if self.is_active else "【已停用】"
         return f"{status} {self.title}"
 
-class Area(models.Model):
-    name = models.CharField(max_length=32, verbose_name='门店全名')
-    desc = models.CharField(max_length=32, verbose_name='门店简称')
-    user = models.ForeignKey(to='UserInfo', on_delete=models.CASCADE, null=True, verbose_name='用户名')
+class OfflineCertification(models.Model):
+    title = models.CharField(max_length=50, verbose_name="标题", default="线下认证长图")
+    # 图片会保存在 media/certification/ 目录下
+    image = models.ImageField(upload_to='certification/', verbose_name="认证图片")
+    is_active = models.BooleanField(default=True, verbose_name="是否启用当前图")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 
     class Meta:
-        verbose_name = '门店表'
+        verbose_name = "线下认证配置"
         verbose_name_plural = verbose_name
+        ordering = ['-update_time']
 
+    def __str__(self):
+        status = "【使用中】" if self.is_active else "【已停用】"
+        return f"{status} {self.title}"
+
+class UserInfo(models.Model):
+    """
+    【门店负责人表】
+    这里通常是具体的“店长”或“现场合伙人”微型档案，属于具体的自然人。
+    """
+    name = models.CharField(max_length=32, verbose_name='姓名')
+    avatar = models.FileField(upload_to='avatar/', max_length=128, verbose_name='头像')  # 修正拼写 avator -> avatar
+    create_time = models.DateTimeField(auto_now=True, verbose_name='创建日期')
+
+    class Meta:
+        verbose_name = '门店负责人'
+        verbose_name_plural = verbose_name
 
     def __str__(self):
         return self.name
 
-class UserInfo(models.Model):
-    name = models.CharField(max_length=32, verbose_name='姓名')
-    avatar = models.FileField(upload_to='avator', max_length=128, verbose_name='头像')
-    create_time = models.DateTimeField(auto_now=True, verbose_name='日期')
 
+class Area(models.Model):
+    """
+    【门店/线下项目表】
+    """
+    name = models.CharField(max_length=32, verbose_name='门店全名')
+    desc = models.CharField(max_length=32, verbose_name='门店简称')
+
+    # 🌟 1. 线下项目由谁管？关联原来的店长/负责人
+    user = models.ForeignKey(
+        to='UserInfo',
+        on_delete=models.SET_NULL,  # 负责人离职，门店不至于被连带级联删除
+        null=True,
+        blank=True,
+        verbose_name='门店负责人'
+    )
+
+    # 🌟 2. 核心联动：这个门店在经济上归属于 Ta创+ 的哪家企业账户？
+    # 这样就彻底把 门店 -> 企业 -> Ta创+ 串联起来了！
+    enterprise = models.ForeignKey(
+        to='EnterpriseProfile',
+        on_delete=models.PROTECT,  # 只要企业下面还有门店在营业，就保护起来不准删企业
+        null=True,
+        blank=True,
+        related_name='stores',
+        verbose_name='归属企业账户'
+    )
+
+    # 🌟 3. 双保险打桩：直接挂载所属的顶级 Ta创+ 老板
+    # 这样做是为了能让 Ta创+ 在工作台里一键 .filter(belong_to_boss=request.user) 查到所有门店
+    belong_to_boss = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='my_offline_stores',
+        verbose_name='所属Ta创+大老板'
+    )
 
     class Meta:
-        verbose_name = '店主用户表'
+        verbose_name = '门店表'
         verbose_name_plural = verbose_name
 
     def __str__(self):
@@ -112,10 +167,6 @@ class Category(models.Model):
         return self.name
 
 # 原有Goods模型保持不变，新增GoodsImage模型存储多组介绍图
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.conf import settings
-
 
 class GoodsImage(models.Model):
     """商品多媒体模型（关联主商品，支持图片与视频）"""
@@ -183,6 +234,7 @@ class Goods(models.Model):
     GOODS_TYPE_CHOICES = (
         (1, '居家产品'),
         (2, '线下项目'),
+        (3, '京东物流'),
     )
     goods_type = models.SmallIntegerField('商品/项目类型', choices=GOODS_TYPE_CHOICES, default=1)
     service_times = models.IntegerField('项目包含次数', default=1, help_text='仅对线下项目有效，买一次包含几次服务')
@@ -402,10 +454,6 @@ class VideoCourse(models.Model):
     def __str__(self):
         return self.title
 
-
-# 务必确保导入在文件中正确位置（建议放在VideoCourse模型下方）
-from django.db import models
-from django.conf import settings
 from django.utils import timezone  # 引入Django时区工具（适配时间字段）
 
 # 视频观看日志模型（完整、无冲突版本）
@@ -494,12 +542,6 @@ class VideoWatchLog(models.Model):
             self.watch_end = self.watch_end or timezone.now()  # 未设置结束时间则补全
             self.save(update_fields=['is_finished', 'watch_end'])
 
-# app01/models.py
-from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
-import random
-import string
-
 class PointsRecord(models.Model):
     """会员积分变动记录（注册/消费/观看视频均生成记录）"""
     POINTS_TYPE_CHOICES = (
@@ -547,9 +589,6 @@ from django.db import models, transaction
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.utils import timezone
-import logging
-
-logger = logging.getLogger(__name__)
 
 class User(AbstractUser):
     # ================= 🌟 基础业务字段 =================
@@ -561,7 +600,11 @@ class User(AbstractUser):
         (5, "Ta创+"),
     )
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, null=True, blank=True, verbose_name="会员等级")
+    can_use_ai = models.BooleanField(default=False, verbose_name="允许使用智能蓝博士")
     expire_time = models.DateTimeField(null=True, blank=True, verbose_name="会籍到期时间")
+    withdrawable_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="可提现余额")
+    frozen_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00,
+                                         verbose_name="冻结中余额（提现中）")
     # 会员ID：8位数字+字母，自动生成
     member_id = models.CharField(
         max_length=8, unique=True, blank=True,
@@ -586,6 +629,10 @@ class User(AbstractUser):
     # 推荐人关联：外键指向自身（上级会员）
     parent_user = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='sub_users', verbose_name="上级会员")
+    root_enterprise = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
+                                        limit_choices_to={'user_type': 5},  # 限制只能选5星
+                                        related_name='all_downline_users',
+                                        verbose_name="归属的Ta创+(算发货用)")
 
     points = models.IntegerField(default=0, verbose_name="积分余额")
     coupon_count = models.IntegerField(default=0, verbose_name="优惠量")
@@ -805,7 +852,11 @@ class User(AbstractUser):
             # 原：status__in=[1, 2, 3]  （漏掉了已取消 4）
             # 改：status__in=[1, 2, 3, 4]（包含所有状态：待发货、已发货、已完成、已取消）
             orders = Order.objects.filter(
-                user=sub_user, status__in=[1, 2, 3, 4]
+                user=sub_user,
+                status__in=[1, 2, 3, 4],
+                is_delete=False,
+                order_type='normal',  # 核心修改：匹配日志里的字符串类型
+                goods_count__gt=0  # 核心屏障：只要商品数为0，统统过滤掉
             ).select_related('address').order_by('-create_time').prefetch_related('items')
 
             if orders:
@@ -891,6 +942,177 @@ class User(AbstractUser):
             ]
         return []
 
+    @property
+    def is_valid_vip(self):
+        """
+        判断用户是否是有效的付费会员/店长
+        """
+        # 如果是普通用户，直接算无效
+        if self.user_type <= 1:
+            return False
+
+        # 如果有过期时间，且当前时间大于过期时间，则已过期
+        if self.expire_time and timezone.now() > self.expire_time:
+            return False
+
+        return True
+# ==============================================================
+    #                    六、电子钱包快捷访问属性
+    # ==============================================================
+    @property
+    def wallet_balance(self):
+        """快捷获取电子账户总余额（本金+赠金）"""
+        # 注意：这里假设你新建的钱包模型 related_name='wallet'
+        if hasattr(self, 'wallet') and self.wallet.status:
+            return self.wallet.total_balance
+        return Decimal('0.00')
+
+    @property
+    def wallet_principal(self):
+        """快捷获取电子账户本金（可用于未来本金提现或退款校验）"""
+        if hasattr(self, 'wallet') and self.wallet.status:
+            return self.wallet.principal
+        return Decimal('0.00')
+
+    @property
+    def wallet_bonus(self):
+        """快捷获取电子账户赠送金"""
+        if hasattr(self, 'wallet') and self.wallet.status:
+            return self.wallet.bonus
+        return Decimal('0.00')
+
+class EnterpriseProfile(models.Model):
+    """
+    【企业档案表】
+    Ta创+ 专属的企业资质与对公结算账户。
+    一个 Ta创+ 账号可以关联多个企业账户（改成 ForeignKey 关系，比 OneToOne 更灵活）
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # 关联你的 User 架构（5星Ta创+）
+        on_delete=models.CASCADE,
+        related_name='enterprise_profiles',
+        verbose_name="所属Ta创+"
+    )
+    company_name = models.CharField(max_length=100, verbose_name="企业/公司名称")
+    credit_code = models.CharField(max_length=18, unique=True, null=True, blank=True, verbose_name="统一社会信用代码")
+    corporate_bank_account = models.CharField(max_length=50, null=True, blank=True, verbose_name="企业对公账户")
+    bank_name = models.CharField(max_length=50, null=True, blank=True, verbose_name="开户行")
+
+    # 企业财务独立/独立结算开关
+    is_active = models.BooleanField(default=True, verbose_name="是否启用结算")
+
+    class Meta:
+        verbose_name = "Ta创+企业档案"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"{self.user.nickname if self.user else '未知'}-{self.company_name}"
+
+class UserWallet(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='wallet',
+                                verbose_name='所属用户')
+
+    # 🌟 强烈建议：本金和赠送金分开存！
+    principal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='本金余额')
+    bonus = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='赠送金余额')
+
+    total_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00,
+                                        verbose_name='总余额')  # 冗余字段，等于 本金+赠金，方便前端查询
+    status = models.BooleanField(default=True, verbose_name='账户状态')  # 用于风控，如果是黑产可以直接冻结钱包而不封禁账号
+    update_time = models.DateTimeField(auto_now=True, verbose_name='最后变动时间')
+
+    def save(self, *args, **kwargs):
+        # 1. 强制洗牌：不管上游传过来的是 float、int 还是字符串，统统转化为高精度 Decimal
+        # 先转 str 是为了防止直接把 float 转 Decimal 导致的无限循环小数精度问题
+        self.principal = Decimal(str(self.principal or '0.00'))
+        self.bonus = Decimal(str(self.bonus or '0.00'))
+
+        # 2. 安全相加
+        self.total_balance = self.principal + self.bonus
+
+        super().save(*args, **kwargs)
+    class Meta:
+        verbose_name = '用户电子钱包'
+        verbose_name_plural = verbose_name
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPE = (
+        (1, '充值'),
+        (2, '消费扣款'),
+        (3, '退款返还'),
+        (4, '后台修改'),
+    )
+
+    wallet = models.ForeignKey(UserWallet, on_delete=models.CASCADE, related_name='transactions',
+                               verbose_name='对应钱包')
+    trade_no = models.CharField(max_length=64, unique=True, verbose_name='交易流水号')
+    order_sn = models.CharField(max_length=64, null=True, blank=True, verbose_name='关联业务订单号')  # 记录是因为哪笔商城订单扣的钱
+
+    transaction_type = models.SmallIntegerField(choices=TRANSACTION_TYPE, verbose_name='变动类型')
+
+    # 变动金额（有正负）
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='变动总金额')
+    principal_change = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='本金变动')
+    bonus_change = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='赠金变动')
+
+    # 变动后的账户快照（极其重要，用于查账防篡改）
+    after_balance = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='变动后总余额')
+
+    remark = models.CharField(max_length=255, verbose_name='变动说明')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='记录时间')
+    class Meta:
+        verbose_name = '电子账户流水'
+        verbose_name_plural = verbose_name
+
+class RechargeActivity(models.Model):
+    """储值活动/套餐配置表"""
+    name = models.CharField(max_length=100, verbose_name='活动名称', help_text='例如：充1000送200元代金券')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='需充值金额(实付)')
+
+    # 赠送权益配置
+    bonus_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'),
+                                       verbose_name='额外赠送金额(进入赠金账户)')
+    gift_coupon = models.ForeignKey('Coupon', on_delete=models.SET_NULL, null=True, blank=True,
+                                    verbose_name='赠送的代金券')
+    gift_coupon_num = models.IntegerField(default=1, verbose_name='赠送代金券张数')
+
+    is_active = models.BooleanField(default=True, verbose_name='是否上架')
+    sort_order = models.IntegerField(default=0, verbose_name='排序(越小越靠前)')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        verbose_name = '储值套餐'
+        verbose_name_plural = verbose_name
+        ordering = ['sort_order', 'amount']
+
+    def __str__(self):
+        return f"{self.amount}元套餐 - {self.name}"
+
+class RechargeOrder(models.Model):
+    """用户充值订单表"""
+    STATUS_CHOICES = ((0, '待支付'), (1, '充值成功'), (2, '已取消'))
+
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='recharge_orders', verbose_name='充值用户')
+    order_sn = models.CharField(max_length=64, unique=True, verbose_name='充值单号')
+    activity = models.ForeignKey(RechargeActivity, on_delete=models.SET_NULL, null=True, blank=True,
+                                 verbose_name='参与的储值套餐')
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='应付金额')
+    status = models.SmallIntegerField(choices=STATUS_CHOICES, default=0, verbose_name='支付状态')
+
+    pay_method = models.IntegerField(choices=((1, '微信支付'), (2, '模拟支付')), default=1, verbose_name='支付方式')
+    pay_time = models.DateTimeField(null=True, blank=True, verbose_name='支付时间')
+    transaction_id = models.CharField(max_length=64, null=True, blank=True, verbose_name='微信支付流水号')
+
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        verbose_name = '充值订单'
+        verbose_name_plural = verbose_name
+        ordering = ['-create_time']
+
+    def __str__(self):
+        return f"{self.order_sn} - {self.get_status_display()}"
 # ====================== 打卡学习：4个核心模型（正确引用User） ======================
 
 # 1. 学习打卡模型
@@ -975,28 +1197,28 @@ class ExamRecord(models.Model):
     def __str__(self):
         return f"{self.user.nickname} - {self.get_course_type_display()} - {self.score}分"
 
-# 4. 线下认证模型
-class Certification(models.Model):
-    CERT_TYPE = [
-        (1, "护肤私教认证"),
-        (2, "线下实操考核"),
-    ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="认证用户")  # 大写User，无冲突
-    cert_type = models.IntegerField(choices=CERT_TYPE, verbose_name="认证类型")
-    name = models.CharField(max_length=50, verbose_name="真实姓名")
-    phone = models.CharField(max_length=11, verbose_name="手机号")
-    id_card = models.CharField(max_length=18, verbose_name="身份证号")
-    upload_file = models.FileField(upload_to='certification/', verbose_name="认证材料")
-    status = models.IntegerField(default=0, choices=[(0, "待审核"), (1, "已通过"), (2, "已驳回")], verbose_name="认证状态")
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name="提交时间")
-    review_time = models.DateTimeField(blank=True, null=True, verbose_name="审核时间")
-
-    class Meta:
-        verbose_name = "线下认证"
-        verbose_name_plural = verbose_name
-
-    def __str__(self):
-        return f"{self.user.nickname} - {self.get_cert_type_display()} - {self.get_status_display()}"
+# # 4. 线下认证模型
+# class Certification(models.Model):
+#     CERT_TYPE = [
+#         (1, "护肤私教认证"),
+#         (2, "线下实操考核"),
+#     ]
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="认证用户")  # 大写User，无冲突
+#     cert_type = models.IntegerField(choices=CERT_TYPE, verbose_name="认证类型")
+#     name = models.CharField(max_length=50, verbose_name="真实姓名")
+#     phone = models.CharField(max_length=11, verbose_name="手机号")
+#     id_card = models.CharField(max_length=18, verbose_name="身份证号")
+#     upload_file = models.FileField(upload_to='certification/', verbose_name="认证材料")
+#     status = models.IntegerField(default=0, choices=[(0, "待审核"), (1, "已通过"), (2, "已驳回")], verbose_name="认证状态")
+#     create_time = models.DateTimeField(auto_now_add=True, verbose_name="提交时间")
+#     review_time = models.DateTimeField(blank=True, null=True, verbose_name="审核时间")
+#
+#     class Meta:
+#         verbose_name = "线下认证"
+#         verbose_name_plural = verbose_name
+#
+#     def __str__(self):
+#         return f"{self.user.nickname} - {self.get_cert_type_display()} - {self.get_status_display()}"
 
 # 新增：购物车模型
 
@@ -1070,8 +1292,6 @@ class StoreSenderAddress(models.Model):
 from django.db import models
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-import logging
-logger = logging.getLogger(__name__)
 
 class Order(models.Model):
     ORDER_STATUS = (
@@ -1084,7 +1304,8 @@ class Order(models.Model):
     # 到店自取专用状态映射（覆盖原状态名）
     PICK_UP_STATUS_MAP = {
         0: "待付款",
-        1: "待取货",  # 把原“待发货”替换为“待取货”
+        1: "备货中",
+        2: "待取货",
         3: "已完成",
         4: "已取消",
     }
@@ -1094,7 +1315,13 @@ class Order(models.Model):
         (2, "到店自取"),
     )
     # 原有核心字段保留
-    user = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="用户")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,  # 用户删除时订单保留，置空即可
+        null=True,
+        blank=True,
+        verbose_name='所属用户'
+    )
     order_sn = models.CharField(max_length=64, unique=True, verbose_name="商户订单编号")
     goods_names = models.CharField(max_length=500, null=True, blank=True, verbose_name="订单产品名称（拼接）")
     goods_count = models.IntegerField(default=0, verbose_name="订单商品总数")
@@ -1103,7 +1330,9 @@ class Order(models.Model):
     status = models.IntegerField(choices=ORDER_STATUS, default=0, verbose_name="订单状态")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     is_point_deducted = models.BooleanField(default=False, verbose_name="积分是否已扣减")
-
+    order_type = models.CharField(max_length=20, default='normal', verbose_name='订单类型')  # normal/member/shop
+    register_data = models.JSONField(null=True, blank=True, verbose_name='注册暂存数据')
+    openid = models.CharField(max_length=64, null=True, blank=True, verbose_name='微信openid')
     # ========== 新增配送相关字段 ==========
     delivery_type = models.IntegerField(
         choices=DELIVERY_TYPE_CHOICES,
@@ -1119,15 +1348,35 @@ class Order(models.Model):
     )
 
     # ========== 新增订单详情字段 ==========
-    # 1. 支付相关
+    # 1. 支付相关 (新增电子钱包和混合支付)
     PAY_METHOD_CHOICES = (
         (1, "微信支付"),
-        (2, "支付宝支付"),
-        (3, "线下支付"),
+        (2, "线下支付"),
+        (3, "电子账户支付"),  # 🌟 新增：全额用电子钱包支付
+        (4, "混合支付"),  # 🌟 新增：钱包余额不足，剩余部分用微信补齐
     )
     pay_method = models.IntegerField(choices=PAY_METHOD_CHOICES, null=True, blank=True, verbose_name="支付方式")
     pay_time = models.DateTimeField(null=True, blank=True, verbose_name="支付完成时间")
     pay_no = models.CharField(max_length=64, null=True, blank=True, verbose_name="支付单号")
+
+    # ===================== 🌟🌟 【新增】订单资金拆分与返佣基数 =====================
+    # 逻辑公式: total_price - point_deduct_money - coupon_deduct = actual_pay_money
+    # actual_pay_money = wallet_pay + wechat_pay = commission_base
+
+    coupon_deduct = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="优惠券抵扣金额"
+    )
+    wallet_pay = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="电子账户支付金额"
+    )
+    wechat_pay = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="第三方支付金额(微信/支付宝)"
+    )
+
+    # 💥 这个字段是整个防薅羊毛体系的灵魂！分佣系统只认这个字段！
+    commission_base = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="返佣计算基数(真金白银)"
+    )
 
     # ========== 物流与发货相关 ==========
     logistics_no = models.CharField(max_length=64, null=True, blank=True, verbose_name="物流单号/运单号")
@@ -1179,6 +1428,10 @@ class Order(models.Model):
         verbose_name='京东揽收状态'
     )
 
+    fulfill_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True,
+                                   limit_choices_to={'user_type': 5},
+                                   related_name='to_fulfill_orders',
+                                   verbose_name="履约方(发货的Ta创+)")
 
     # 4. 软删除
     is_delete = models.BooleanField(default=False, verbose_name="是否删除")
@@ -1215,9 +1468,7 @@ class Order(models.Model):
             return self.get_status_display()
 
     def clean(self):
-        if self.delivery_type == 2 and self.status == 2:
-            raise ValidationError("到店自取订单不支持「待收货」状态")
-        if self.delivery_type == 2 and self.status not in [0, 1, 3, 4]:
+        if self.delivery_type == 2 and self.status not in [0, 1, 2, 3, 4]:
             raise ValidationError("到店自取订单仅支持：待付款/待取货/已完成/已取消")
 
     def save(self, *args, **kwargs):
@@ -1390,7 +1641,6 @@ class Coupon(models.Model):
         else:
             return f"{self.title} - {self.discount_rate * 10}折券"
 
-
 class UserCoupon(models.Model):
     """用户持有的优惠券（关联用户和优惠券模板）"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_coupons",
@@ -1429,6 +1679,75 @@ class UserCoupon(models.Model):
         """判断优惠券是否可用（未使用+未过期）"""
         return not self.is_used and not self.is_expired
 
+class CommissionRecord(models.Model):
+    """佣金返现流水表"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='commissions', verbose_name="获佣人(上级)")
+    buyer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="购买人(下级)")
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, verbose_name="关联订单")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="佣金金额")
+    desc = models.CharField(max_length=255, verbose_name="奖励说明")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="记账时间")
+
+    class Meta:
+        db_table = 'commission_record'
+        ordering = ['-create_time']
+        verbose_name = "佣金收益流水"
+        verbose_name_plural = "佣金收益流水"
+
+class WithdrawRecord(models.Model):
+    """提现申请表"""
+    STATUS_CHOICES = (
+        (0, '待财务审核'),
+        (1, '打款中(待用户微信确认)'),
+        (2, '打款成功'),
+        (3, '已拒绝/打款失败'),
+    )
+
+    # 微信转账所需的单号
+    out_bill_no = models.CharField(max_length=64, unique=True, verbose_name="商户单号")
+    transfer_bill_no = models.CharField(max_length=64, null=True, blank=True, verbose_name="微信转账单号")
+    package_info = models.CharField(max_length=255, null=True, blank=True, verbose_name="微信收款包")
+    # 基础信息
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='withdraws', verbose_name="提现用户")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="提现金额")
+    status = models.IntegerField(choices=STATUS_CHOICES, default=0, verbose_name="状态")
+
+    # 时间追踪
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="申请时间")
+
+    # 财务审核相关
+    audit_time = models.DateTimeField(null=True, blank=True, verbose_name="审核时间")
+    auditor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='audited_withdraws', verbose_name="审核人(财务)"
+    )
+    audit_remark = models.CharField(max_length=255, null=True, blank=True, verbose_name="审核备注")
+
+    class Meta:
+        db_table = 'withdraw_record'
+        ordering = ['-create_time']
+        verbose_name = "提现申请"
+        verbose_name_plural = "提现申请"
+
+    @classmethod
+    def can_withdraw_this_month(cls, user):
+        """
+        核心业务逻辑：检查该用户本月是否还可以提现
+        返回 Boolean
+        """
+        now = timezone.now()
+        # 获取本月第一天的 00:00:00
+        first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # 查询该用户在本月内是否有过提现记录
+        # 注意：通常只要提交了申请（不论是否通过），或者只算通过的，视你的具体业务而定。
+        # 这里默认以“提交过申请（状态不是已拒绝）”来限制。
+        existing_withdraws = cls.objects.filter(
+            user=user,
+            create_time__gte=first_day_of_month,
+        ).exclude(status=3)  # 如果被财务拒绝了，可以允许他当月重新提现，所以排除掉状态3
+
+        return not existing_withdraws.exists()
 
 # 快递物流轨迹模型（关联Order，记录每一条物流节点）
 class ExpressLogistics(models.Model):
@@ -1640,12 +1959,12 @@ class UserSkinProfile(models.Model):
     final_report = models.TextField(
         null=True,
         blank=True,
-        verbose_name="小明私教综合定性报告"
+        verbose_name="蓝博士私教综合定性报告"
     )
     skincare_plan = models.TextField(
         null=True,
         blank=True,
-        verbose_name="小明私教终极居家方案(Markdown表格)"
+        verbose_name="私教终极居家方案(Markdown表格)"
     )
 
     # ================= ⏳ 时间轴 =================
