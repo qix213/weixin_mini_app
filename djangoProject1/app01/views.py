@@ -198,18 +198,17 @@ def wx_get_openid_and_phone(login_code, phone_code):
 
 def create_register_user(data):
     """
-    统一的用户注册核心逻辑（已开启模拟支付与资产全自动注入）
+    统一的用户注册核心逻辑（适配全新 6 档会员体系与默认 1000 积分）
     """
     login_code = data.get('login_code')
     phone_code = data.get('phone_code')
     openid = data.get('openid', None)
 
     # ==============================================================
-    # 🌟 模拟支付核心修改：放行微信服务器通信，无授权码时改用前端模拟参数
+    # 模拟支付核心修改：放行微信服务器通信，无授权码时改用前端模拟参数
     # ==============================================================
     if login_code and phone_code:
         try:
-            # 如果传了 code，尝试请求微信（如果报错会被 catch 降级到模拟数据）
             wechat_openid, real_phone = wx_get_openid_and_phone(login_code, phone_code)
             data['phone'] = real_phone
             data['username'] = real_phone
@@ -217,30 +216,24 @@ def create_register_user(data):
         except Exception as e:
             print(f"[测试提示] 微信接口请求失败，自动降级为模拟数据。原因: {str(e)}")
 
-    # 💥 兜底：如果没传或者微信接口报错，用前端传的手机号当用户名
     if not data.get('phone'):
-        # 前端如果不传，就随机生成一个
         import random
         mock_phone = data.get('phone', f"138{random.randint(10000000, 99999999)}")
         data['phone'] = mock_phone
         data['username'] = mock_phone
 
     if not openid:
-        openid = f"MOCK_OPENID_{data['phone']}"  # 模拟一个唯一的 openid
+        openid = f"MOCK_OPENID_{data['phone']}"
 
-    # 序列化创建用户
     serializer = RegisterSerializer(data=data)
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
 
     update_fields = []
-
-    # 绑定模拟的 openid
     if hasattr(user, 'openid'):
         user.openid = openid
         update_fields.append('openid')
 
-    # 设置会员有效期（付费等级的一年有效期）
     if user.user_type > 1:
         user.expire_time = timezone.now() + timedelta(days=365)
         update_fields.append('expire_time')
@@ -248,37 +241,44 @@ def create_register_user(data):
     if update_fields:
         user.save(update_fields=update_fields)
 
-    # 生日信息处理
     birth_date = data.get('birth_date')
     if birth_date:
         user.birth_date = birth_date
         user.last_birth_date_modify = timezone.now()
         user.save(update_fields=['birth_date', 'last_birth_date_modify'])
 
-    # 赠送注册积分
-    user.add_points(
-        points=1000,
-        points_type=1,
-        related_desc='新用户注册专属积分，立即到账'
-    )
+    # 🌟 核心更新：固定赠送 1000 注册积分
+    try:
+        user.add_points(
+            points=1000,
+            points_type=1,
+            related_desc='欢迎开启仙女肌养肤之旅，赠送注册积分'
+        )
+    except Exception as e:
+        print(f"赠送注册积分失败：{str(e)}")
 
-    # 智能获取本次注册实际付了多少钱
+    # 🌟 核心更新：对齐全新的 6 档价格体系
     amount_paid = data.get('amount')
     if not amount_paid:
-        # 如果前端注册接口里没传 amount 参数，后端根据 user_type 自动匹配金额兜底
-        LEVEL_PRICE_MAP = {1: 0.0, 2: 980.00, 3: 3980.00, 4: 9800.00, 5: 59800.00}
+        LEVEL_PRICE_MAP = {
+            1: 0.00,      # 0星: 0元
+            2: 980.00,    # 1星: 980元
+            3: 1980.00,   # 2星: 1980元
+            4: 3800.00,   # 3星: 3800元
+            5: 9800.00,   # 4星: 9800元
+            6: 39800.00   # 5星: 39800元
+        }
         amount_paid = LEVEL_PRICE_MAP.get(int(user.user_type), 0.00)
 
-    # 派发资产（新注册用户钱包初始为0，0 + 对应档位金额 = 精准存入对应金额）
+    # 派发资产
     grant_member_assets(
         user=user,
         target_level=int(user.user_type),
         amount_paid=amount_paid,
         remark_text="新用户注册首充资产入账"
     )
-    # ==============================================================
 
-    return user, None, None  # 测试阶段可以直接不生成真实的 JWT 凭证，或者保持原有的凭证生成逻辑
+    return user, None, None
 
 # ===================== 基础视图 =====================
 def index(request):
@@ -658,19 +658,19 @@ class VideoCourseViewSet(ModelViewSet):
         try:
             video = self.get_object()
 
-            # 🌟 极简拼接逻辑
             video_link = ""
             if video.video_url:
-                raw_path = video.video_url.strip()  # 去除前后多余空格
+                raw_path = video.video_url.strip()
 
-                # 如果你在后台不小心填了完整的 http 链接，直接用
                 if raw_path.startswith('http'):
                     video_link = raw_path
-                # 正常情况：拼接上专属域名
                 else:
                     if not raw_path.startswith('/'):
                         raw_path = '/' + raw_path
                     video_link = f"https://video.lansik2026.com{raw_path}"
+
+            # 🌟 增加日志：明确告诉后端，发给前端的链接到底长什么样
+            logger.info(f"👉 [check_permission] ID: {pk}, 原始路径: {video.video_url}, 最终下发播放直链: {video_link}")
 
             return Response({
                 "code": 200,
@@ -679,7 +679,7 @@ class VideoCourseViewSet(ModelViewSet):
                 "video_url": video_link
             })
         except Exception as e:
-            logger.error(f"check_permission接口错误：{str(e)}")
+            logger.error(f"❌ check_permission接口错误：{str(e)}", exc_info=True)
             return Response({
                 "code": 500,
                 "msg": "获取视频失败"
@@ -934,7 +934,15 @@ class RegisterPreCheckView(APIView):
     def post(self, request):
         recommender_id = request.data.get('recommender_id')
         phone_code = request.data.get('phone_code')
+        nickname = request.data.get('nickname')  # 🌟 1. 接收前端传来的昵称
 
+        # ==========================================
+        # 🌟 2. 前置校验：昵称查重拦截
+        # ==========================================
+        if nickname:
+            # 假设你的模型是 User，根据你的实际模型名调整
+            if User.objects.filter(nickname=nickname).exists():
+                return Response({'code': 400, 'msg': '该昵称已被使用，请换一个更特别的名字哦~'})
         # 1. 严格校验推荐人是否存在 (假设你的 User 表用 member_id 或类似字段标识推荐码)
         if recommender_id:
 
@@ -3397,20 +3405,8 @@ class WechatPayCallbackView(APIView):
                     ).exists()
 
                     if not has_given and total_fee > 0:
-                        # 安全获取用户等级，默认为 1 (0星)
-                        user_type = getattr(user, 'user_type', 1) or 1
-
-                        # 根据会员等级判定积分返还比例
-                        if user_type <= 2:
-                            point_ratio = 1
-                        elif user_type == 3:
-                            point_ratio = 2
-                        elif user_type == 4:
-                            point_ratio = 3
-                        else:
-                            point_ratio = 0
-
-                        base_points = round(total_fee * point_ratio)
+                        # 🌟 核心更新：消费护肤品 1 元获得 1 积分
+                        base_points = round(total_fee * 1)
 
                         is_bd_month = user.is_birthday_month() if hasattr(user, 'is_birthday_month') else False
                         final_points = base_points * 2 if is_bd_month else base_points
@@ -3785,27 +3781,27 @@ class WalletPayOrderView(APIView):
 class RechargeActivityListView(APIView):
     """获取所有上架的储值套餐列表"""
 
-    # 这个接口主要是查询，不涉及支付核心，只需稍作优化容错即可
-
     def init_default_rules(self):
-        """自动初始化 980 / 3980 / 9800 三档储值规则"""
+        """🌟 自动初始化全新 6 档储值与代金券规则"""
         coupon_100, _ = Coupon.objects.get_or_create(
             title="储值专享100元代金券",
             defaults={
-                'coupon_type': 1,
-                'money': 100.00,
-                'discount_rate': 1.00,
-                'min_consume': 0.00,
-                'valid_days': 365,
-                'is_active': True
+                'coupon_type': 1, 'money': 100.00, 'discount_rate': 1.00,
+                'min_consume': 0.00, 'valid_days': 365, 'is_active': True
             }
         )
 
+        # 🌟 严格对齐新版体系的金额与代金券张数
         rules = [
-            {"amount": 980, "num": 1, "name": "充980元赠1张百元代金券"},
-            {"amount": 3980, "num": 3, "name": "充3980元赠3张百元代金券"},
-            {"amount": 9800, "num": 6, "name": "充9800元赠6张百元代金券"},
+            {"amount": 980, "num": 1, "name": "充980元 (蓝朋友1星)"},
+            {"amount": 1980, "num": 3, "name": "充1980元 (蓝朋友2星)"},
+            {"amount": 3800, "num": 10, "name": "充3800元 (蓝朋友3星)"},
+            {"amount": 9800, "num": 0, "name": "充9800元 (蓝朋友4星)"},
+            {"amount": 39800, "num": 0, "name": "充39800元 (蓝朋友5星)"},
         ]
+
+        # 为了防止旧数据干扰，初始化前可以考虑清空旧规则 (仅限首次重构)
+        # RechargeActivity.objects.all().delete()
 
         for idx, rule in enumerate(rules):
             RechargeActivity.objects.get_or_create(
@@ -3813,7 +3809,7 @@ class RechargeActivityListView(APIView):
                 defaults={
                     "name": rule["name"],
                     "bonus_amount": 0.00,
-                    "gift_coupon": coupon_100,
+                    "gift_coupon": coupon_100 if rule["num"] > 0 else None,
                     "gift_coupon_num": rule["num"],
                     "sort_order": idx + 1,
                     "is_active": True
@@ -3825,10 +3821,8 @@ class RechargeActivityListView(APIView):
             self.init_default_rules()
 
         activities = RechargeActivity.objects.filter(is_active=True).order_by('sort_order')
-
         data = []
         for act in activities:
-            # 安全取值，防止 coupon 被意外删除导致的 500 报错
             coupon_num = act.gift_coupon_num or 0
             has_coupon = act.gift_coupon and coupon_num > 0
 
@@ -3838,7 +3832,7 @@ class RechargeActivityListView(APIView):
                 "amount": float(act.amount),
                 "gift_coupon_title": act.gift_coupon.title if has_coupon else "",
                 "gift_coupon_num": coupon_num,
-                "tags": f"送 {coupon_num * 100} 元券包" if has_coupon else ""
+                "tags": f"送 {coupon_num * 100} 元券包" if has_coupon else ("享专属会员价" if act.amount >= 980 else "")
             })
 
         return Response({"code": 200, "msg": "获取成功", "data": data})
@@ -3997,6 +3991,70 @@ class SubmitRechargeOrderView(APIView):
             traceback.print_exc()
             return Response({"code": 500, "msg": f"发起充值故障: {str(e)}"}, status=500)
 
+
+from datetime import datetime, timedelta
+
+
+class GrantBirthdayCouponView(APIView):
+    """
+    🌟 每月执行一次：自动给当月生日的正式会员发放 200 元代金券
+    调用方式：可以通过服务器 Cron 定时任务发起 GET 请求 /app01/grant_birthday_coupons/
+    """
+    permission_classes = [AllowAny]  # 实际部署建议加上内部秘钥校验防盗刷
+
+    def get(self, request):
+        current_month = timezone.now().month
+
+        # 1. 创建或获取 200元 面值的生日代金券模板
+        birthday_coupon, _ = Coupon.objects.get_or_create(
+            title="生日专属200元代金券",
+            defaults={
+                'coupon_type': 1,
+                'money': 200.00,
+                'discount_rate': 1.00,
+                'min_consume': 0.00,
+                'valid_days': 30,  # 生日券一般有效期 30 天
+                'is_active': True
+            }
+        )
+
+        # 2. 筛选出当月过生日，且星级在 1星(含) 以上的正式会员
+        # 排除掉没有填写生日的用户
+        birthday_users = User.objects.filter(
+            birth_date__isnull=False,
+            birth_date__month=current_month,
+            user_type__gte=2
+        )
+
+        grant_count = 0
+        already_granted_count = 0
+
+        # 3. 开始派发
+        for user in birthday_users:
+            # 防重复检查：本月是否已经领过这类型的券
+            has_granted = UserCoupon.objects.filter(
+                user=user,
+                coupon=birthday_coupon,
+                start_time__month=current_month,
+                start_time__year=timezone.now().year
+            ).exists()
+
+            if not has_granted:
+                UserCoupon.objects.create(
+                    user=user,
+                    coupon=birthday_coupon,
+                    start_time=timezone.now(),
+                    end_time=timezone.now() + timedelta(days=birthday_coupon.valid_days),
+                    is_used=False
+                )
+                grant_count += 1
+            else:
+                already_granted_count += 1
+
+        msg = f"操作完成！{current_month}月生日且达标的会员共 {birthday_users.count()} 人。本次成功派发 200元代金券 {grant_count} 张，跳过已领取的 {already_granted_count} 人。"
+        print(f"🎂 [生日礼遇] {msg}")
+
+        return Response({"code": 200, "msg": msg})
 # ===================== 短信验证码视图 =====================
 @csrf_exempt
 def send_sms_code(request):
@@ -6078,10 +6136,13 @@ def create_upgrade_order(request):
 
     # 后端硬编码价格，杜绝前端篡改
     level_prices = {
-        2: 980,
-        3: 3980,
-        4: 9800,
-        5: 39800
+        1: 0.00,
+        2: 980.00,  # 1星
+        3: 1980.00,  # 2星
+        4: 3800.00,  # 3星
+        5: 9800.00,  # 4星
+        6: 39800.00,  # 5星
+        7: 98000.00  # Ta创+
     }
     if target_level not in level_prices:
         return Response({"code": 400, "msg": "非法的升级等级"})

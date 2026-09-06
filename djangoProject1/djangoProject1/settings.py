@@ -16,6 +16,8 @@ SECRET_KEY = 'django-insecure-6j)67*2#nahe40s-*y#p32vlwpa6)h4vrp!hw_o#=(oel98*w=
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    '*',
+    'fgrz.tongdemeng.com',
     'www.lansik2026.com',
     'lansik2026.com',
     '127.0.0.1',

@@ -590,14 +590,18 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.utils import timezone
 
+
 class User(AbstractUser):
     # ================= 🌟 基础业务字段 =================
+    # 🌟 核心更新：扩展为 7 档会员体系
     USER_TYPE_CHOICES = (
-        (1, "蓝朋友0星"),
-        (2, "蓝朋友1星"),
-        (3, "蓝朋友2星"),
-        (4, "蓝朋友3星"),
-        (5, "Ta创+"),
+        (1, "蓝朋友"),  # 0元
+        (2, "蓝朋友1星"),  # 980元
+        (3, "蓝朋友2星"),  # 1980元
+        (4, "蓝朋友3星"),  # 3800元
+        (5, "蓝朋友4星"),  # 9800元
+        (6, "蓝朋友5星"),  # 39800元
+        (7, "Ta创+"),  # 98000元
     )
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, null=True, blank=True, verbose_name="会员等级")
     can_use_ai = models.BooleanField(default=False, verbose_name="允许使用智能蓝博士")
@@ -630,12 +634,12 @@ class User(AbstractUser):
     parent_user = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='sub_users', verbose_name="上级会员")
     root_enterprise = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
-                                        limit_choices_to={'user_type': 5},  # 限制只能选5星
+                                        limit_choices_to={'user_type': 7},  # 🌟 核心更新：限制归属为顶级 7 (Ta创+)
                                         related_name='all_downline_users',
                                         verbose_name="归属的Ta创+(算发货用)")
 
     points = models.IntegerField(default=0, verbose_name="积分余额")
-    coupon_count = models.IntegerField(default=0, verbose_name="优惠量")
+    coupon_count = models.IntegerField(default=0, verbose_name="优惠券数量")
     star_level = models.IntegerField(default=1, verbose_name="星级（1-5星）")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="注册时间")
 
@@ -663,7 +667,7 @@ class User(AbstractUser):
         return f"{type_display}-{self.member_id}"
 
     # ==============================================================
-    #                    一、生命周期钩子方法
+    #                   一、生命周期钩子方法
     # ==============================================================
     def save(self, *args, **kwargs):
         """保存时自动生成唯一的 8 位 member_id"""
@@ -677,7 +681,7 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
     # ==============================================================
-    #                    二、生日与积分流转中枢
+    #                   二、生日与积分流转中枢
     # ==============================================================
     def update_birth_date(self, new_date):
         """修改生日，限制一年只能改一次"""
@@ -726,7 +730,8 @@ class User(AbstractUser):
 
     def handle_consume_points(self, order_money, order_sn):
         """处理消费赠分（内置生日当月首笔消费双倍逻辑）"""
-        base_points = int(float(order_money) / 10)  # 10元积1分
+        # 🌟 核心更新：修复为“1元积1分”
+        base_points = int(float(order_money))
         if base_points <= 0:
             return
 
@@ -800,6 +805,7 @@ class User(AbstractUser):
 
                 # ================= 增加积分 (带过期时间) =================
                 else:
+                    import datetime
                     expire_time = timezone.now() + datetime.timedelta(days=365)
                     self.points = current_points + points
                     self.save(update_fields=["points"])
@@ -812,6 +818,8 @@ class User(AbstractUser):
 
             return True, f"积分{'增加' if points > 0 else '扣减'}成功（{abs(points)}分）"
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"积分操作失败：{str(e)}", exc_info=True)
             return False, f"积分操作失败：{str(e)}"
 
@@ -829,7 +837,7 @@ class User(AbstractUser):
         return {"success": True, "msg": "积分兑换计算完成", "data": exchange_detail}
 
     # ==============================================================
-    #                    三、会员网络与下级查询
+    #                   三、会员网络与下级查询
     # ==============================================================
     def get_sub_users(self):
         """获取直属下级会员"""
@@ -848,15 +856,12 @@ class User(AbstractUser):
         sub_consume_data = []
 
         for sub_user in sub_users:
-            # ===================== 核心修复 =====================
-            # 原：status__in=[1, 2, 3]  （漏掉了已取消 4）
-            # 改：status__in=[1, 2, 3, 4]（包含所有状态：待发货、已发货、已完成、已取消）
             orders = Order.objects.filter(
                 user=sub_user,
                 status__in=[1, 2, 3, 4],
                 is_delete=False,
-                order_type='normal',  # 核心修改：匹配日志里的字符串类型
-                goods_count__gt=0  # 核心屏障：只要商品数为0，统统过滤掉
+                order_type='normal',
+                goods_count__gt=0
             ).select_related('address').order_by('-create_time').prefetch_related('items')
 
             if orders:
@@ -874,7 +879,7 @@ class User(AbstractUser):
         return sub_consume_data
 
     # ==============================================================
-    #                    四、优惠券系统查询
+    #                   四、优惠券系统查询
     # ==============================================================
     def get_coupons(self, only_valid=False, coupon_type=None):
         """获取用户的优惠券列表"""
@@ -900,41 +905,59 @@ class User(AbstractUser):
         }
 
     # ==============================================================
-    #                    五、会员分层权益文本配置
+    #                   五、会员分层权益文本配置
     # ==============================================================
     def get_benefits(self):
-        """返回对应会员级别的文字权益介绍（适配全新 0-3星体系及 Ta创+）"""
+        """🌟 核心更新：返回对应会员级别的文字权益介绍（适配最新 7 档体系）"""
         if self.user_type == 1:
             return [
-                "注册门槛：1元",
+                "注册门槛：0元",
                 "专享价格：零售价",
-                "裂变权益：0%",
+                "消费补贴：0%",
                 "其他权益：关注小程序完成注册即可体验基础服务。"
             ]
         elif self.user_type == 2:
             return [
                 "注册储值：980元",
                 "专享价格：会员价",
-                "裂变权益：0%",
-                "其他权益：解锁会员专属星价与积分换礼资格。"
+                "消费补贴：0%",
+                "会员礼遇：100元代金券"
             ]
         elif self.user_type == 3:
             return [
-                "注册储值：3980元",
+                "注册储值：1980元",
                 "专享价格：会员价",
-                "裂变权益：家居品 10% 返点",
-                "其他权益：畅享高额家居返点收益。"
+                "消费补贴：0%",
+                "会员礼遇：300元代金券",
+                "商学院权益：享受 3980元 护肤私教专业认证资格"
             ]
         elif self.user_type == 4:
             return [
-                "注册储值：9800元",
+                "注册储值：3800元",
                 "专享价格：会员价",
-                "裂变权益：全产品 25% 返点",
-                "商学院权益：免费享价值 3980元 的护肤私教专业认证。"
+                "消费补贴：家居品 10%",
+                "会员礼遇：1000元代金券",
+                "商学院权益：享受 3980元 护肤私教专业认证资格"
             ]
         elif self.user_type == 5:
             return [
-                "开通门槛：5.98万元（需线下签约）",
+                "注册储值：9800元",
+                "专享价格：会员价",
+                "消费补贴：全产品 15%",
+                "会员礼遇：1次胶原mini",
+                "商学院权益：享受 3980元 护肤私教专业认证资格"
+            ]
+        elif self.user_type == 6:
+            return [
+                "注册储值：39800元",
+                "专享价格：会员价",
+                "消费补贴：全产品 15%",
+                "会员礼遇：1次胶原尊享 + 1套胶原润肌",
+                "商学院权益：享受 3980元 护肤私教专业认证资格"
+            ]
+        elif self.user_type == 7:
+            return [
+                "开通门槛：9.8万元（需线下签约）",
                 "高端圈层：Ta创+高端俱乐部会员，享奇肌疗愈营，高端沙龙活动；",
                 "产品折扣：享极具竞争力的专属进货权益，产品任选；",
                 "SSTA运营：运营中心模版店的打造及全面扶持；",
@@ -956,15 +979,16 @@ class User(AbstractUser):
             return False
 
         return True
-# ==============================================================
-    #                    六、电子钱包快捷访问属性
+
+    # ==============================================================
+    #                   六、电子钱包快捷访问属性
     # ==============================================================
     @property
     def wallet_balance(self):
         """快捷获取电子账户总余额（本金+赠金）"""
-        # 注意：这里假设你新建的钱包模型 related_name='wallet'
         if hasattr(self, 'wallet') and self.wallet.status:
             return self.wallet.total_balance
+        from decimal import Decimal
         return Decimal('0.00')
 
     @property
@@ -972,6 +996,7 @@ class User(AbstractUser):
         """快捷获取电子账户本金（可用于未来本金提现或退款校验）"""
         if hasattr(self, 'wallet') and self.wallet.status:
             return self.wallet.principal
+        from decimal import Decimal
         return Decimal('0.00')
 
     @property
@@ -979,6 +1004,7 @@ class User(AbstractUser):
         """快捷获取电子账户赠送金"""
         if hasattr(self, 'wallet') and self.wallet.status:
             return self.wallet.bonus
+        from decimal import Decimal
         return Decimal('0.00')
 
 class EnterpriseProfile(models.Model):

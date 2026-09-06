@@ -12,6 +12,7 @@ from .views import (
     welcome, BannerView, Index_AnnonceView,
     CustomTokenObtainPairView, RegisterAPIView, MemberInfoView,
     SubUserConsumeView,VideoCourseViewSet, RegisterPreCheckView, MiniProgramWalletView,
+GrantBirthdayCouponView,
     # 购物车相关
     CartView, CartAddView, CartListView, CartUpdateNumView, CartDeleteView, CartClearView,
     # 收件人/地址相关
@@ -27,7 +28,7 @@ router = SimpleRouter()
 router.register('banner', BannerView, basename='banner')
 router.register(r'categories', views.CategoryView, basename='category')
 router.register(r'goods', views.GoodsViewSet, basename='goods')
-router.register(r'video_courses1', VideoCourseViewSet)
+router.register(r'video_courses', VideoCourseViewSet)
 router.register(r'check-in', views.StudyCheckInViewSet, basename='study_check_in')
 router.register(r'exam_questions', views.ExamQuestionViewSet, basename='exam_question')
 router.register(r'exam_records', views.ExamRecordViewSet, basename='exam_record')
@@ -65,7 +66,7 @@ urlpatterns = [
     path('cart/delete/', CartDeleteView.as_view()),
     path('cart/clear/', CartClearView.as_view()),
     path('cart/clear/<int:order_id>/', CartClearView.as_view()),
-
+    path('grant_birthday_coupons/', GrantBirthdayCouponView.as_view(), name='grant_birthday_coupons'),
     # 收件人接口
     path('recipient/', RecipientView.as_view()),
     path('checkout/', CheckoutView.as_view()),
@@ -100,7 +101,7 @@ urlpatterns = [
     path('verify-sms/', views.verify_sms_code),
     path('member/give-register-points/', GiveRegisterPointsView.as_view(), name='give_register_points'),
     path('member/upload_avatar/', views.upload_avatar, name='upload_avatar'),
-    path('video_prox2/', views.video_proxy, name='video_proxy'),  # 新增极简代理接口
+    path('video_prox/', views.video_proxy, name='video_proxy'),  # 新增极简代理接口
     # 优惠券
     # path('member/coupons/', views.UserCouponView.as_view(), name='member_coupons'),
     path('user/stats/', views.get_user_stats),
