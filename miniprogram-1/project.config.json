@@ -2,6 +2,8 @@
   "appid": "wx8c245b48cd8672b3",
   "setting": {
     "enhance": true,
-    "es6": true
+    "es6": true,
+    "minifyWXML": true,
+    "minified": true
   }
 }

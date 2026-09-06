@@ -335,3 +335,54 @@ page {
   margin: 0 8rpx;
   font-weight: bold;
 }
+
+/* ================= 未登录/购物车为空 状态容器 ================= */
+.empty-cart-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 250rpx; /* 控制距离顶部的距离，可根据实际视觉微调 */
+  width: 100%;
+}
+
+/* 占位图样式 */
+.empty-img {
+  width: 240rpx;
+  height: 240rpx;
+  margin-bottom: 40rpx;
+  /* 如果没有现成的图片，可以用一个浅灰色的背景先占位 */
+  /* background-color: #f5f5f5; border-radius: 50%; */
+}
+
+/* 提示文字样式 */
+.empty-text {
+  font-size: 28rpx;
+  color: #999999;
+  margin-bottom: 60rpx;
+}
+
+/* 去登录 / 随便逛逛 按钮 */
+.empty-cart-state .login-btn {
+  width: 280rpx;
+  height: 80rpx;
+  line-height: 80rpx; /* 保证文字垂直居中 */
+  background-color: #94A48C; /* 强烈建议换成你们小程序的主色调（比如科技蓝或品牌红） */
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 500;
+  border-radius: 40rpx; /* 胶囊型圆角 */
+  text-align: center;
+  padding: 0;
+  border: none;
+}
+
+/* 去除小程序原生 button 的默认边框 */
+.empty-cart-state .login-btn::after {
+  border: none;
+}
+
+/* 按钮按下的点击态（稍微变透明一点，增强交互感） */
+.empty-cart-state .login-btn:active {
+  opacity: 0.8;
+}

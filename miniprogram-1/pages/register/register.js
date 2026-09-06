@@ -19,21 +19,30 @@ Page({
     dpDay: '',        
     decades: [1960, 1970, 1980, 1990, 2000, 2010, 2020], 
     months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    days: [],         
+    days: [],        
 
     tabList: [
       { name: '成为会员', id: 0 },
       { name: '我要开店', id: 1 }
     ],
+
+    // =========================================================
+    // 🌟 核心修改：对齐最新的 6 档会员体系 (0星~5星)
+    // =========================================================
     memberTypeList: [
-      { value: 1, name: '蓝朋友 0星', amount: 0.1 },
-      { value: 2, name: '蓝朋友 1星', amount: 0.1 },
-      { value: 3, name: '蓝朋友 2星', amount: 0.1 },
-      { value: 4, name: '蓝朋友 3星', amount: 0.1 }
+      { value: 1, name: '蓝朋友 0星', amount: 0.0 },
+      { value: 2, name: '蓝朋友 1星', amount: 980 },
+      { value: 3, name: '蓝朋友 2星', amount: 1980 },
+      { value: 4, name: '蓝朋友 3星', amount: 3980 },
+      { value: 5, name: '蓝朋友 4星', amount: 9800 },
+      { value: 6, name: '蓝朋友 5星', amount: 39800 }
     ],
+    // 🌟 核心修改：将 Ta创+ 映射为 value=7，金额 98000
     shopTypeList: [
-      { value: 5, name: 'Ta创+', amount: 0.1 }
+      { value: 7, name: 'Ta创+', amount: 98000 }
     ],
+    // =========================================================
+
     userTypeIndex: 0,    
     selectedUserType: {}, 
     
@@ -139,7 +148,7 @@ Page({
     if (!isAgreed) { wx.showToast({ title: '请先阅读并勾选《用户充值须知》', icon: 'none' }); return; }
 
     // 2. 基础表单严校验
-    if (!this.data.avatarUrl) { wx.showToast({ title: '请点击顶部设置头像', icon: 'none' }); return; } // 🌟 拦截未设置头像
+    if (!this.data.avatarUrl) { wx.showToast({ title: '请点击顶部设置头像', icon: 'none' }); return; } 
     if (!nickname) { wx.showToast({ title: '请设置昵称', icon: 'none' }); return; }
     if (!birthDate) { wx.showToast({ title: '请选择出生日期', icon: 'none' }); return; }
     
@@ -167,70 +176,70 @@ Page({
 
     wx.showLoading({ title: '安全校验中...' });
 
-// 5. 获取用于换取 openid 的 login code
-wx.login({
-  success: (res) => {
-    if (!res.code) {
-      wx.hideLoading();
-      return wx.showToast({ title: '微信登录失败', icon: 'none' });
-    }
-    const loginCode = res.code;
-
-    // 🌟 核心修改：跳转收银台前，先发给后端做校验和解密！
-    wx.request({
-      url: `${app.globalData.baseUrl}/app01/register/pre_check/`,
-      method: 'POST',
-      data: {
-        recommender_id: recommenderId,
-        phone_code: phoneCode
-      },
-      success: (checkRes) => {
-        wx.hideLoading();
-        // console.log("【后端预校验返回完整数据】:", checkRes.data); // 🌟 加上这行
-        if (checkRes.data.code === 200) {
-          // 校验通过！拿到后端解密出来的真实手机号
-          const realPhone = checkRes.data.data.real_phone;
-
-          // 6. 构建数据，注意：这里存的是 real_phone，彻底丢弃 phone_code！
-          const registerData = {
-            memberId: memberId,
-            nickname: nickname,
-            avatarUrl: this.data.avatarUrl,
-            password: password,
-            password_confirm: passwordConfirm,
-            user_type: selectedUserType.value,
-            recommender_id: recommenderId,
-            birth_date: birthDate,
-            real_phone: realPhone, // 🌟 传明文手机号给暂存区
-            login_code: loginCode  
-          };
-          
-          app.globalData.pendingRegisterData = registerData;
-          wx.setStorageSync('pendingRegisterData', registerData);
-
-          // 7. 安全放行，跳转支付页
-          const scene = activeTab === 0 ? 'member' : 'shop';
-          wx.showToast({ title: '校验通过，前往支付', icon: 'success', duration: 1000 });
-          
-          setTimeout(() => {
-            wx.navigateTo({
-              // 把真实的手机号展示在收银台页面
-              url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(selectedUserType.name)}&amount=${selectedUserType.amount}&phone=${realPhone}&memberId=${memberId}`,
-            });
-          }, 1000);
-        } else {
-          // 拦截器生效：推荐人不对、手机号已经注册过、授权失败等，直接弹窗阻止跳转
-          console.error("【业务拦截报错】:", checkRes.data.msg);
-          wx.showToast({ title: checkRes.data.msg, icon: 'none', duration: 3000 });
+    // 5. 获取用于换取 openid 的 login code
+    wx.login({
+      success: (res) => {
+        if (!res.code) {
+          wx.hideLoading();
+          return wx.showToast({ title: '登录失败', icon: 'none' });
         }
-      },
-      fail: () => {
-        wx.hideLoading();
-        console.error("【前端网络请求彻底失败】:", err);
-        wx.showToast({ title: '网络异常，校验失败', icon: 'none' });
+        const loginCode = res.code;
+
+        // 🌟 核心修改：跳转收银台前，先发给后端做校验和解密！
+        wx.request({
+          url: `${app.globalData.baseUrl}/app01/register/pre_check/`,
+          method: 'POST',
+          data: {
+            recommender_id: recommenderId,
+            phone_code: phoneCode,
+            nickname: nickname // 🌟 新增：把昵称传给后端查重
+          },
+          success: (checkRes) => {
+            wx.hideLoading();
+            if (checkRes.data.code === 200) {
+              // 校验通过！拿到后端解密出来的真实手机号
+              const realPhone = checkRes.data.data.real_phone;
+
+              // 6. 构建数据，注意：这里存的是 real_phone，彻底丢弃 phone_code！
+              const registerData = {
+                memberId: memberId,
+                nickname: nickname,
+                avatarUrl: this.data.avatarUrl,
+                password: password,
+                password_confirm: passwordConfirm,
+                user_type: selectedUserType.value,
+                recommender_id: recommenderId,
+                birth_date: birthDate,
+                real_phone: realPhone, 
+                login_code: loginCode  
+              };
+              
+              app.globalData.pendingRegisterData = registerData;
+              wx.setStorageSync('pendingRegisterData', registerData);
+
+              // 7. 安全放行，跳转支付页
+              const scene = activeTab === 0 ? 'member' : 'shop';
+              wx.showToast({ title: '校验通过，前往支付', icon: 'success', duration: 1000 });
+              
+              setTimeout(() => {
+                wx.navigateTo({
+                  // 把真实的手机号展示在收银台页面
+                  url: `/pages/pay/pay?scene=${scene}&typeName=${encodeURIComponent(selectedUserType.name)}&amount=${selectedUserType.amount}&phone=${realPhone}&memberId=${memberId}`,
+                });
+              }, 1000);
+            } else {
+              // 拦截器生效：推荐人不对、手机号已经注册过、授权失败等，直接弹窗阻止跳转
+              console.error("【业务拦截报错】:", checkRes.data.msg);
+              wx.showToast({ title: checkRes.data.msg, icon: 'none', duration: 3000 });
+            }
+          },
+          fail: (err) => {
+            wx.hideLoading();
+            console.error("【前端网络请求彻底失败】:", err);
+            wx.showToast({ title: '网络异常，校验失败', icon: 'none' });
+          }
+        });
       }
     });
-  }
-});
   }
 });

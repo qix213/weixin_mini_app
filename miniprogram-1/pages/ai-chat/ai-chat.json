@@ -1,6 +1,6 @@
-{
-  "navigationBarTitleText": "AI蓝博士",
-  "usingComponents": {},
+{  
+  "usingComponents": {"van-icon": "@vant/weapp/icon/index"},
+  "navigationBarTitleText": "智能蓝博士",
   "navigationBarBackgroundColor": "#94A48C",
   "navigationBarTextStyle": "white"
 }

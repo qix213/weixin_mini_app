@@ -57,14 +57,22 @@
               </block>
 
               <block wx:else>
+                <!-- 1. 主价格（如会员价），所有商品保持展示 -->
                 <view class="price-row main-price-row">
                   <text class="price-label">{{item.mainPriceLabel}}</text>
                   <text class="price-val">¥{{item.mainPriceValue}}</text>
                 </view>
                 
+                <!-- 🌟 2. 修改：副价格（如零售价），只要主副价格不同，所有商品（含项目）都显示 -->
                 <view class="price-row sub-price-row" wx:if="{{item.mainPriceValue !== item.subPriceValue}}">
                   <text class="price-label">{{item.subPriceLabel}}</text>
                   <text class="price-val strikethrough">¥{{item.subPriceValue}}</text>
+                </view>
+
+                <!-- 🌟 3. 修改：包含次数，作为附加信息，专门给院线项目显示 -->
+                <view class="price-row sub-price-row" wx:if="{{item.goods_type === 2 && item.service_times}}">
+                  <text class="price-label" style="color: #94A48C;">包含次数：</text>
+                  <text class="price-val" style="color: #94A48C;">{{item.service_times}}次</text>
                 </view>
               </block>
             </view>

@@ -107,7 +107,7 @@ Page({
 
   doSubmit(courseType, answers) {
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    wx.showLoading({ title: 'AI系统批改中...' });
+    wx.showLoading({ title: '系统批改中...' });
 
     wx.request({
       url: `${app.globalData.baseUrl}/app01/exam_records/`,

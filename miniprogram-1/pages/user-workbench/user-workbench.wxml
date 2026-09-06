@@ -53,11 +53,11 @@
 
             <view class="profile-body" wx:if="{{expandedId === item.id}}">
               <view class="skin-section">
-                <text class="section-label">AI 肤质标签</text>
+                <text class="section-label">肤质标签</text>
                 <view class="tags-container" wx:if="{{item.skin_tags.length > 0}}">
                   <view class="skin-tag" wx:for="{{item.skin_tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</view>
                 </view>
-                <view class="no-tags" wx:else>尚未完成问卷诊断</view>
+                <view class="no-tags" wx:else>尚未完成问卷调查</view>
               </view>
 
               <view class="timeline-section">

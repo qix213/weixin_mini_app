@@ -1,5 +1,7 @@
-<view class="dynamic-bg"></view>
+<!-- <view class="dynamic-bg"></view> -->
 
+<!-- 🚨 已注释：原有的顶部欢迎语与登录注册按钮区域 -->
+<!--
 <view class="banner-header-wrap">
   <view class="banner-header">
     <view class="banner-text">
@@ -22,24 +24,26 @@
     </view>
   </view>
 </view>
+-->
 
 <view class="admin-content" wx:if="{{isAdminMember}}">
-  
-  <view class="section-title-wrap">
-    <text class="section-title tech-gradient-text">创+专属工作台</text>
-  </view>
 
+  <view class="top-fixed-image-wrap skeleton-bg" wx:if="{{fixed_images && fixed_images.length > 0}}">
+    <image class="top-fixed-image" src="{{fixed_images[0].img}}" mode="widthFix" lazy-load="true" />
+  </view>
+  
   <view class="dashboard-grid">
     <view class="glass-card dash-card" bindtap="goToOrderList">
-      <view class="dash-icon-box">📊</view>
+      <van-icon name="records" class="dash-icon-box" />
+      <!-- <view class="dash-icon-box">📊</view> -->
       <text class="dash-title">订单管理</text>
       <text class="dash-desc">全盘订单数据追踪</text>
     </view>
     
     <view class="glass-card dash-card" bindtap="goToUserWorkbench">
-      <view class="dash-icon-box">👥</view>
+      <van-icon name="friends" class="dash-icon-box" />
       <text class="dash-title">用户管理</text>
-      <text class="dash-desc">AI测肤档案与数据</text>
+      <text class="dash-desc">测肤档案与数据</text>
     </view>
   </view>
 
@@ -60,7 +64,8 @@
         <block wx:for="{{star_goods}}" wx:key="id">
           <view class="table-row" bindtap="goToGoodsDetail" data-goodsid="{{item.id}}">
             <view class="table-col table-col-img">
-              <image class="row-img" src="{{item.image}}" mode="aspectFill" lazy-load="false" default-src="/images/home/default-img.png" />
+              <!-- 🌟 加上 skeleton-bg，并把 lazy-load 改为 true -->
+              <image class="row-img skeleton-bg" src="{{item.image}}" mode="aspectFill" lazy-load="true" default-src="/images/home/default-img.png" />
             </view>
             <view class="table-col table-col-name text-ellipsis">{{item.name}}</view>
             <view class="table-col table-col-price emphasis">¥{{item.price}}</view>
@@ -77,26 +82,35 @@
   </view>
 </view>
 
+<!-- ================= 普通用户内容区 ================= -->
 <view class="normal-content" wx:else>
+
+  <!-- 🌟 1. 顶部固定图 (只取接口返回的第一张图) -->
+  <view class="top-fixed-image-wrap skeleton-bg" wx:if="{{fixed_images && fixed_images.length > 0}}">
+    <image class="top-fixed-image" src="{{fixed_images[0].img}}" mode="widthFix" lazy-load="true" />
+  </view>
+
+  <!-- 🌟 2. 轮播图区域 -->
+  <view class="banner-swiper-wrap" wx:if="{{banner_list.length > 0}}">
+    <swiper class="banner-swiper" autoplay indicator-dots circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#fff" interval="4000">
+      <swiper-item wx:for="{{banner_list}}" wx:key="index" class="skeleton-bg">
+        <image class="swiper-img" src="{{item.img}}" mode="aspectFill" lazy-load="true" />
+      </swiper-item>
+    </swiper>
+  </view>
   
-  <view class="notice-bar-wrap" wx:if="{{notice || content}}">
+  <!-- 3. 公告栏 -->
+  <!-- <view class="notice-bar-wrap" wx:if="{{notice || content}}">
     <view class="glass-card notice-bar">
       <text class="notice-icon">✨</text>
       <view class="notice-marquee">
         <text class="notice-text">{{notice}} {{content}}</text>
       </view>
     </view>
-  </view>
+  </view> -->
 
-  <view class="banner-swiper-wrap" wx:if="{{banner_list.length > 0}}">
-    <swiper class="banner-swiper" autoplay indicator-dots circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#fff" interval="4000">
-      <swiper-item wx:for="{{banner_list}}" wx:key="index">
-        <image class="swiper-img" src="{{item.img}}" mode="aspectFill" />
-      </swiper-item>
-    </swiper>
-  </view>
-
-  <view class="section-title-wrap">
+  <!-- 4. 明星产品列表 -->
+  <!-- <view class="section-title-wrap">
     <text class="section-title tech-gradient-text">明星家居产品</text>
   </view>
   
@@ -118,11 +132,12 @@
         </view>
       </block>
     </view>
-  </view>
+  </view> -->
 
 </view>
 
-<view class="ai-popup-mask {{showAiPopup ? 'show' : ''}}" bindtap="closeAiPopup" catchtouchmove="preventTouchMove">
+
+<!-- <view class="ai-popup-mask {{showAiPopup ? 'show' : ''}}" bindtap="closeAiPopup" catchtouchmove="preventTouchMove">
   <view class="ai-popup-box {{showAiPopup ? 'show' : ''}}" catchtap="preventTouchMove">
     
     <view class="popup-bg-glow"></view>
@@ -136,7 +151,7 @@
         <view class="avatar-ring delay"></view>
       </view>
 
-      <view class="popup-title">欢迎体验AI蓝博士</view>
+      <view class="popup-title">欢迎体验智能蓝博士</view>
       <view class="popup-desc">您的专属护肤私教已准备好为您测试！</view>
 
       <view class="popup-btns">
@@ -146,4 +161,4 @@
     </view>
     
   </view>
-</view>
+</view> -->

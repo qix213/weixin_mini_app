@@ -20,9 +20,9 @@ Page({
     this.loadHomeData().finally(() => {
       this.setData({ loading: false });
     });
-    setTimeout(() => {
-      this.setData({ showAiPopup: true });
-    }, 1000);
+    // setTimeout(() => {
+    //   this.setData({ showAiPopup: true });
+    // }, 100);
   },
 
   onShow() {
@@ -31,31 +31,33 @@ Page({
       this.getMemberInfo();
     }
   },
-// 阻止蒙层滑动穿透到底部页面
-preventTouchMove() {
-  return;
-},
 
-// 点击取消 / 蒙层关闭弹窗
-closeAiPopup() {
-  this.setData({ showAiPopup: false });
-},
+  // 阻止蒙层滑动穿透到底部页面
+  preventTouchMove() {
+    return;
+  },
 
-// 点击体验跳转
-toAiChat() {
-  this.closeAiPopup(); // 先关闭弹窗
-  
-  // 请将此处路径替换为你实际的 AI Chat 页面路径
-  wx.navigateTo({
-    url: '/pages/ai-chat/ai-chat', 
-    fail: (err) => {
-      // 兜底方案：如果 ai-chat 是在底部 tabBar 上，需要用 switchTab 跳转
-      wx.switchTab({
-        url: '/pages/ai-chat/ai-chat'
-      });
-    }
-  });
-},
+  // 点击取消 / 蒙层关闭弹窗
+  closeAiPopup() {
+    this.setData({ showAiPopup: false });
+  },
+
+  // 点击体验跳转
+  toAiChat() {
+    this.closeAiPopup(); // 先关闭弹窗
+    
+    // 请将此处路径替换为你实际的 AI Chat 页面路径
+    wx.navigateTo({
+      url: '/pages/ai-chat/ai-chat', 
+      fail: (err) => {
+        // 兜底方案：如果 ai-chat 是在底部 tabBar 上，需要用 switchTab 跳转
+        wx.switchTab({
+          url: '/pages/ai-chat/ai-chat'
+        });
+      }
+    });
+  },
+
   syncGlobalUserState() {
     const isLogin = app.globalData.isLogin;
     const memberInfo = app.globalData.memberInfo || wx.getStorageSync('memberInfo') || {};
@@ -65,7 +67,8 @@ toAiChat() {
       isLogin: isLogin,
       userInfo: memberInfo,
       memberInfo: memberInfo,
-      isAdminMember: isLogin && [5].includes(userType)
+      // 🌟 核心修复：最新的 "Ta创+" 对应的 user_type 是 7
+      isAdminMember: isLogin && [7].includes(userType)
     });
   },
 
@@ -83,7 +86,8 @@ toAiChat() {
         this.setData({
           userInfo: memberInfo,
           memberInfo: memberInfo,
-          isAdminMember: [5].includes(userType)
+          // 🌟 核心修复：最新的 "Ta创+" 对应的 user_type 是 7
+          isAdminMember: [7].includes(userType)
         });
       }
     }).catch(err => {

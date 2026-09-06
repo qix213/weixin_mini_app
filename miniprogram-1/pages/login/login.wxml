@@ -14,32 +14,29 @@
         class="tab {{loginType=='wechat'?'active':''}}"
         data-type="wechat"
         bindtap="changeTab">
-        微信登录
+        手机号登录
       </view>
 
       <view
         class="tab {{loginType=='account'?'active':''}}"
         data-type="account"
         bindtap="changeTab">
-        账号登录
+        账号密码登录
       </view>
     </view>
 
     <!-- 微信登录 -->
     <view wx:if="{{loginType=='wechat'}}">
-
       <button
         class="login-btn"
         open-type="getPhoneNumber"
         bindgetphonenumber="handleWechatLogin">
-        微信手机号快捷登录
+        手机号快捷登录
       </button>
-
     </view>
 
     <!-- 用户名密码登录 -->
     <view wx:if="{{loginType=='account'}}">
-
       <input
         class="login-input"
         placeholder="请输入用户名"
@@ -58,7 +55,6 @@
         bindtap="handleAccountLogin">
         登录
       </button>
-
     </view>
 
     <!-- 注册 -->
@@ -69,6 +65,15 @@
         bindtap="goToRegister">
         立即注册
       </text>
+    </view>
+
+    <!-- ================= 🌟 修改为 Button 的暂不登录 ================= -->
+    <view class="cancel-login-wrap">
+      <button 
+        class="cancel-btn" 
+        bindtap="handleCancelLogin">
+        暂不登录
+      </button>
     </view>
 
   </view>

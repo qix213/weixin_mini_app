@@ -1,4 +1,3 @@
-import Toast from '@vant/weapp/toast/toast';
 const app = getApp();
 
 Page({
@@ -8,22 +7,27 @@ Page({
     loading: true,
     cartNum: 1,
     currentSwipeIndex: 0,
-    
     mediaList: [], 
     isPlayingVideo: false, 
-    
     isPointGoods: false,
     pointPrice: 0,
-
-    // --- 弹窗控制 ---
     showPopup: false,
-    actionType: '' // 'cart' | 'buy'
+    actionType: '',
+    
+    userType: 1, 
+    mainPriceLabel: '',
+    mainPriceValue: '',
+    subPriceLabel: '',
+    subPriceValue: ''
   },
 
   onLoad(options) {
+    const memberInfo = app.globalData.memberInfo || wx.getStorageSync('memberInfo') || {};
+    this.setData({ userType: memberInfo.user_type || 1 });
+
     const goodsId = options.goods_id;
     if (!goodsId) {
-      Toast.fail('无效的商品ID');
+      wx.showToast({ title: '无效的商品ID', icon: 'error' });
       setTimeout(() => { wx.navigateBack(); }, 1500);
       return;
     }
@@ -34,7 +38,6 @@ Page({
   isPointGoods(item) {
     const pointField = item.isPointGoods || item.can_point_exchange || item.canPointExchange || false;
     const hasPointPrice = item.pointPrice && Number(item.pointPrice) > 0;
-    
     let isPoint = false;
     if (typeof pointField === 'string') {
       isPoint = pointField.toLowerCase() === 'true';
@@ -50,7 +53,6 @@ Page({
     if (!url) return '';
     let fixedUrl = url.replace('//media/', '/media/');
     const baseUrl = app.globalData.baseUrl;
-    
     if (!fixedUrl.startsWith('http')) {
       fixedUrl = baseUrl + (fixedUrl.startsWith('/') ? fixedUrl : '/' + fixedUrl);
     }
@@ -58,13 +60,13 @@ Page({
   },
 
   getGoodsDetail() {
-    const { goodsId } = this.data;
+    const { goodsId, userType } = this.data;
 
     app.request({
       url: `/app01/goods/${goodsId}/`, 
       method: 'GET'
     }).then(res => {
-      if (res.data.code === 200) {
+      if (res.data && res.data.code === 200) {
         let goodsData = res.data.data;
         let mediaList = [];
 
@@ -77,25 +79,39 @@ Page({
           sortedImages.forEach(item => {
             let url = item.media_url || (Number(item.media_type) === 1 ? item.video_url : item.image_url);
             if (url) {
-              mediaList.push({ 
-                type: item.media_type !== undefined ? Number(item.media_type) : 0, 
-                url: this.formatUrl(url) 
-              });
+              mediaList.push({ type: item.media_type !== undefined ? Number(item.media_type) : 0, url: this.formatUrl(url) });
             }
           });
         }
 
-        const uniqueMediaList = Array.from(new Set(mediaList.map(a => a.url)))
-          .map(url => {
-            return mediaList.find(a => a.url === url)
-          });
+        const uniqueMediaList = Array.from(new Set(mediaList.map(a => a.url))).map(url => mediaList.find(a => a.url === url));
 
         const isPointGoods = this.isPointGoods(goodsData);
         let pointPrice = 0;
         if (isPointGoods) {
           const memberPriceStr = (goodsData.member_price || '0').toString().replace(/[^0-9.]/g, '');
-          const memberPrice = parseFloat(memberPriceStr) || 0;
-          pointPrice = Number(Math.floor(memberPrice * 100)); 
+          pointPrice = Number(Math.floor((parseFloat(memberPriceStr) || 0) * 100)); 
+        }
+
+        // ==========================================
+        // ✅ 前端展示算价逻辑
+        // ==========================================
+        const currentLevel = parseInt(userType) || 1;
+        const memberPrice = parseFloat(goodsData.member_price || 0).toFixed(2);
+        const originalPrice = parseFloat(goodsData.original_price || 0).toFixed(2);
+        
+        let mainPriceLabel = '', mainPriceValue = '', subPriceLabel = '', subPriceValue = '';
+
+        if (currentLevel <= 1) {
+          mainPriceLabel = '零售价';
+          mainPriceValue = originalPrice;
+          subPriceLabel = '会员价';
+          subPriceValue = memberPrice;
+        } else {
+          mainPriceLabel = '会员价';
+          mainPriceValue = memberPrice;
+          subPriceLabel = '零售价';
+          subPriceValue = originalPrice;
         }
 
         this.setData({ 
@@ -103,14 +119,19 @@ Page({
           mediaList: uniqueMediaList,
           isPointGoods: isPointGoods || false,
           pointPrice: pointPrice,
+          mainPriceLabel: mainPriceLabel,
+          mainPriceValue: mainPriceValue,
+          subPriceLabel: subPriceLabel,
+          subPriceValue: subPriceValue,
           loading: false
         });
       } else {
-        Toast.fail('获取详情失败：' + (res.data?.msg || '异常'));
+        const errorMsg = (res.data && res.data.msg) ? res.data.msg : '异常';
+        wx.showToast({ title: '获取详情失败：' + errorMsg, icon: 'none' });
         this.setData({ loading: false });
       }
     }).catch(err => {
-      Toast.fail('网络异常');
+      wx.showToast({ title: '网络异常', icon: 'none' });
       this.setData({ loading: false });
     });
   },
@@ -144,7 +165,6 @@ Page({
     
     const currentIndex = e.currentTarget.dataset.index || 0;
     const currentMedia = mediaList[currentIndex];
-    
     if (currentMedia.type === 1) return;
 
     const pureImgUrls = mediaList.filter(m => m.type === 0).map(m => m.url);
@@ -154,16 +174,11 @@ Page({
     });
   },
 
-  imageLoadError(e) { console.error('图片加载失败，URL：', e.currentTarget.dataset.src); },
+  imageLoadError(e) { console.error('图片加载失败', e.currentTarget.dataset.src); },
 
-  // ================= 弹窗与数量控件逻辑 =================
   openPopup(e) {
-    const action = e.currentTarget.dataset.action; // 'cart' 或 'buy'
-    this.setData({ 
-      showPopup: true,
-      actionType: action,
-      cartNum: 1 // 每次打开重置为1
-    });
+    const action = e.currentTarget.dataset.action; 
+    this.setData({ showPopup: true, actionType: action, cartNum: 1 });
   },
 
   closePopup() {
@@ -186,12 +201,12 @@ Page({
   },
 
   executeAddToCart() {
-    const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
+    const { goodsDetail, cartNum, isPointGoods } = this.data;
     this.closePopup();
 
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     if (!token) {
-      Toast('本地已暂存，登录后同步');
+      wx.showToast({ title: '本地已暂存，登录后同步', icon: 'none' });
       const cartList = wx.getStorageSync('cartList') || {};
       cartList[goodsDetail.id] = (cartList[goodsDetail.id] || 0) + cartNum;
       wx.setStorageSync('cartList', cartList);
@@ -201,45 +216,47 @@ Page({
     app.request({
       url: '/app01/cart/add/',
       method: 'POST',
-      data: { goods_id: goodsDetail.id, num: cartNum }
+      data: { goods_id: goodsDetail.id, num: cartNum } // ✅ 只传ID和数量，绝对安全
     }).then(res => {
-      if (res.data?.code === 200) {
-        Toast.success(isPointGoods ? `已加购 x${cartNum}\n需${pointPrice * cartNum}积分` : `已加购 x${cartNum}`);
+      if (res.data && res.data.code === 200) {
+        wx.showToast({ title: isPointGoods ? `加购 x${cartNum}` : `加购 x${cartNum}`, icon: 'success' });
       } else {
-        Toast.fail(res.data?.msg || '加入失败');
+        const errorMsg = (res.data && res.data.msg) ? res.data.msg : '加入失败';
+        wx.showToast({ title: errorMsg, icon: 'none' });
       }
     }).catch(err => {
-      Toast.fail('网络异常');
+      wx.showToast({ title: '网络异常', icon: 'none' });
     });
   },
 
   executeBuyNow() {
-    const { goodsDetail, cartNum, isPointGoods, pointPrice } = this.data;
+    const { goodsDetail, cartNum } = this.data;
     this.closePopup();
   
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    if (!token) return Toast('请先登录后结算');
+    if (!token) {
+      return wx.showToast({ title: '请先登录后结算', icon: 'none' });
+    }
   
-    // 移除线下商品直达支付逻辑，所有商品统一跳转结算页
     app.request({
       url: '/app01/cart/add/',
       method: 'POST',
-      data: { goods_id: goodsDetail.id, num: cartNum }
+      data: { goods_id: goodsDetail.id, num: cartNum } // ✅ 只传ID和数量，绝对安全
     }).then(res => {
-      if (res.data?.code === 200) {
-        Toast.success(isPointGoods ? `即将结算\n需${pointPrice * cartNum}积分` : `即将结算 x${cartNum}`);
+      if (res.data && res.data.code === 200) {
+        wx.showToast({ title: '即将结算', icon: 'success' });
         setTimeout(() => {
-          // 统一跳结算页面，由结算页创建正式订单
           wx.navigateTo({
             url: `/pages/checkout/checkout?goodsId=${goodsDetail.id}&num=${cartNum}`,
             fail: () => wx.switchTab({ url: '/pages/cart/cart' })
           });
         }, 1500);
       } else {
-        Toast.fail(res.data?.msg || '无法结算');
+        const errorMsg = (res.data && res.data.msg) ? res.data.msg : '无法结算';
+        wx.showToast({ title: errorMsg, icon: 'none' });
       }
     }).catch(err => {
-      Toast.fail('网络异常');
+      wx.showToast({ title: '网络异常', icon: 'none' });
     });
   }
 });

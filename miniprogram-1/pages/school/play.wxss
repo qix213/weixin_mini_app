@@ -1,7 +1,7 @@
 /* ================== 基础设置 ================== */
-.video-play-page {
+.content-detail-page {
   min-height: 100vh;
-  background-color: #FAF8F5; /* 奶油可可白底色 */
+  background-color: #FAF8F5;
   position: relative;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
@@ -14,21 +14,41 @@
   gap: 32rpx;
 }
 
-/* ================== 视频区域 ================== */
-.video-container {
+/* ================== 媒体区域 (兼容图片与视频) ================== */
+.media-container {
   width: 100%;
+  height: 450rpx;
   border-radius: 20rpx;
   overflow: hidden;
   position: relative;
   background-color: #F8F9F5;
-  box-shadow: 0 12rpx 32rpx rgba(148, 164, 140, 0.12); /* 柔和的高级弥散阴影 */
+  box-shadow: 0 12rpx 32rpx rgba(148, 164, 140, 0.12);
   border: 1px solid rgba(148, 164, 140, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.video-player {
+.media-player, .media-cover {
   width: 100%;
-  height: 450rpx;
+  height: 100%;
   display: block;
+}
+
+/* 伪装图文模式时的遮罩提示 */
+.media-mask {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(44, 51, 39, 0.6), transparent);
+  padding: 30rpx 20rpx 20rpx;
+  box-sizing: border-box;
+}
+.media-tip {
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 500;
 }
 
 /* 居中自定义播放按钮 */
@@ -39,7 +59,7 @@
   transform: translate(-50%, -50%);
   width: 100rpx;
   height: 100rpx;
-  background: rgba(44, 51, 39, 0.4); /* 深绿色调低透明度，比纯黑更高级 */
+  background: rgba(44, 51, 39, 0.4);
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -57,7 +77,7 @@
 .play-svg {
   width: 50rpx;
   height: 50rpx;
-  filter: invert(100%); /* 纯白图标 */
+  filter: invert(100%);
 }
 
 /* ================== 白卡浮雕信息卡片 ================== */
@@ -72,19 +92,19 @@
   gap: 20rpx;
 }
 
-.video-title {
+.content-title {
   font-size: 34rpx;
   font-weight: 600;
-  color: #2C3327; /* 深森林绿主文本 */
+  color: #2C3327;
   line-height: 1.5;
   letter-spacing: 1rpx;
 }
 
-.video-meta {
+.content-meta {
   display: flex;
   gap: 40rpx;
   font-size: 24rpx;
-  color: #8A8E88; /* 莫兰迪灰 */
+  color: #8A8E88;
 }
 
 .meta-tag {
@@ -123,7 +143,6 @@
   border: none;
 }
 
-/* 莫兰迪绿主按钮 */
 .primary-btn {
   background: linear-gradient(135deg, #94A48C 0%, #7A8B72 100%);
   color: #FFFFFF;
@@ -135,7 +154,6 @@
   box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.15);
 }
 
-/* 浅色辅助按钮 */
 .secondary-btn {
   background: rgba(148, 164, 140, 0.08);
   color: #7A8B72;
@@ -146,7 +164,6 @@
   background: rgba(148, 164, 140, 0.15);
 }
 
-/* 幽灵返回按钮 */
 .ghost-btn {
   background: transparent;
   color: #A0A49D;

@@ -3,11 +3,18 @@
     "miniprogram": {
       "list": [
         {
+          "name": "pages/school/play",
+          "pathName": "pages/school/play",
+          "query": "id=4&videoUrl=https%253A%252F%252Fvideo.lansik2026.com%252Fvideo1%252Foutput_video1.m3u8",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/order-workbench/order-workbench",
           "pathName": "pages/order-workbench/order-workbench",
           "query": "",
-          "scene": null,
-          "launchMode": "default"
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "pages/register/register",

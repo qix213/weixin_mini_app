@@ -1,91 +1,80 @@
 Page({
   data: {
-    second: 4,
-    bgUrl: '' // 🌟 修复1：显式初始化变量，防止 WXML 报未定义警告，利于页面丝滑渲染
+    second: 5,
+    // 🌟 1. 初始值只读缓存，如果没有缓存就为空字符串，绝不用本地假路径
+    bgUrl: wx.getStorageSync('index_bg_url') || '', 
+    isImageLoaded: false 
   },
   
-  timer: null,      // 保存定时器实例
-  isJumping: false, // 跳转锁
+  timer: null,
+  isJumping: false,
 
   onLoad(options) {
     this.startTimer();
-    this.getWelcomeBg();
+    this.getWelcomeBg(); 
   },
 
-  // 获取欢迎页背景图
+  onImageLoad() {
+    this.setData({ isImageLoaded: true });
+  },
+
+  onImageError(err) {
+    console.error("网络图片加载失败或地址失效", err);
+    // 🌟 2. 失败了直接清空，露出底层的 CSS 高级渐变色即可
+    this.setData({ bgUrl: '' });
+  },
+
   getWelcomeBg() {
-    const that = this;
-    
-    // 🌟 修复2：在函数内部动态安全获取 app 实例，彻底避免全局 ReferenceError
     const appInstance = getApp();
-    if (!appInstance || !appInstance.globalData) {
-      console.warn('App 实例尚未完全初始化，启用本地兜底图');
-      that.setData({ bgUrl: '/images/bg/bg.png' });
-      return;
-    }
+    if (!appInstance || !appInstance.globalData) return;
 
     wx.request({
       url: `${appInstance.globalData.baseUrl}/app01/welcome/`, 
       method: 'GET',
       success: (res) => {
         if (res.data.code === 100 && res.data.result) {
-          that.setData({
-            bgUrl: res.data.result 
-          });
-          // 缓存图片绝对路径
-          wx.setStorageSync('index_bg_url', res.data.result);
-        } else {
-          that.setData({ bgUrl: '/images/bg/bg.png' });
+          const newUrl = res.data.result;
+          const oldUrl = this.data.bgUrl;
+          
+          // 🌟 3. 核心逻辑：如果当前屏幕上没图(第一次打开小程序)，拿到新图立刻显示！
+          if (!oldUrl) {
+            this.setData({ bgUrl: newUrl });
+          }
+
+          // 无论如何，都把最新获取的 URL 存入缓存，下次秒开
+          if (newUrl !== wx.getStorageSync('index_bg_url')) {
+            wx.setStorageSync('index_bg_url', newUrl);
+          }
         }
-      },
-      fail: () => {
-        // 失败兜底
-        that.setData({ bgUrl: '/images/bg/bg.png' });
       }
     });
   },
-
-  // 开启倒计时
+  // --- 下方的倒计时与跳转逻辑保持不变 ---
   startTimer() {
-    // 安全防范：开启前先清理已有定时器，防止死锁或重复叠加
     this.clearWelcomeTimer();
-
     this.timer = setInterval(() => {
       if (this.data.second <= 1) {
-        this.doJump(); // 时间到，自动跳转
+        this.doJump();
       } else {
-        this.setData({
-          second: this.data.second - 1
-        });
+        this.setData({ second: this.data.second - 1 });
       }
     }, 1000);
   },
 
-  // 执行跳转
   doJump() {
-    // 1. 防止重复点击锁
     if (this.isJumping) return;
     this.isJumping = true;
-
-    // 2. 彻底销毁定时器
     this.clearWelcomeTimer();
     
-    // 3. 执行跳转
     wx.switchTab({
       url: '/pages/index/index',
-      success: () => {
-        console.log('跳转首页成功');
-      },
       fail: (err) => {
-        // ⚠️ 如果跳不过去，这里会在控制台清晰打印报错原因
-        // 常见错误：app.json 的 tabBar 数组里没有配置过 "/pages/index/index"
-        console.error('跳转首页失败，请确认该路径是否在 app.json 的 tabBar 中：', err);
-        this.isJumping = false; // 失败了解锁，允许用户再次点击尝试
+        console.error('跳转首页失败：', err);
+        this.isJumping = false;
       }
     });
   },
 
-  // 封装统一的定时器清理方法
   clearWelcomeTimer() {
     if (this.timer) {
       clearInterval(this.timer);
@@ -93,13 +82,6 @@ Page({
     }
   },
 
-  // 🌟 修复3：switchTab 触发的是 onHide 而不是 onUnload，必须在这里防范性清理定时器
-  onHide() {
-    this.clearWelcomeTimer();
-  },
-
-  // 页面真正被销毁时清理
-  onUnload() {
-    this.clearWelcomeTimer();
-  }
+  onHide() { this.clearWelcomeTimer(); },
+  onUnload() { this.clearWelcomeTimer(); }
 });

@@ -163,7 +163,7 @@ var validator_1 = require("../common/validator");
                 sources: sources,
                 current: current,
                 fail: function () {
-                    wx.showToast({ title: '预览视频失败', icon: 'none' });
+                    wx.showToast({ title: '预览失败', icon: 'none' });
                 },
             });
         },

@@ -49,15 +49,18 @@ Page({
           } else if (res.statusCode === 200) {
             categories = res.data.results || res.data || [];
           }
-          const allCategory = { id: '', name: '全部系列', icon: 'apps-o' };
-          if (!categories.some(item => item.id === '')) {
-            categories = [allCategory, ...categories];
+          
+          // 如果没有选中任何分类，且分类列表有数据，默认选中第一个分类
+          let selectedCategoryId = this.data.selectedCategoryId;
+          if (categories.length > 0 && !selectedCategoryId) {
+            selectedCategoryId = categories[0].id;
           }
-          this.setData({ categories });
+
+          this.setData({ categories, selectedCategoryId });
           resolve();
         },
         fail: (err) => {
-          this.setData({ categories: [{ id: '', name: '全部系列', icon: 'apps-o' }] });
+          this.setData({ categories: [] });
           resolve();
         }
       });

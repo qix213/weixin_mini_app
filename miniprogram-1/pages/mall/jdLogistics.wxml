@@ -2,7 +2,19 @@
 
 <view wx:if="{{precheckStatus !== null}}" class="status-banner slim {{precheckStatus === false ? 'error' : 'success'}}">
   <van-icon name="{{precheckStatus === false ? 'warning' : 'checked'}}" size="32rpx" />
-  <text class="status-text">{{precheckStatus === false ? (errorMsg || '地址受限，前置校验未通过⚠️') : '地址符合京东揽收标准✅'}}</text>
+  <view class="status-text flex-center">
+  <!-- 校验未通过状态 -->
+  <block wx:if="{{precheckStatus === false}}">
+    <text>{{errorMsg || '地址受限，前置校验未通过'}}</text>
+    <van-icon name="warning-o" color="#ee0a24" size="28rpx" style="margin-left: 8rpx;" />
+  </block>
+  
+  <!-- 校验通过状态 -->
+  <block wx:else>
+    <text>地址符合京东揽收标准</text>
+    <van-icon name="passed" color="#07c160" size="28rpx" style="margin-left: 8rpx;" />
+  </block>
+</view>
 </view>
 
 <view class="card address-card">

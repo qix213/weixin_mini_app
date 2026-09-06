@@ -1,6 +1,6 @@
-{ 
-   "usingComponents": {"van-icon": "@vant/weapp/icon/index"},
-  "navigationBarTitleText": "考核通关",
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "线下认证",
   "navigationBarBackgroundColor": "#94A48C",
   "navigationBarTextStyle": "white",
   "backgroundColor": "#94A48C"

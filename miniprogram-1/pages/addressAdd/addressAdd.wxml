@@ -6,7 +6,7 @@
     </view>
     <textarea 
       class="smart-textarea" 
-      placeholder="请粘贴收件人姓名、电话、地址文本，例如：明明 13812345678 广东省深圳市南山区某某街道8号" 
+      placeholder="请粘贴收件人信息，注意用空格分隔！例如：明明 138xxxx5678 xx省 xx市 xx区 xx街道8号" 
       placeholder-class="placeholder-style"
       model:value="{{smartText}}"
     ></textarea>

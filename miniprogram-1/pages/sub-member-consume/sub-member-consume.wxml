@@ -32,7 +32,17 @@
     </view>
   </view>
 </view>
-
+<view class="withdraw-notice-card">
+      <view class="notice-title">
+        <van-icon name="info-o" color="#C5B390" size="32rpx" />
+        <text>提现规则须知</text>
+      </view>
+      <view class="notice-content">
+        <view class="notice-item"><text class="dot"></text>每位用户每月仅支持免费提现 <text class="highlight">1 次</text></view>
+        <view class="notice-item"><text class="dot"></text>单次提现金额最低要求为 <text class="highlight">¥0.10</text></view>
+        <view class="notice-item"><text class="dot"></text>提现申请提交后，预计 <text class="highlight">3-5 个工作日</text> 内到账</view>
+      </view>
+    </view>
     <view class="modal-mask {{showWithdrawModal ? 'show' : ''}}" bindtap="closeWithdrawModal"></view>
     <view class="withdraw-bottom-sheet {{showWithdrawModal ? 'show' : ''}}">
       <view class="modal-header">
@@ -63,121 +73,138 @@
       <view class="safe-area-bottom"></view>
     </view>
 
-    <view class="foldable-section">
-      <view class="section-header-bar" bindtap="toggleCommissionList">
-        <text class="section-title">关联订单收益明细</text>
-        <view class="section-right">
-          <text class="summary-text text-muted" wx:if="{{walletDetails && walletDetails.length}}">共 {{walletDetails.length}} 笔</text>
-          <van-icon name="{{showCommissionList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
-        </view>
-      </view>
-
-      <view class="section-body" wx:if="{{showCommissionList}}">
-        <view class="commission-list" wx:if="{{walletDetails && walletDetails.length > 0}}">
-          <view class="commission-card" wx:for="{{walletDetails}}" wx:key="id">
-            <view class="comm-top flex-between">
-              <view class="comm-desc-box">
-                <van-icon name="balance-o" color="#94A48C" size="32rpx" class="comm-icon" />
-                <text class="comm-desc">{{item.desc}}</text>
-              </view>
-              <text class="comm-money">+￥{{item.amount}}</text>
-            </view>
-            <view class="comm-divider"></view>
-            <view class="comm-bottom">
-              <view class="info-line">
-                <text class="info-label">关联单号：</text>
-                <text class="info-value font-mono">{{item.order_sn}}</text>
-              </view>
-              <view class="info-line">
-                <text class="info-label">订单实付：</text>
-                <text class="info-value">￥{{item.order_amount}}</text>
-              </view>
-              <view class="info-line">
-                <text class="info-label">买家账号：</text>
-                <text class="info-value">{{item.buyer_name}} <text class="text-muted">({{item.buyer_phone}})</text></text>
-              </view>
-              <view class="info-line">
-                <text class="info-label">记账时间：</text>
-                <text class="info-value text-muted">{{item.date}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-        <view class="empty-state" wx:else>
-          <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
-          <text>暂无记账流水明细</text>
-        </view>
-      </view>
+<!-- ================== 1. 关联订单收益明细面板 ================== -->
+<view class="foldable-section">
+  <!-- 头部栏 -->
+  <view class="section-header-bar" bindtap="toggleCommissionList">
+    <text class="section-title">关联订单收益明细</text>
+    <view class="section-right">
+      <text class="summary-text text-muted" wx:if="{{walletDetails && walletDetails.length}}">共 {{walletDetails.length}} 笔</text>
+      <van-icon name="{{showCommissionList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
     </view>
+  </view>
 
-    <view class="foldable-section">
-      <view class="section-header-bar" bindtap="toggleConsumeList">
-        <text class="section-title">关联订单消费明细</text>
-        <view class="section-right">
-          <text class="summary-text highlight-text">总消费: ¥{{totalAllConsume}}</text>
-          <van-icon name="{{showConsumeList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
+  <!-- 展开内容 -->
+  <view class="section-body" wx:if="{{showCommissionList}}">
+    <view class="commission-list" wx:if="{{walletDetails && walletDetails.length > 0}}">
+      <view class="commission-card" wx:for="{{walletDetails}}" wx:key="id">
+        <!-- 收益金额与描述 -->
+        <view class="comm-top flex-between">
+          <view class="comm-desc-box">
+            <van-icon name="balance-o" color="#94A48C" size="32rpx" class="comm-icon" />
+            <text class="comm-desc">{{item.desc}}</text>
+          </view>
+          <text class="comm-money">+￥{{item.amount}}</text>
         </view>
-      </view>
-
-      <view class="section-body" wx:if="{{showConsumeList}}">
-        <view class="empty-state" wx:if="{{memberList.length === 0}}">
-          <image class="empty-img" src="https://img.yzcdn.cn/vant/empty-image-default.png" mode="aspectFit"></image>
-          <text>暂无下级会员消费记录</text>
-        </view>
-
-        <view class="member-list" wx:if="{{memberList.length > 0}}">
-          <view wx:for="{{memberList}}" wx:key="id" class="member-card {{currentMemberId === item.id ? 'is-expanded' : ''}}">
-            <view class="member-header" bindtap="onMemberClick" data-member-id="{{item.id}}">
-              <view class="member-info-col">
-                <view class="title-row">
-                  <text class="nickname">{{item.nickname}}</text>
-                  <text class="level-tag" wx:if="{{item.level_name}}">{{item.level_name}} V{{item.star_level}}</text>
-                </view>
-                <view class="subtitle" wx:if="{{item.member_code}}">ID: {{item.member_code}}</view>
-              </view>
-              <view class="member-action-col">
-                <view class="consume-sum">
-                  <text class="sum-label">累计</text>
-                  <text class="sum-val">¥{{item.totalConsume}}</text>
-                </view>
-                <van-icon name="{{currentMemberId === item.id ? 'arrow-up' : 'arrow-down'}}" color="#B4B9AE" size="32rpx" />
-              </view>
-            </view>
-
-            <view class="consume-detail-wrap" wx:if="{{currentMemberId === item.id}}">
-              <view class="divider"></view>
-              <view class="order-list" wx:if="{{item.consumeRecords.length > 0}}">
-                <view class="order-item" wx:for="{{item.consumeRecords}}" wx:for-item="order" wx:key="id">
-                  <view class="order-summary">
-                    <view class="summary-top">
-                      <text class="order-sn">单号: {{order.order_sn}}</text>
-                      <text class="order-status {{order.status_name === '已完成' ? 'success' : ''}}">{{order.status_name || '未知'}}</text>
-                    </view>
-                    <view class="summary-bottom">
-                      <text class="order-date">{{order.create_time}}</text>
-                      <text class="order-total">合计: <text class="emphasis">¥{{order.total_price}}</text></text>
-                    </view>
-                  </view>
-                  <view class="goods-table" wx:if="{{order.goods.length > 0}}">
-                    <view class="t-head">
-                      <text class="t-col goods-name">商品</text>
-                      <text class="t-col num">数量</text>
-                      <text class="t-col price">单价</text>
-                    </view>
-                    <view class="t-row" wx:for="{{order.goods}}" wx:for-item="goods" wx:key="goods_name">
-                      <text class="t-col goods-name text-ellipsis">{{goods.goods_name}}</text>
-                      <text class="t-col num">x{{goods.num}}</text>
-                      <text class="t-col price">¥{{goods.price}}</text>
-                    </view>
-                  </view>
-                </view>
-              </view>
-              <view class="empty-order" wx:else>该会员暂无订单明细</view>
-            </view>
+        <view class="comm-divider"></view>
+        <!-- 收益详情 -->
+        <view class="comm-bottom">
+          <view class="info-line">
+            <text class="info-label">关联单号：</text>
+            <text class="info-value font-mono">{{item.order_sn}}</text>
+          </view>
+          <view class="info-line">
+            <text class="info-label">订单实付：</text>
+            <text class="info-value">￥{{item.order_amount}}</text>
+          </view>
+          <view class="info-line">
+            <text class="info-label">买家账号：</text>
+            <text class="info-value">{{item.buyer_name}} <text class="text-muted">({{item.buyer_phone}})</text></text>
+          </view>
+          <view class="info-line">
+            <text class="info-label">记账时间：</text>
+            <text class="info-value text-muted">{{item.date}}</text>
           </view>
         </view>
       </view>
     </view>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:else>
+      <van-empty description="暂无记账流水明细" />
+    </view>
+  </view>
+</view>
+
+<!-- ================== 2. 关联订单消费明细面板 ================== -->
+<view class="foldable-section">
+  <!-- 头部栏 -->
+  <view class="foldable-section" wx:if="{{hasSubConsumePermission}}">
+  
+  <!-- 头部栏 -->
+  <view class="section-header-bar" bindtap="toggleConsumeList">
+    <text class="section-title">关联订单消费明细</text>
+    <view class="section-right">
+      <text class="summary-text highlight-text">总消费: ¥{{totalAllConsume}}</text>
+      <van-icon name="{{showConsumeList ? 'arrow-up' : 'arrow-down'}}" color="#9CA3AF" size="32rpx" class="toggle-icon" />
+    </view>
+  </view>
+
+  <!-- 展开内容 -->
+  <view class="section-body" wx:if="{{showConsumeList}}">
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{memberList.length === 0}}">
+      <van-empty description="暂无下级会员消费记录" />
+    </view>
+
+    <!-- 会员列表 -->
+    <view class="member-list" wx:if="{{memberList.length > 0}}">
+      <view wx:for="{{memberList}}" wx:key="id" class="member-card {{currentMemberId === item.id ? 'is-expanded' : ''}}">
+        <!-- 会员信息卡片头部 (点击展开订单) -->
+        <view class="member-header" bindtap="onMemberClick" data-member-id="{{item.id}}">
+          <view class="member-info-col">
+            <view class="title-row">
+              <text class="nickname">{{item.nickname}}</text>
+              <text class="level-tag" wx:if="{{item.level_name}}">{{item.level_name}} V{{item.star_level}}</text>
+            </view>
+            <view class="subtitle" wx:if="{{item.member_code}}">ID: {{item.member_code}}</view>
+          </view>
+          <view class="member-action-col">
+            <view class="consume-sum">
+              <text class="sum-label">累计</text>
+              <text class="sum-val">¥{{item.totalConsume}}</text>
+            </view>
+            <van-icon name="{{currentMemberId === item.id ? 'arrow-up' : 'arrow-down'}}" color="#B4B9AE" size="32rpx" />
+          </view>
+        </view>
+
+        <!-- 该会员的订单明细 (二级展开) -->
+        <view class="consume-detail-wrap" wx:if="{{currentMemberId === item.id}}">
+          <view class="divider"></view>
+          <view class="order-list" wx:if="{{item.consumeRecords.length > 0}}">
+            <view class="order-item" wx:for="{{item.consumeRecords}}" wx:for-item="order" wx:key="id">
+              <!-- 订单摘要 -->
+              <view class="order-summary">
+                <view class="summary-top">
+                  <text class="order-sn">单号: {{order.order_sn}}</text>
+                  <text class="order-status {{order.status_name === '已完成' ? 'success' : ''}}">{{order.status_name || '未知'}}</text>
+                </view>
+                <view class="summary-bottom">
+                  <text class="order-date">{{order.create_time}}</text>
+                  <text class="order-total">合计: <text class="emphasis">¥{{order.total_price}}</text></text>
+                </view>
+              </view>
+              <!-- 商品表格 -->
+              <view class="goods-table" wx:if="{{order.goods.length > 0}}">
+                <view class="t-head">
+                  <text class="t-col goods-name">商品</text>
+                  <text class="t-col num">数量</text>
+                  <text class="t-col price">单价</text>
+                </view>
+                <view class="t-row" wx:for="{{order.goods}}" wx:for-item="goods" wx:key="goods_name">
+                  <text class="t-col goods-name text-ellipsis">{{goods.goods_name}}</text>
+                  <text class="t-col num">x{{goods.num}}</text>
+                  <text class="t-col price">¥{{goods.price}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-order" wx:else>该会员暂无订单明细</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
 
   </view>
+</view>
 </view>

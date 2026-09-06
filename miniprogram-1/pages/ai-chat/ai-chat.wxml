@@ -1,18 +1,18 @@
 <view class="container">
-  <view class="nav-header">AI 蓝博士专家问诊</view>
+  <view class="nav-header">蓝博士专家问诊</view>
 
-  <scroll-view 
+<!-- 🌟 1. 变量名改为 scrollToView -->
+<scroll-view 
     class="chat-scroll" 
     scroll-y="true" 
-    scroll-into-view="{{scrollToId}}" 
-    scroll-with-animation
+    scroll-into-view="{{scrollToView}}" 
   >
     <view class="message-list">
       <block wx:for="{{messages}}" wx:key="id">
         <view class="msg-row ai-row" wx:if="{{item.role === 'ai'}}" id="msg-{{index}}">
           <view class="avatar-box">
             <view class="ai-avatar">
-            <image class="svg-icon" src="/images/bg/AI蓝博士头像.jpg"></image>
+              <image class="svg-icon" src="/images/bg/AI蓝博士头像.jpg"></image>
             </view>
           </view>
           <view class="bubble ai-bubble">
@@ -31,6 +31,10 @@
         </view>
       </block>
     </view>
+
+    <!-- 🌟🌟🌟 2. 核心改变：固定它的 ID 为 chat-bottom，永远不改它！ -->
+    <view id="chat-bottom" style="height: 60rpx; width: 100%; clear: both;"></view>
+
   </scroll-view>
 
   <view class="action-panel">
@@ -43,17 +47,31 @@
         bindinput="onNameInput" 
         value="{{subjectName}}" 
       />
+
       <view class="action-row">
-        <button class="action-btn primary" bindtap="startQuestionnaire">📝 填写肤质问卷</button>
-        <button class="action-btn ghost" bindtap="skipQuestionnaire">⏭️ 跳过此步</button>
+        <button class="action-btn primary" bindtap="startQuestionnaire"> 
+          <van-icon name="description-o" size="36rpx" />
+          <text class="btn-text">填写肤质问卷</text>
+        </button>
+        
+        <button class="action-btn ghost" bindtap="skipQuestionnaire">
+          <van-icon name="share-o" size="36rpx" /> 
+          <text class="btn-text">跳过此步</text>
+        </button>
       </view>
-    </view>
+    </view> <!-- ✅ 这里就是你原本漏掉的闭合标签！ -->
 
     <!-- 🌟 全新第二步：拍照 -->
     <view class="btn-group" wx:if="{{currentStep === 1}}">
       <view class="action-row" style="width: 100%;">
-        <button class="action-btn primary" bindtap="uploadPhoto">📸 第2步：上传面部照片</button>
-        <button class="action-btn ghost" bindtap="skipPhoto">⏭️ 跳过此步</button>
+        <button class="action-btn primary" bindtap="uploadPhoto">
+          <van-icon name="photograph" size="36rpx" />
+          <text class="btn-text">第2步：上传面部照片</text>
+        </button>
+        <button class="action-btn ghost" bindtap="skipPhoto">
+          <van-icon name="share-o" size="36rpx" /> 
+          <text class="btn-text">跳过此步</text>
+        </button>
       </view>
     </view>
 
@@ -62,23 +80,39 @@
       <!-- 若跳过了问卷，显示返回提示 -->
       <block wx:if="{{isQuestionnaireSkipped}}">
         <view style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-          <view style="font-size: 24rpx; color: #D4A39D; margin-bottom: 20rpx;">⚠️ 需先完成问卷，才能生成精准报告</view>
-          <button class="action-btn ghost" bindtap="startQuestionnaire">↩️ 返回补充问卷</button>
+          <view style="font-size: 24rpx; color: #D4A39D; margin-bottom: 20rpx;">
+            <van-icon name="warning-o" size="28rpx" style="margin-right: 8rpx;" />
+            <text>需先完成问卷，才能生成精准报告</text>
+          </view>
+          <button class="action-btn ghost" bindtap="startQuestionnaire">
+            <van-icon name="revoke" size="36rpx" />
+            <text class="btn-text">返回补充问卷</text>
+          </button>
         </view>
       </block>
       <!-- 若未跳过问卷，正常生成报告 -->
       <block wx:else>
-        <button class="action-btn primary" bindtap="generateAnalysis">🧠 第3步：生成深度肤质报告</button>
+        <button class="action-btn primary" bindtap="generateAnalysis">
+          <van-icon name="notes-o" size="36rpx" />
+          <text class="btn-text">第3步：生成深度肤质报告</text>
+        </button>
       </block>
     </view>
 
     <!-- 第四步：生成方案 -->
     <view class="btn-group" wx:if="{{currentStep === 3}}">
-      <button class="action-btn primary" bindtap="generatePlan">📋 第4步：生成定制护肤方案</button>
+      <button class="action-btn primary" bindtap="generatePlan">
+        <van-icon name="todo-list-o" size="36rpx" />
+        <text class="btn-text">第4步：生成定制护肤方案</text>
+      </button>
     </view>
     
+    <!-- 第五步：结束与重置 -->
     <view class="btn-group" wx:if="{{currentStep === 4}}">
-      <button class="action-btn ghost" bindtap="resetChat">✨ 测肤完成，开启新档案</button>
+      <button class="action-btn ghost" bindtap="resetChat">
+        <van-icon name="replay" size="36rpx" />
+        <text class="btn-text">测肤完成，开启新档案</text>
+      </button>
     </view>
   </view>
 
@@ -96,6 +130,19 @@
             <text class="opt-key">{{key}}.</text> {{val}}
           </view>
         </block>
+        
+        <!-- 🌟 新增：补充情况输入框 -->
+        <view class="q-sup-box">
+          <textarea 
+            class="q-sup-input" 
+            placeholder="有其他情况？可以在此补充(选填)" 
+            value="{{answers[questionnaireData[currentQIndex].id + '_sup'] || ''}}" 
+            data-key="{{questionnaireData[currentQIndex].id + '_sup'}}"
+            bindinput="onSupInput"
+            cursor-spacing="20"
+            disable-default-padding="true"
+          ></textarea>
+        </view>
       </scroll-view>
 
       <view class="q-footer">

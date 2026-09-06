@@ -15,7 +15,7 @@
   </view>
 
   <view wx:if="{{deliveryType==1}}" class="glass-card location-card" bindtap="toAddressPage">
-    <view class="icon-wrap">📍</view>
+    <van-icon name="location-o" class="icon-wrap"/>
     <view class="location-info">
       <view class="location-title">收货地址</view>
       <view wx:if="{{defaultAddress}}" class="location-desc">
@@ -28,7 +28,7 @@
   </view>
 
   <view wx:if="{{deliveryType==2}}" class="glass-card location-card" bindtap="openStore">
-    <view class="icon-wrap store-icon">🏪</view>
+    <van-icon name="shop-o" class="icon-wrap store-icon"/>
     <view class="location-info">
       <view class="location-title">取货门店</view>
       <view wx:if="{{selectedStore}}" class="location-desc highlight-text">{{selectedStore.name}}</view>

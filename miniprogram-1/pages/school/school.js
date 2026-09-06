@@ -101,7 +101,7 @@ Page({
         this.filterVideos(this.data.activeSubCategory || '品牌溯源');
       },
       fail: (err) => {
-        console.error('获取视频列表接口报错:', err);
+        console.error('获取列表接口报错:', err);
         this.setData({ loading: false });
         wx.showToast({ title: '加载失败', icon: 'none' });
       }
@@ -137,7 +137,11 @@ Page({
     } else if (menuId === 'exam') {
       wx.navigateTo({ url: '/pages/school/exam' });
     } else if (menuId === 'cert') {
-      wx.navigateTo({ url: '/pages/school/certification' });
+      wx.navigateTo({ 
+        url: '/pages/school/certification',
+        success: () => console.log("✅ 跳转成功！"),
+        fail: (err) => console.error("❌ 跳转失败被拦截，原因：", err) // 🌟 这行非常关键！
+      });
     }
   },
 
@@ -153,19 +157,30 @@ Page({
     const videoId = e.currentTarget.dataset.id;
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
     
+    console.log(`[视频权限校验] 开始请求视频ID: ${videoId} 的播放权限...`);
+
     wx.request({
       url: `${app.globalData.baseUrl}/app01/video_courses/${videoId}/check_permission/`,
       method: 'GET',
       header: { 'Authorization': `Bearer ${accessToken}` },
       success: (res) => {
+        console.log(`[视频权限校验] 接口返回详情:`, res.data); // 🌟 核心日志
+
         if (res.data?.has_permission && res.data?.video_url) {
+          const finalUrl = res.data.video_url;
+          console.log(`✅ [准备播放] 最终送往播放器的URL: ${finalUrl}`); // 🌟 确认是否直连腾讯云
+
           wx.navigateTo({
-            url: `/pages/school/play?id=${videoId}&videoUrl=${encodeURIComponent(res.data.video_url)}`
+            url: `/pages/school/play?id=${videoId}&videoUrl=${encodeURIComponent(finalUrl)}`
           });
           this.updatePlayCount(videoId);
         } else {
+          console.error(`❌ [权限被拒] 返回数据异常:`, res.data);
           wx.showToast({ title: '获取权限失败', icon: 'none' });
         }
+      },
+      fail: (err) => {
+        console.error(`❌ [网络请求失败] check_permission 接口异常:`, err);
       }
     });
   },

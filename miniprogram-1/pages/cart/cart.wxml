@@ -1,3 +1,14 @@
+<view wx:if="{{!isLogin && !loading}}" class="empty-cart-state">
+  <image src="/assets/images/empty-cart.png" class="empty-img"></image>
+  <view class="empty-text">您还未登录，登录后即可查看购物车</view>
+  
+  <!-- 引导登录按钮，点击触发 goToLogin -->
+  <button class="login-btn" bindtap="goToLogin">立即登录</button>
+</view>
+
+<!-- 2. 已登录状态下的正常购物车展示 -->
+<view wx:else>
+
 <van-nav-bar title="我的购物车" fixed border="{{false}}" custom-class="nav-glass" />
 
 <view class="cart-container">
@@ -24,7 +35,9 @@
               <text class="val">{{item.pointPrice}}</text> <text class="unit">积分</text>
             </block>
             <block wx:else>
-              <text class="unit">¥</text><text class="val">{{item.goods.member_price}}</text>
+              <!-- 🌟 核心修改：使用动态单价，并增加价格身份标签 -->
+              <text class="price-label" style="font-size: 20rpx; color: #999; margin-right: 6rpx;">{{item.price_label}}</text>
+              <text class="unit">¥</text><text class="val">{{item.show_single_price}}</text>
             </block>
           </view>
         </view>
@@ -43,7 +56,7 @@
           </view>
           
           <view class="delete-btn" bindtap="deleteCart" data-id="{{item.id}}">
-            <text class="icon">🗑️</text> 删除
+            <van-icon name="delete-o" class="icon"/> 删除
           </view>
         </view>
       </view>
@@ -52,7 +65,7 @@
 
   <view wx:if="{{cartList.length === 0 && !loading}}" class="empty-state">
     <view class="empty-icon-wrapper">
-      <view class="empty-icon">🛒</view>
+      <van-icon name="cart-circle-o" class="empty-icon" />
       <view class="glow-ring"></view>
     </view>
     <view class="empty-text">购物车空空如也，快去商城探索吧</view>
@@ -84,4 +97,5 @@
   </view>
 
   <van-toast id="van-toast" />
+</view>
 </view>

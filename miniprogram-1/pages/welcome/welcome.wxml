@@ -1,11 +1,15 @@
-<view class="welcome-container">
+<!-- 🌟 外层换成了 brand-bg 品牌底色 -->
+<view class="welcome-container brand-bg">
+  
+  <!-- 🌟 只有当 bgUrl 有值时，才渲染 image 标签 -->
   <image 
-  class="bg-img" 
-  src="{{bgUrl}}" 
-  mode="aspectFill" 
-  lazy-load="{{true}}"
-  fade-in="{{true}}"
-/>
+    wx:if="{{bgUrl}}"
+    class="bg-img {{isImageLoaded ? 'show' : ''}}" 
+    src="{{bgUrl}}" 
+    mode="aspectFill" 
+    bindload="onImageLoad"
+    binderror="onImageError" 
+  />
   
   <view class="skip-btn" bindtap="doJump">
     跳过 {{second}}s

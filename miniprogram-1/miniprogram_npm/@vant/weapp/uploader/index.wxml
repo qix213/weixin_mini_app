@@ -25,7 +25,7 @@
       <video
         wx:elif="{{ item.isVideo }}"
         src="{{ item.url }}"
-        title="{{ item.name || ('视频' + index) }}"
+        title="{{ item.name || ('干货' + index) }}"
         poster="{{ item.thumb }}"
         autoplay="{{ item.autoplay }}"
         object-fit="{{videoFit}}"

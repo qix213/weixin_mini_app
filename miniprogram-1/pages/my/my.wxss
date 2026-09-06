@@ -254,40 +254,70 @@ page {
   position: relative;
 }
 
+/* 修改点：缩小价格的字体，不然 5 个金额并排会挤爆屏幕 */
 .node-cost {
   display: flex;
   align-items: baseline; 
-  font-size: 26rpx; 
+  font-size: 24rpx; /* 🔽 进一步缩小字体以支持 5 级显示 */
   font-family: 'DIN Alternate', -apple-system, sans-serif;
   font-weight: bold;
   margin-bottom: 12rpx;
 }
 
 .node-cost .rmb {
-  font-size: 24rpx; 
+  font-size: 20rpx; /* 🔽 缩小羊角符 */
   font-weight: 500;
   margin-right: 4rpx;
 }
 
+/* 🌟 核心：给星星的父容器设定固定尺寸，作为“勋章底盘” */
 .node-stars {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-left: 10rpx; 
-}
-
-/* 🌟 重叠星星的核心样式 */
-.overlap-star {
-  margin-left: -16rpx; 
   position: relative;
-  transition: all 0.3s;
+  width: 56rpx;
+  height: 56rpx;
+  margin: 0 auto; /* 居中 */
 }
 
-.overlap-star:nth-child(1) { z-index: 4; }
-.overlap-star:nth-child(2) { z-index: 3; }
-.overlap-star:nth-child(3) { z-index: 2; }
-.overlap-star:nth-child(4) { z-index: 1; }
+/* 所有的星星开启绝对定位 */
+.overlap-star {
+  position: absolute;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+/* =========================================
+   👑 勋章级错落排版引擎
+========================================= */
+
+/* 【1颗星】：正中央 */
+.star-layout-1 .overlap-star:nth-child(1) {
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 【2颗星】：左右水平错开 */
+.star-layout-2 .overlap-star:nth-child(1) { top: 50%; left: -6rpx; transform: translateY(-50%); }
+.star-layout-2 .overlap-star:nth-child(2) { top: 50%; right: -6rpx; transform: translateY(-50%); }
+
+/* 【3颗星】：正三角形 (1上 2下) */
+.star-layout-3 .overlap-star:nth-child(1) { top: -6rpx; left: 50%; transform: translateX(-50%); }
+.star-layout-3 .overlap-star:nth-child(2) { bottom: -2rpx; left: -8rpx; }
+.star-layout-3 .overlap-star:nth-child(3) { bottom: -2rpx; right: -8rpx; }
+
+/* 【4颗星】：菱形 (1上 1下 1左 1右) */
+.star-layout-4 .overlap-star:nth-child(1) { top: -10rpx; left: 50%; transform: translateX(-50%); }
+.star-layout-4 .overlap-star:nth-child(2) { top: 50%; right: -12rpx; transform: translateY(-50%); }
+.star-layout-4 .overlap-star:nth-child(3) { bottom: -10rpx; left: 50%; transform: translateX(-50%); }
+.star-layout-4 .overlap-star:nth-child(4) { top: 50%; left: -12rpx; transform: translateY(-50%); }
+
+/* 【5颗星】：大满贯五边形 / 星星环绕 */
+.star-layout-5 .overlap-star:nth-child(1) { top: -12rpx; left: 50%; transform: translateX(-50%); z-index: 5;} /* 顶点 */
+.star-layout-5 .overlap-star:nth-child(2) { top: 15%; right: -16rpx; z-index: 4;} /* 右上 */
+.star-layout-5 .overlap-star:nth-child(3) { bottom: -8rpx; right: -4rpx; z-index: 3;} /* 右下 */
+.star-layout-5 .overlap-star:nth-child(4) { bottom: -8rpx; left: -4rpx; z-index: 2;} /* 左下 */
+.star-layout-5 .overlap-star:nth-child(5) { top: 15%; left: -16rpx; z-index: 1;} /* 左上 */
 /* ========== 资产数据 ========== */
 .asset-container {
   display: flex;

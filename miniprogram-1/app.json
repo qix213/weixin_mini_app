@@ -27,6 +27,7 @@
     "pages/mall/detail",
     "pages/mall/jdLogistics",
     "pages/school/school",
+    "pages/school/certification",   
     "pages/school/play",
     "pages/school/exam",
     "pages/cart/cart",
@@ -81,13 +82,18 @@
       }
     ]
   },
+
+   
+ 
   "usingComponents": {
     "van-row": "@vant/weapp/row/index",
     "van-col": "@vant/weapp/col/index",
     "van-notice-bar": "@vant/weapp/notice-bar/index",
     "van-button": "@vant/weapp/button/index",
     "van-dropdown-menu": "@vant/weapp/dropdown-menu/index",
-    "van-dropdown-item": "@vant/weapp/dropdown-item/index"
+    "van-dropdown-item": "@vant/weapp/dropdown-item/index",
+    "van-icon": "@vant/weapp/icon/index"
   },
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"
 }

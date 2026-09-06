@@ -374,7 +374,7 @@ Page({
       return;
     }
 
-    if (Number(actualAmount) <= 0) {
+    if (Number(actualAmount) < 0) {
       wx.showToast({ title: '金额异常或需全额抵扣', icon: 'none' });
       return;
     }
@@ -389,7 +389,10 @@ Page({
 
     this.getOpenid().then(openid => {
       const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-
+      const requestHeader = { 'content-type': 'application/json' };
+      if (token) {
+        requestHeader['Authorization'] = `Bearer ${token}`;
+      }
       const postData = {
         scene: scene,
         point_deduct: pointDeductPoints || 0,
@@ -416,10 +419,7 @@ Page({
       wx.request({
         url: `${app.globalData.baseUrl}/app01/order/wechat_prepay/`,
         method: 'POST',
-        header: { 
-          'Authorization': `Bearer ${token}`,
-          'content-type': 'application/json' 
-        },
+        header: requestHeader, // 🌟 使用动态组装的 header
         data: postData,
         success: (res) => {
           if (res.data.code === 200) {
@@ -431,10 +431,7 @@ Page({
               wx.request({
                 url: `${app.globalData.baseUrl}/app01/order/pay/wallet/`, 
                 method: 'POST',
-                header: { 
-                  'Authorization': `Bearer ${token}`,
-                  'content-type': 'application/json' 
-                },
+                header: requestHeader, // 🌟 这里也同步替换
                 data: { order_sn: finalOrderSn },
                 success: (walletRes) => {
                   wx.hideLoading();

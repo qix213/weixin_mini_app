@@ -4,7 +4,7 @@
   <view class="search-header">
     <view class="search-box">
       <icon type="search" size="16" color="#94A48C" class="search-icon"></icon>
-      <input type="text" placeholder="搜索课程/视频关键词" placeholder-class="search-placeholder" 
+      <input type="text" placeholder="搜索关键词" placeholder-class="search-placeholder" 
              value="{{searchValue}}" bindinput="onSearchChange" confirm-type="search" 
              bindconfirm="onSearch" class="search-input" />
       <text bindtap="clearSearch" wx:if="{{searchValue}}" class="clear-icon">×</text>
@@ -23,7 +23,7 @@
 
       <view class="menu-item {{activeMenu === 'course' ? 'active-parent' : ''}}" data-id="course" bindtap="handleMainMenuClick">
         <van-icon name="{{activeMenu === 'course' ? 'video' : 'video-o'}}" class="menu-icon" />
-        <text class="menu-name">课程学习</text>
+        <text class="menu-name">干货专栏</text>
         <view class="arrow {{isCourseExpanded ? 'up' : 'down'}}"></view>
       </view>
 
@@ -82,7 +82,7 @@
 </view>
 
       <view class="empty-state" wx:if="{{!loading && videoList.length === 0}}">
-        <view class="empty-text">该分类下暂无视频</view>
+        <view class="empty-text">该分类下暂无内容</view>
       </view>
 
       <view class="no-more" wx:if="{{finished && videoList.length > 0}}">

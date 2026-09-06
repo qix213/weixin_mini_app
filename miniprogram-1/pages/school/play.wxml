@@ -1,6 +1,16 @@
-<view class="video-play-page">
+<view class="content-detail-page">
   <view class="content-wrapper">
-    <view class="video-container">
+    
+    <!-- 模式 A：图文/审核模式 (当后端没有返回视频URL时展示) -->
+    <view class="media-container" wx:if="{{!videoUrl}}">
+      <image src="{{coverUrl}}" class="media-cover" mode="aspectFill"></image>
+      <view class="media-mask">
+        <text class="media-tip">📖 内部精选专栏</text>
+      </view>
+    </view>
+
+    <!-- 模式 B：真实视频模式 (当后端下发了视频URL时才渲染视频组件) -->
+    <view class="media-container" wx:if="{{videoUrl}}">
       <video 
         id="myVideo"
         src="{{videoUrl}}"
@@ -19,7 +29,7 @@
         bindfullscreenchange="onFullScreenChange"
         binderror="onVideoError"
         bindloadeddata="onLoadedData"
-        class="video-player"
+        class="media-player"
         autoplay="{{false}}"
         initial-time="0"
       ></video>
@@ -28,17 +38,19 @@
       </view>
     </view>
 
-    <view class="glass-card video-info">
-      <view class="video-title">{{videoTitle || '未知视频'}}</view>
-      <view class="video-meta">
-        <view class="meta-tag"><text class="icon">⏱</text> 时长：{{duration || '00:00'}}</view>
-        <view class="meta-tag"><text class="icon">▶</text> 播放：{{playCount || 0}} 次</view>
+    <!-- 信息卡片 (去课程化文案) -->
+    <view class="glass-card content-info">
+      <view class="content-title">{{videoTitle || '内部精选专栏'}}</view>
+      <view class="content-meta">
+        <view class="meta-tag"><text class="icon">⏱</text> 预计阅读：{{duration || '05:00'}}</view>
+        <view class="meta-tag"><text class="icon">👁</text> 浏览人数：{{playCount || 0}} 人</view>
       </view>
     </view>
 
+    <!-- 功能按钮 (将“学习/考核”弱化为“阅读/通关”) -->
     <view class="func-btns">
-      <button bindtap="toCheckIn" class="func-btn primary-btn">学习打卡</button>
-      <button bindtap="toExam" class="func-btn secondary-btn">考核通关</button>
+      <button bindtap="toCheckIn" class="func-btn primary-btn">阅读打卡</button>
+      <button bindtap="toExam" class="func-btn secondary-btn">知识通关</button>
       <button bindtap="goBack" class="func-btn ghost-btn">返回列表</button> 
     </view>
   </view>

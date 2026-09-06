@@ -3,16 +3,18 @@ const app = getApp();
 Page({
   data: {
     currentLevel: 1,
-    currentLevelName: '蓝朋友0星',
+    currentLevelName: '蓝朋友',
     selectedLevelId: null, // 当前选中的升级目标ID
     selectedAmount: 0,
     
-    // 全部的升级配置（前端写死展示用，安全性由后端兜底）
+    // 🌟 核心修改：全新 6 个升级目标（对应 1星 到 Ta创+）
     allLevels: [
-      { id: 2, name: '蓝朋友1星', price: 0.1, desc: '解锁基础分销与专属护肤指导' },
-      { id: 3, name: '蓝朋友2星', price: 0.2, desc: '解锁高级分销与线下沙龙名额' },
-      { id: 4, name: '蓝朋友3星', price: 0.3, desc: '尊享区域代理权与全系产品折扣' },
-      { id: 5, name: 'Ta创+', price: 0.4, desc: '顶级合伙人，共享品牌城市分红' }
+      { id: 2, name: '蓝朋友1星', price: 980, desc: '解锁会员专享价与100元代金券' },
+      { id: 3, name: '蓝朋友2星', price: 1980, desc: '解锁300元代金券及专业护肤私教认证资格' },
+      { id: 4, name: '蓝朋友3星', price: 3980, desc: '解锁家居品10%消费补贴与千元代金券' },
+      { id: 5, name: '蓝朋友4星', price: 9800, desc: '解锁全产品15%消费补贴与胶原mini核销权益' },
+      { id: 6, name: '蓝朋友5星', price: 39800, desc: '尊享实物大礼包与全产品15%补贴' },
+      { id: 7, name: 'Ta创+', price: 98000, desc: '高端俱乐部合伙人，尊享产品任选与门店全面扶持' }
     ],
     availableLevels: [] // 实际可升级的列表
   },
@@ -30,7 +32,7 @@ Page({
     
     this.setData({
       currentLevel: cLevel,
-      currentLevelName: memberInfo.user_type_text || '蓝朋友0星',
+      currentLevelName: memberInfo.user_type_text || '蓝朋友',
       availableLevels: available,
       // 默认选中第一个可升级的
       selectedLevelId: available.length > 0 ? available[0].id : null,
@@ -65,7 +67,7 @@ Page({
           const orderId = resData.order_id || resData.order_sn || '';
           const amount = resData.amount || resData.total_price || '0.00';
           
-          // 🌟 核心修复：直接拿你 data 里定义的 selectedLevelId
+          // 🌟 直接拿你 data 里定义的 selectedLevelId
           const target_level = this.data.selectedLevelId; 
         
           if (!target_level) {

@@ -147,3 +147,9 @@ page {
   align-items: center;
   width: 100%;
 }
+
+.flex-center {
+  display: flex;
+  align-items: center;
+}
+/* 如果你原来的 status-text 已经是 inline 或者 block，把它改成 flex 会让图标对齐得更好看 */

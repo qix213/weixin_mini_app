@@ -342,17 +342,20 @@ page {
 
 /* ================= 轮播图 ================= */
 .banner-swiper-wrap {
-  padding: 0 30rpx;
-  margin-top: 10rpx;
+  width: 100%;
+  padding: 0 10rpx;
+  box-sizing: border-box;
+  margin-top: 0; /* 之前可能有 margin-top，现在因为上面有图了，可以设为0 */
 }
 
 .banner-swiper {
   width: 100%;
-  height: 320rpx;
+  height: 1200rpx;
   border-radius: 24rpx;
   overflow: hidden;
   transform: translateY(0);
   box-shadow: 0 16rpx 40rpx rgba(148, 164, 140, 0.15);
+  
 }
 
 .swiper-img {
@@ -634,4 +637,53 @@ page {
 .confirm-btn:active {
   transform: scale(0.96);
   box-shadow: 0 4rpx 12rpx rgba(148, 164, 140, 0.2);
+}
+
+/* ================== 顶部固定图样式 ================== */
+.top-fixed-image-wrap {
+  width: 100%;
+  margin-bottom: 20rpx; /* 与下方轮播图保持一定间距 */
+  /* 如果你的页面两边有留白，可以在这里加 padding，例如：padding: 0 30rpx; */
+  box-sizing: border-box;
+}
+
+.top-fixed-image {
+  width: 100%;
+  border-radius: 16rpx; /* 给图片加点圆角，显得更精致，不需要可以删掉 */
+  display: block; /* 消除图片下方的隐形空白间隙 */
+}
+
+/* ==========================================
+   4. 图片骨架屏/占位流光动画 (高级加载体验)
+========================================== */
+.skeleton-bg {
+  background-color: #f0f2f5; /* 浅灰色背景 */
+  position: relative;
+  overflow: hidden;
+}
+
+/* 利用伪元素制作扫光效果 */
+.skeleton-bg::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: shimmer 3s infinite ease-in-out;
+  z-index: 1; /* 保证光效在最上层 */
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 给顶部的固定图容器加一个默认最小高度，防止加载前高度塌陷 */
+.top-fixed-image-wrap {
+  width: 100%;
+  min-height: 300rpx; /* 占位高度，图片出来后会自动撑开 */
+  margin-bottom: 20rpx; 
+  box-sizing: border-box;
 }

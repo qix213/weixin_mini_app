@@ -2,87 +2,137 @@ const app = getApp();
 
 Page({
   data: {
+    scrollToView: '',
     messages: [
       { 
         id: 'init', 
         role: 'ai', 
-        content: '您好呀，宝贝！✨ 我是您的专属护肤私教蓝博士。<br><br>第一步：请输入**被测人姓名**，并完成肤质问卷。', 
+        content: '您好呀，宝贝！✨ 我是您的专属护肤私教蓝博士。<br><br>第一步：请输入<strong style="color: rgb(125, 140, 115);">被测人姓名</strong>，并完成肤质问卷。', 
         isTyping: false 
       }
     ],
     scrollToId: '',
     currentStep: 0, 
-    
-    // 🌟 被测人姓名
     subjectName: '',
-
-    // 问卷相关
     showQuestionnaire: false,
     questionnaireData: [], 
     currentQIndex: 0,
     answers: {},
-    isQuestionnaireSkipped: false // 🌟 新增：标记是否跳过了问卷
+    isQuestionnaireSkipped: false 
   },
 
   onLoad() {
+    const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    if (!token) {
+      wx.showToast({ title: '请先登录/注册', icon: 'none', duration: 2000 });
+      setTimeout(() => { wx.navigateTo({ url: '/pages/login/login' }); }, 1000);
+      return; 
+    }
     this.fetchQuestionnaire();
   },
 
-  // 获取问卷数据
+  onShow() {
+    const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    if (!token) {
+      wx.showToast({ title: '登录后即可体验智能专属护肤私教', icon: 'none' });
+      setTimeout(() => { wx.switchTab({ url: '/pages/index/index' }); }, 1000);
+    }
+  },
+
   fetchQuestionnaire() {
     wx.request({
       url: `${app.globalData.baseUrl}/app01/api/get_questionnaire/`, 
       success: (res) => {
         let data = res.data;
-        if (data && data.data) {
-           this.setData({ questionnaireData: data.data });
-        } else if (Array.isArray(data)) {
-           this.setData({ questionnaireData: data });
-        } else {
-           console.error("【题库调试】后端返回的数据格式无法解析");
-        }
-      },
-      fail: (err) => {
-        console.error("【题库调试】请求失败:", err);
+        if (data && data.data) this.setData({ questionnaireData: data.data });
+        else if (Array.isArray(data)) this.setData({ questionnaireData: data });
       }
     });
   },
 
   scrollToBottom() {
-    setTimeout(() => {
-      const lastMsgIndex = this.data.messages.length - 1;
-      this.setData({ scrollToId: `msg-${lastMsgIndex}` });
-    }, 100);
+    if (this.scrollTimer) clearTimeout(this.scrollTimer);
+    
+    // 150ms 完美防抖，给足微信把文字画到屏幕上的时间
+    this.scrollTimer = setTimeout(() => {
+      // 🚀 核心绝招：先置空，再在回调中赋值！
+      // 这相当于把锚点“拔出来，再插进去”，强制唤醒微信底层的滚动功能
+      this.setData({ scrollToView: '' }, () => {
+        this.setData({ scrollToView: 'chat-bottom' });
+      });
+    }, 150);
   },
 
-  decodeUTF8(arrayBuffer) {
-    let uint8Array = new Uint8Array(arrayBuffer);
-    let out = "", i = 0, len = uint8Array.length;
-    while(i < len) {
-        let c = uint8Array[i++];
-        switch(c >> 4) { 
-          case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-            out += String.fromCharCode(c); break;
-          case 12: case 13:
-            out += String.fromCharCode(((c & 0x1F) << 6) | (uint8Array[i++] & 0x3F)); break;
-          case 14:
-            out += String.fromCharCode(((c & 0x0F) << 12) | ((uint8Array[i++] & 0x3F) << 6) | ((uint8Array[i++] & 0x3F) << 0)); break;
+  onSupInput(e) {
+    const key = e.currentTarget.dataset.key; // 获取类似 'Q1_sup' 的键名
+    this.setData({ 
+      [`answers.${key}`]: e.detail.value 
+    });
+  },
+  // ==========================================
+  // 🌟 高级富文本渲染器 (完美支持流式)
+  // ==========================================
+  formatMessage(text) {
+    if (!text) return "";
+    let lines = text.split('\n');
+    let html = '';
+    let isHeader = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim(); 
+      line = line.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #7D8C73; font-weight: 900; padding: 0 4rpx;">$1</strong>');
+      if (line.startsWith('- ') || line.startsWith('* ')) {
+        line = '<span style="color: #7D8C73; margin-right: 8rpx;">•</span>' + line.substring(2);
+      }
+
+      if (line.includes('|') && line.length > 2) {
+        if (/^[\|\-\:\s]+$/.test(line)) continue; 
+        
+        let cols = line.split('|').map(c => c.trim());
+        if (cols[0] === '') cols.shift(); 
+        if (cols.length > 0 && cols[cols.length - 1] === '') cols.pop();
+        if (cols.length === 0) continue;
+
+        if (cols[0].includes('步骤') || cols[0].includes('时间')) {
+          isHeader = true; continue; 
         }
+
+        let stepName = cols[0] || "护理步骤";
+        let products = cols[1] || "暂无建议";
+        let notes = cols[2] ? cols[2] : "";
+
+        let cardHtml = `
+          <div style="background: #fcfdfc; border-radius: 16rpx; padding: 24rpx; margin-bottom: 24rpx; border: 2rpx solid #eef2eb; box-shadow: 0 4rpx 16rpx rgba(125,140,115,0.08);">
+              <div style="display: flex; align-items: center; margin-bottom: 16rpx;">
+                  <div style="background: #7D8C73; width: 8rpx; height: 28rpx; border-radius: 4rpx; margin-right: 12rpx; display: inline-block;"></div>
+                  <div style="font-weight: 800; color: #43503a; font-size: 28rpx; display: inline-block;">${stepName}</div>
+              </div>
+              <div style="color: #374151; font-size: 26rpx; line-height: 1.6; margin-bottom: ${notes ? '16rpx' : '0'};">
+                  <span style="font-weight:bold; color:#7D8C73;">方案：</span>${products}
+              </div>
+              ${notes ? `
+              <div style="padding-top: 16rpx; border-top: 2rpx dashed #d1d5db; color: #6b7280; font-size: 24rpx; line-height: 1.5;">
+                  <span style="font-weight:bold; color:#9ca3af;">注意：</span>${notes}
+              </div>` : ''}
+          </div>
+        `;
+        html += cardHtml;
+      } else {
+        html += line === '' ? '<br>' : line + '<br>';
+      }
     }
-    return out;
+    html = html.replace(/(<br>){3,}/g, '<br><br>');
+    return html;
   },
 
+  // ==========================================
+  // 🌟 终极流式网络引擎 + 独立打字机
+  // ==========================================
   async requestAIStream(step, queryText, imageBase64 = null) {
     const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
-    if (!token) {
-      wx.showToast({ title: '请先登录账号', icon: 'none' });
-      setTimeout(() => { wx.navigateTo({ url: '/pages/login/login' }); }, 1500);
-      return;
-    }
+    if (!token) return;
     
-    // 🌟 核心修复 1：在变成 -1 之前，把当前的真实步骤备份下来！
     const originalStep = this.data.currentStep;
-    
     this.setData({ currentStep: -1 });
 
     const aiMsgIndex = this.data.messages.length;
@@ -92,79 +142,109 @@ Page({
     this.scrollToBottom();
 
     let fullText = "";
+    let displayLength = 0;
+    let isNetworkDone = false;
+    let nextStepToSet = originalStep;
+    
+    // 微信专供：手动 UTF-8 拼包解码器 (防断字乱码)
+    let textBuffer = new Uint8Array(0);
+    const decodeStream = (arrayBuffer) => {
+      let newBytes = new Uint8Array(arrayBuffer);
+      let merged = new Uint8Array(textBuffer.length + newBytes.length);
+      merged.set(textBuffer); merged.set(newBytes, textBuffer.length);
+      let i = 0, str = "";
+      while (i < merged.length) {
+        let b0 = merged[i], charLength = 0;
+        if ((b0 & 0x80) === 0) charLength = 1;
+        else if ((b0 & 0xE0) === 0xC0) charLength = 2;
+        else if ((b0 & 0xF0) === 0xE0) charLength = 3;
+        else if ((b0 & 0xF8) === 0xF0) charLength = 4;
+        else { i++; continue; } 
+        if (i + charLength > merged.length) break; 
+        if (charLength === 1) str += String.fromCharCode(b0);
+        else if (charLength === 2) str += String.fromCharCode(((b0 & 0x1F) << 6) | (merged[i+1] & 0x3F));
+        else if (charLength === 3) str += String.fromCharCode(((b0 & 0x0F) << 12) | ((merged[i+1] & 0x3F) << 6) | (merged[i+2] & 0x3F));
+        else if (charLength === 4) {
+          let codePoint = ((b0 & 0x07) << 18) | ((merged[i+1] & 0x3F) << 12) | ((merged[i+2] & 0x3F) << 6) | (merged[i+3] & 0x3F);
+          codePoint -= 0x10000;
+          str += String.fromCharCode((codePoint >> 10) + 0xD800, (codePoint & 0x3FF) + 0xDC00);
+        }
+        i += charLength;
+      }
+      textBuffer = merged.slice(i); return str;
+    };
 
+    // 🚀 独立打字机定时器
+    if (this.typewriterTimer) clearInterval(this.typewriterTimer);
+    
+    this.typewriterTimer = setInterval(() => {
+      if (displayLength < fullText.length) {
+        // 动态调速：如果网络猛灌数据进来，打字机自动加速消化
+        let backlog = fullText.length - displayLength;
+        let charsToAdd = 2; 
+        if (backlog > 20) charsToAdd = 4;
+        if (backlog > 60) charsToAdd = 8;
+        
+        displayLength += charsToAdd;
+        if (displayLength > fullText.length) displayLength = fullText.length;
+
+        let currentMarkdown = fullText.substring(0, displayLength);
+        currentMarkdown = currentMarkdown.replace(/\[SHOW_STEP_2_AND_SKIP\]|\[SHOW_STEP_3\]|\[SHOW_STEP_4\]/g, "");
+        
+        this.setData({ [`messages[${aiMsgIndex}].content`]: this.formatMessage(currentMarkdown) });
+        this.scrollToBottom();
+
+      } else if (isNetworkDone) {
+        clearInterval(this.typewriterTimer);
+        this.setData({ [`messages[${aiMsgIndex}].isTyping`]: false, currentStep: nextStepToSet });
+      }
+    }, 40); // 间隔 40 毫秒
+
+    // 发起真实的网络请求
     const requestTask = wx.request({
       url: `${app.globalData.baseUrl}/app01/api/wx_chat_stream/`,
       method: 'POST',
-      enableChunked: true,
-      header: { 
-        'content-type': 'application/x-www-form-urlencoded',
-        'Authorization': `Bearer ${token}` 
-      },
-      data: {
-        step: step,
-        query: queryText,
-        image_base64: imageBase64 || ''
-      },
+      enableChunked: true, // 开启流式通道
+      header: { 'content-type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${token}` },
+      data: { step: step, query: queryText, subject_name: this.data.subjectName, image_base64: imageBase64 || '' },
       success: (res) => {
-        this.setData({ [`messages[${aiMsgIndex}].isTyping`]: false });
+        if (fullText.includes('[SHOW_STEP_3]')) nextStepToSet = 2;
+        if (fullText.includes('[SHOW_STEP_4]')) nextStepToSet = 3;
+        if (step === 'submit_questionnaire') nextStepToSet = originalStep === 0 ? 1 : originalStep; 
+        else if (step === 'analyze') nextStepToSet = 3;
+        else if (step === 'generate_plan') nextStepToSet = 4;
         
-        // 🌟 核心修复 2：使用备份的 originalStep 参与流转逻辑的计算
-        let nextStep = originalStep; 
-        
-        if (fullText.includes('[SHOW_STEP_3]')) nextStep = 2;
-        if (fullText.includes('[SHOW_STEP_4]')) nextStep = 3;
-        
-        if (step === 'submit_questionnaire') {
-          // 如果是第一次提交(0)，走向第2步(拍照为1)；如果是第三步返回补充的(2)，停留在第三步(2)
-          nextStep = originalStep === 0 ? 1 : originalStep; 
-        } else if (step === 'analyze') {
-          nextStep = 3;
-        } else if (step === 'generate_plan') {
-          nextStep = 4;
-        }
-
-        let cleanedText = fullText.replace(/\[SHOW_STEP_2_AND_SKIP\]|\[SHOW_STEP_3\]|\[SHOW_STEP_4\]/g, "");
-        cleanedText = cleanedText.replace(/\n/g, '<br>'); 
-        
-        this.setData({ 
-          [`messages[${aiMsgIndex}].content`]: cleanedText,
-          currentStep: nextStep 
-        });
+        isNetworkDone = true; // 发送完工信号给打字机
       },
       fail: () => {
+        clearInterval(this.typewriterTimer);
         this.setData({
           [`messages[${aiMsgIndex}].content`]: "❌ 网络连接中断，请重试。",
-          [`messages[${aiMsgIndex}].isTyping`]: false,
-          currentStep: originalStep // 🌟 修复：如果失败，退回原来的步骤，而不是退回 0
+          [`messages[${aiMsgIndex}].isTyping`]: false, currentStep: originalStep 
         });
       }
     });
 
     requestTask.onChunkReceived((res) => {
-      const newText = this.decodeUTF8(res.data);
+      let newText = decodeStream(res.data);
+      if (!newText) return; 
+
+      // 🛡️ 核心拦截：把后端的 1024 破冰空格彻底清理掉，绝不放进展示区
+      if (fullText.trim().length === 0) {
+          newText = newText.trimStart();
+      }
+      
+      // 文字直接扔进水池，页面渲染全靠定时器
       fullText += newText;
-      let displayText = fullText.replace(/\[SHOW_STEP_2_AND_SKIP\]|\[SHOW_STEP_3\]|\[SHOW_STEP_4\]/g, "");
-      displayText = displayText.replace(/\n/g, '<br>');
-      this.setData({ [`messages[${aiMsgIndex}].content`]: displayText });
-      this.scrollToBottom();
     });
   },
 
-  // ======== 姓名输入 ========
-  onNameInput(e) {
-    this.setData({ subjectName: e.detail.value });
-  },
+  onNameInput(e) { this.setData({ subjectName: e.detail.value }); },
 
-  // ======== 🌟 全新第一步：问卷 ========
   startQuestionnaire() { 
-    const { subjectName } = this.data;
-    if (!subjectName || !subjectName.trim()) {
-      return wx.showToast({ title: '请先输入被测人姓名', icon: 'none' });
-    }
+    if (!this.data.subjectName.trim()) return wx.showToast({ title: '请先输入被测人姓名', icon: 'none' });
     this.setData({ showQuestionnaire: true, currentQIndex: 0, answers: {} }); 
   },
-  
   closeQuestionnaire() { this.setData({ showQuestionnaire: false }); },
   
   selectOption(e) {
@@ -172,7 +252,6 @@ Page({
     const qId = this.data.questionnaireData[this.data.currentQIndex].id;
     this.setData({ [`answers.${qId}`]: key });
   },
-  
   prevQ() { if(this.data.currentQIndex > 0) this.setData({ currentQIndex: this.data.currentQIndex - 1 }); },
   
   nextQ() {
@@ -183,139 +262,108 @@ Page({
       this.setData({ currentQIndex: this.data.currentQIndex + 1 });
     } else {
       this.setData({ showQuestionnaire: false, isQuestionnaireSkipped: false });
-      
-      this.setData({
-        messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `被测人：${this.data.subjectName}\n📝 肤质问卷已提交。` }]
-      });
-
-      const payload = {
-        subject_name: this.data.subjectName,
-        answers: this.data.answers
-      };
-      this.requestAIStream('submit_questionnaire', JSON.stringify(payload));
+      this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `被测人：${this.data.subjectName}\n📝 肤质问卷已提交。` }] });
+      this.requestAIStream('submit_questionnaire', JSON.stringify({ subject_name: this.data.subjectName, answers: this.data.answers }));
     }
   },
 
   skipQuestionnaire() {
-    const { subjectName } = this.data;
-    if (!subjectName || !subjectName.trim()) {
-      return wx.showToast({ title: '请先输入被测人姓名', icon: 'none' });
-    }
-
+    if (!this.data.subjectName.trim()) return wx.showToast({ title: '请先输入被测人姓名', icon: 'none' });
     this.setData({
-      isQuestionnaireSkipped: true, // 标记为跳过
-      messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `被测人：${subjectName}\n⏭️ 跳过肤质问卷` }],
-      currentStep: 1 // 进入第二步拍照
+      isQuestionnaireSkipped: true, 
+      messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `被测人：${this.data.subjectName}\n⏭️ 跳过肤质问卷` }],
+      currentStep: 1 
     });
     this.scrollToBottom();
 
     setTimeout(() => {
-       this.setData({
-          messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: '好的，已为您跳过肤质问卷！\n\n第二步：请上传面部照片，蓝博士将为您存档入库。', isTyping: false }]
-       });
+       this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: '好的，已为您跳过肤质问卷！\n\n第二步：请上传面部照片，蓝博士将为您存档入库。', isTyping: false }] });
        this.scrollToBottom();
     }, 500);
   },
 
-  // ======== 🌟 全新第二步：上传照片 ========
-// ======== 🌟 全新第二步：上传照片 (支持多图并发上传) ========
-uploadPhoto() {
-  const { subjectName } = this.data;
-  wx.chooseMedia({
-    count: 10, // 🔥 修改点 1：将 1 改为 10，允许最多选 10 张
-    mediaType: ['image'],
-    sourceType: ['album', 'camera'],
-    sizeType: ['compressed'],
-    // camera: 'front', // 💡 建议注释掉：既然允许多张，用户可能需要用后置摄像头拍侧脸或局部细节
-    success: (res) => {
-      const tempFiles = res.tempFiles; // 现在这是一个数组
-      const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+  uploadPhoto() {
+    if (!this.data.subjectName.trim()) return wx.showToast({ title: '请重新输入姓名', icon: 'none' });
 
-      // 🔥 修改点 2：将所有选中的照片转化为多条气泡消息
-      const newMessages = tempFiles.map((file, index) => ({
-        id: Date.now() + index, // 确保 key 唯一
-        role: 'user',
-        content: tempFiles.length > 1 ? `（已上传第 ${index + 1}/${tempFiles.length} 张照片）` : '（已上传面部照片）',
-        image: file.tempFilePath
-      }));
+    wx.chooseMedia({
+      count: 10, mediaType: ['image'], sourceType: ['album', 'camera'], sizeType: ['compressed'],
+      success: (res) => {
+        const tempFiles = res.tempFiles; 
+        const token = wx.getStorageSync('accessToken') || app.globalData.accessToken;
 
-      this.setData({
-        messages: [...this.data.messages, ...newMessages],
-        currentStep: 2 // 转向第三步：报告分析
-      });
-      this.scrollToBottom();
+        const newMessages = tempFiles.map((file, index) => ({
+          id: Date.now() + index, role: 'user',
+          content: tempFiles.length > 1 ? `（已上传第 ${index + 1}/${tempFiles.length} 张照片）` : '（已上传面部照片）',
+          image: file.tempFilePath
+        }));
 
-      // 增加全屏 Loading 防护，避免上传过程中用户乱点别的按钮
-      wx.showLoading({ title: '照片加密上传中...', mask: true });
+        this.setData({ messages: [...this.data.messages, ...newMessages], currentStep: 2 });
+        this.scrollToBottom();
+        wx.showLoading({ title: '照片加密上传中...', mask: true });
 
-      // 🔥 修改点 3：利用 Promise.all 解决 wx.uploadFile 只能单张上传的痛点
-      const uploadTasks = tempFiles.map(file => {
-        return new Promise((resolve, reject) => {
-          wx.uploadFile({
-            url: `${app.globalData.baseUrl}/app01/api/save_skin_photo/`,
-            filePath: file.tempFilePath,
-            name: 'file',
-            formData: { 'subject_name': subjectName },
-            header: { 'Authorization': `Bearer ${token}` },
-            success: (uploadRes) => resolve(uploadRes),
-            fail: (err) => reject(err)
+        const uploadTasks = tempFiles.map(file => {
+          return new Promise((resolve, reject) => {
+            wx.uploadFile({
+              url: `${app.globalData.baseUrl}/app01/api/save_skin_photo/`,
+              filePath: file.tempFilePath, name: 'file',
+              formData: { 'subject_name': this.data.subjectName }, 
+              header: { 'Authorization': `Bearer ${token}` },
+              success: (uploadRes) => resolve(uploadRes), fail: (err) => reject(err)
+            });
           });
         });
-      });
 
-      // 等待所有照片都上传完毕
-      Promise.all(uploadTasks)
-        .then(() => {
-          wx.hideLoading();
-          console.log(`INFO: ${tempFiles.length} 张照片已全部成功提交到后端`);
+        Promise.all(uploadTasks).then(() => {
+            wx.hideLoading();
+            setTimeout(() => {
+              const aiMsg = this.data.isQuestionnaireSkipped 
+                ? `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n⚠️ 蓝博士发现您跳过了问卷，需要补充问卷数据才能出具精准分析报告哦~\n\n第三步：点击下方按钮生成报告。` 
+                : `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n第三步：请点击下方按钮生成深度肤质报告。`;
+              
+              this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }] });
+              this.scrollToBottom();
 
-          // 根据是否跳过问卷，给出不同的提示
-          setTimeout(() => {
-            const aiMsg = this.data.isQuestionnaireSkipped 
-              ? `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n⚠️ 蓝博士发现您跳过了问卷，需要补充问卷数据才能出具精准分析报告哦~` 
-              : `一共 ${tempFiles.length} 张照片已为您存档入库！\n\n第三步：点击下方按钮生成深度肤质报告。`;
-            
-            this.setData({
-              messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }]
-            });
-            this.scrollToBottom();
-          }, 500);
-        })
-        .catch((err) => {
-          wx.hideLoading();
-          console.error('ERROR: 部分或全部照片上传失败', err);
-          wx.showToast({ title: '网络波动，部分照片上传失败', icon: 'none' });
-        });
-    }
-  });
-},
+              wx.request({
+                url: `${app.globalData.baseUrl}/app01/api/wx_chat_stream/`,
+                method: 'POST',
+                header: { 'content-type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${token}` },
+                data: { step: 'pre_analyze', subject_name: this.data.subjectName, query: '预生成报告' }
+              });
+            }, 500);
+          }).catch((err) => {
+            wx.hideLoading();
+            wx.showToast({ title: '上传失败', icon: 'none' });
+          });
+      }
+    });
+  },
 
   skipPhoto() {
-    this.setData({
-      messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `⏭️ 跳过照片上传` }],
-      currentStep: 2
-    });
+    this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'user', content: `⏭️ 跳过照片上传` }], currentStep: 2 });
     this.scrollToBottom();
 
     setTimeout(() => {
        const aiMsg = this.data.isQuestionnaireSkipped 
-         ? '好的，已为您跳过照片上传！\n\n⚠️ 提示：需要补充问卷调查数据才能为您出具分析报告哦~' 
+         ? '好的，已为您跳过照片上传！\n\n⚠️ 提示：您没有留存数据，只能提供通用指引...\n\n第三步：点击下方按钮生成报告。' 
          : '好的，已为您跳过照片上传！\n\n第三步：请点击下方按钮生成深度肤质报告。';
 
-       this.setData({
-          messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }]
-       });
+       this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'ai', content: aiMsg, isTyping: false }] });
        this.scrollToBottom();
+       
+       wx.request({
+         url: `${app.globalData.baseUrl}/app01/api/wx_chat_stream/`,
+         method: 'POST',
+         header: { 'content-type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${wx.getStorageSync('accessToken')}` },
+         data: { step: 'pre_analyze', subject_name: this.data.subjectName, query: '预生成报告' }
+       });
     }, 500);
   },
 
-  // ======== 第三步：生成报告 ========
   generateAnalysis() {
     this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'user', content: '🧠 请生成深度肤质分析报告。' }] });
     this.requestAIStream('analyze', '请结合档案生成深度报告。');
   },
 
-  // ======== 第四步：生成方案 ========
   generatePlan() {
     this.setData({ messages: [...this.data.messages, { id: Date.now(), role: 'user', content: '📋 请为我定制专属护肤方案。' }] });
     this.requestAIStream('generate_plan', '请生成专属方案表格。');
@@ -323,11 +371,8 @@ uploadPhoto() {
 
   resetChat() {
     this.setData({
-      messages: [{ id: 'init', role: 'ai', content: '已为您重置档案，您可以随时开启全新诊断！', isTyping: false }],
-      currentStep: 0, 
-      subjectName: '',
-      answers: {},
-      isQuestionnaireSkipped: false
+      messages: [{ id: 'init', role: 'ai', content: '已为您重置档案，您可以随时开启全新放大镜！', isTyping: false }],
+      currentStep: 0, subjectName: '', answers: {}, isQuestionnaireSkipped: false
     });
   }
 });

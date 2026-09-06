@@ -1,7 +1,8 @@
 {
   "usingComponents": {
     "van-button": "@vant/weapp/button/index",
-    "van-toast": "@vant/weapp/toast/index"
+    "van-toast": "@vant/weapp/toast/index",
+    "van-icon": "@vant/weapp/icon/index"
   },
   "navigationBarTitleText": "我的购物车",
   "enablePullDownRefresh": true,

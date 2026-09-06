@@ -52,6 +52,7 @@ Page({
     this.setData({
       showConsumeList: !this.data.showConsumeList
     });
+    console.log("👆 [点击面板] 消费明细面板当前状态 (showConsumeList):", this.data.showConsumeList);
   },
   // 统一下发请求
   fetchWalletData() {
@@ -277,111 +278,116 @@ handleConfirmReceipt() {
       });
     });
   },
-  // --- 以下为你原有的核心逻辑，保持不变 ---
-  getSubMemberConsumeList() {
-    const app = getApp();
-    const header = app.getRequestHeader();
+// 🌟 获取下级消费数据（带 HTTP 403 拦截与静默处理）
+getSubMemberConsumeList() {
+  const app = getApp();
+  const header = app.getRequestHeader();
 
-    wx.request({
-      url: app.globalData.baseUrl + '/app01/member/sub-consume/',
-      method: 'GET',
-      header: header,
-      data: {
-        current_level: this.data.currentLevel
-      },
-      success: (res) => {
-        wx.hideLoading();
-        this.setData({
-          loading: false
-        });
-        if (res.data.code === 200) {
-          const memberMap = {};
-          let allConsumeList = [];
-          let totalAllConsume = 0;
+  wx.request({
+    url: app.globalData.baseUrl + '/app01/member/sub-consume/',
+    method: 'GET',
+    header: header,
+    data: {
+      current_level: this.data.currentLevel
+    },
+    success: (res) => {
+      // 🌟 修复警告：用 try-catch 包裹，忽略多余的关闭动作报错
+      try { wx.hideLoading(); } catch (e) {}
+      this.setData({ loading: false });
 
-          res.data.data.forEach(memberItem => {
-            const memberInfo = memberItem.member_info || {};
-            const memberId = memberInfo.id || `sub_${Math.random().toString(36).substr(2, 8)}`;
-            const memberNickname = memberInfo.nickname || '未知会员';
-            const memberType = memberInfo.user_type || 0;
-            const memberTypeName = memberInfo.user_type_name || '普通会员';
-            const memberStarLevel = memberInfo.star_level || 0;
-            const memberCode = memberInfo.member_id || '';
+      // 🌟 核心修复：检查 HTTP 状态码 res.statusCode 是否为 403
+      if (res.statusCode === 403 || (res.data && res.data.code === 403)) {
+        console.log("🚫 [权限拦截] HTTP 403 触发，当前账号非顶级Ta创+，自动隐藏消费明细模块");
+        this.setData({ hasSubConsumePermission: false });
+        return; // 命中 403 直接退出，不再往下执行
+      }
 
-            const memberOrders = memberItem.orders || [];
-            const formatOrders = memberOrders.map(order => {
-              const orderSn = order.order_sn || '';
-              const status = order.status || 0;
-              const statusName = order.status_name || '未知状态';
-              const orderPrice = this.safeToNumber(order.total_price || 0);
-              const createTime = order.create_time || '';
+      // 如果状态码是 200，且业务代码也是 200，才开始解析数据
+      if (res.statusCode === 200 && res.data && res.data.code === 200) {
+        const memberMap = {};
+        let allConsumeList = [];
+        let totalAllConsume = 0;
 
-              const goodsList = order.goods_list || [];
-              const formatGoods = goodsList.map(good => {
-                return {
-                  goods_name: good.goods_name || '未知商品',
-                  num: this.safeToNumber(good.num || 1),
-                  price: this.safeToNumber(good.price || 0),
-                  total_price: this.safeToNumber(good.total_price || 0)
-                };
-              });
+        const rawDataList = res.data.data || [];
+        rawDataList.forEach(memberItem => {
+          const memberInfo = memberItem.member_info || {};
+          const memberId = memberInfo.id || `sub_${Math.random().toString(36).substr(2, 8)}`;
+          const memberNickname = memberInfo.nickname || '未知会员';
+          const memberType = memberInfo.user_type || 0;
+          const memberTypeName = memberInfo.user_type_name || '普通会员';
+          const memberStarLevel = memberInfo.star_level || 0;
+          const memberCode = memberInfo.member_id || '';
 
-              const formatOrder = {
-                id: orderSn,
-                order_sn: orderSn,
-                status: status,
-                status_name: statusName,
-                total_price: orderPrice,
-                create_time: this.formatDate(createTime),
-                goods: formatGoods
+          const memberOrders = memberItem.orders || [];
+          const formatOrders = memberOrders.map(order => {
+            const orderSn = order.order_sn || '';
+            const status = order.status || 0;
+            const statusName = order.status_name || '未知状态';
+            const orderPrice = this.safeToNumber(order.total_price || 0);
+            const createTime = order.create_time || '';
+
+            const goodsList = order.goods_list || [];
+            const formatGoods = goodsList.map(good => {
+              return {
+                goods_name: good.goods_name || '未知商品',
+                num: this.safeToNumber(good.num || 1),
+                price: this.safeToNumber(good.price || 0),
+                total_price: this.safeToNumber(good.total_price || 0)
               };
-              allConsumeList.push(formatOrder);
-              return formatOrder;
             });
 
-            const memberTotalConsume = formatOrders.reduce((sum, item) => sum + item.total_price, 0);
-            totalAllConsume += memberTotalConsume;
-
-            memberMap[memberId] = {
-              id: memberId,
-              member_code: memberCode,
-              nickname: memberNickname,
-              level: memberType,
-              level_name: memberTypeName,
-              star_level: memberStarLevel,
-              consumeRecords: formatOrders,
-              totalConsume: memberTotalConsume.toFixed(2)
+            const formatOrder = {
+              id: orderSn,
+              order_sn: orderSn,
+              status: status,
+              status_name: statusName,
+              total_price: orderPrice,
+              create_time: this.formatDate(createTime),
+              goods: formatGoods
             };
+            allConsumeList.push(formatOrder);
+            return formatOrder;
           });
 
-          const memberList = Object.values(memberMap);
+          const memberTotalConsume = formatOrders.reduce((sum, item) => sum + item.total_price, 0);
+          totalAllConsume += memberTotalConsume;
 
-          this.setData({
-            consumeList: allConsumeList,
-            memberList: memberList,
-            currentMemberId: '',
-            currentMemberInfo: {},
-            totalAllConsume: totalAllConsume.toFixed(2)
-          });
-        } else {
-          wx.showToast({
-            title: res.data.msg || '获取记录失败',
-            icon: 'none'
-          });
-        }
-      },
-      fail: (err) => {
-        wx.hideLoading();
+          memberMap[memberId] = {
+            id: memberId,
+            member_code: memberCode,
+            nickname: memberNickname,
+            level: memberType,
+            level_name: memberTypeName,
+            star_level: memberStarLevel,
+            consumeRecords: formatOrders,
+            totalConsume: memberTotalConsume.toFixed(2)
+          };
+        });
+
+        const memberList = Object.values(memberMap);
+
         this.setData({
-          loading: false
+          hasSubConsumePermission: true, // ✅ 有权限且解析成功，标记为 true
+          consumeList: allConsumeList,
+          memberList: memberList,
+          currentMemberId: '',
+          currentMemberInfo: {},
+          totalAllConsume: totalAllConsume.toFixed(2)
         });
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        });
+
+      } else {
+        // 其他真正的错误才弹窗报错
+        this.setData({ hasSubConsumePermission: false });
+        wx.showToast({ title: res.data.msg || '获取记录失败', icon: 'none' });
       }
-    });
-  },
+    },
+    fail: (err) => {
+      try { wx.hideLoading(); } catch (e) {}
+      this.setData({ loading: false });
+      console.error("网络请求失败:", err);
+    }
+  });
+},
 
   safeToNumber(value) {
     const num = parseFloat(value);

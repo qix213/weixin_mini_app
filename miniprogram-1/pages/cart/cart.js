@@ -5,10 +5,14 @@ Page({
   data: {
     cartList: [],        // 购物车商品列表
     loading: true,       // 加载状态
+    isLogin: true,       // 当前是否已登录状态（默认先当做true，避免闪烁）
     
     // ================= 🌟 核心拆分双资产池 =================
     totalCashPrice: '0.00',   // 纯现金商品总计（元）
-    totalPointPrice: 0        // 纯积分商品总计（积分）
+    totalPointPrice: 0,       // 纯积分商品总计（积分）
+    
+    // 🌟 新增：用户星级身份标识
+    userType: 1
   },
 
   // 🌟 1. 严格对齐后端核心字段，精准识别积分商品
@@ -18,11 +22,22 @@ Page({
     return String(flag) === '1' || String(flag).toLowerCase() === 'true' || flag === true;
   },
 
-  // 计算积分价格
-  calcPointPrice(memberPrice) {
-    const memberPriceStr = (memberPrice || '0').toString().replace(/[^0-9.]/g, '');
-    const memberPriceNum = parseFloat(memberPriceStr) || 0;
-    return Math.floor(memberPriceNum * 100);
+  calcPointPrice(price) {
+    const priceStr = (price || '0').toString().replace(/[^0-9.]/g, '');
+    const priceNum = parseFloat(priceStr) || 0;
+    return Math.floor(priceNum * 100);
+  },
+
+  // 🌟 新增：根据用户星级，动态获取真实的商品单价
+  getGoodsCashPrice(goods) {
+    if (!goods) return 0;
+    const currentUserType = parseInt(this.data.userType) || 1;
+    
+    const memberPrice = Number(goods.member_price || goods.price || 0);
+    const originalPrice = Number(goods.original_price || memberPrice); // 没填零售价兜底拿会员价
+    
+    // 0星用户取零售价，星级用户取会员价
+    return currentUserType <= 1 ? originalPrice : memberPrice;
   },
 
   onLoad(options) {
@@ -34,11 +49,28 @@ Page({
       });
       return;
     }
-    this.getCartList();
+    // onLoad 通常不需要拉取，交由 onShow 统筹
   },
 
   onShow() {
-    this.setData({ cartList: [], totalCashPrice: '0.00', totalPointPrice: 0 });
+    const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    
+    // 🌟 每次显示页面，获取最新的用户身份
+    const memberInfo = app.globalData.memberInfo || wx.getStorageSync('memberInfo') || {};
+    this.setData({ userType: memberInfo.user_type || 1 });
+    
+    if (!accessToken) {
+      this.setData({ 
+        isLogin: false, 
+        cartList: [], 
+        totalCashPrice: '0.00', 
+        totalPointPrice: 0,
+        loading: false 
+      });
+      return; 
+    }
+
+    this.setData({ isLogin: true, cartList: [], totalCashPrice: '0.00', totalPointPrice: 0 });
     this.getCartList();
   },
 
@@ -75,9 +107,15 @@ Page({
   // 🌟 2. 获取列表时：双轨独立统计
   getCartList(callback) {
     const accessToken = wx.getStorageSync('accessToken') || app.globalData.accessToken;
+    if (!accessToken) {
+      this.setData({ isLogin: false, loading: false });
+      callback && callback();
+      return;
+    }
+
     const header = {
       'content-type': 'application/json',
-      ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
+      'Authorization': `Bearer ${accessToken}`
     };
 
     this.setData({ loading: true });
@@ -91,17 +129,21 @@ Page({
           wx.removeStorageSync('accessToken');
           app.globalData.accessToken = '';
           app.globalData.isLogin = false;
+          
+          this.setData({ isLogin: false, cartList: [], totalCashPrice: '0.00', totalPointPrice: 0 });
+          
           wx.showModal({
-            title: '登录过期', content: '请重新登录', showCancel: false,
-            success: () => wx.navigateTo({ url: '/pages/login/login' })
+            title: '登录过期', content: '请重新登录以查看购物车', showCancel: false,
+            success: () => {
+              wx.navigateTo({ url: '/pages/login/login' });
+            }
           });
-          this.setData({ cartList: [], totalCashPrice: '0.00', totalPointPrice: 0 });
           return;
         }
 
         let cartList = [];
-        let sumCash = 0;   // 现金池
-        let sumPoints = 0; // 积分池
+        let sumCash = 0;   
+        let sumPoints = 0; 
         
         if (res.data && res.data.code === 200) {
           cartList = res.data.data.cart_list || [];
@@ -111,14 +153,15 @@ Page({
               item.goods.image_url = item.goods.image_url.replace('//media/', '/media/');
             }
             
-            // 精准判定
             const isPointGoods = this.isPointGoods(item.goods);
-            const goodsPrice = Number(item.goods?.member_price || 0);
             
-            // 积分单价优先获取后端真实数据，没有则前端换算
+            // 🌟 核心修改：不再写死 member_price，动态取真实价格
+            const goodsPrice = this.getGoodsCashPrice(item.goods);
+            
             let pointPrice = 0;
             if (isPointGoods) {
               pointPrice = Number(item.goods?.point_price || 0);
+              // 积分商品如果没填积分价，自动用现金价折算 (1元=100积分)
               if (pointPrice <= 0) pointPrice = this.calcPointPrice(goodsPrice);
             }
             
@@ -127,23 +170,27 @@ Page({
             
             if (isPointGoods) {
               total_price = pointPrice * num;
-              sumPoints += total_price; // 归入积分池
+              sumPoints += total_price;
             } else {
               total_price = goodsPrice * num;
-              sumCash += total_price;   // 归入现金池
+              sumCash += total_price; 
             }
-
+            const currentUserType = parseInt(this.data.userType) || 1;
+            const priceLabel = currentUserType <= 1 ? '零售价' : '会员价'
             return {
               ...item,
               isPointGoods: isPointGoods,
               pointPrice: pointPrice,
-              total_price: isPointGoods ? total_price.toString() : total_price.toFixed(2)
+              total_price: isPointGoods ? total_price.toString() : total_price.toFixed(2),
+              show_single_price: isPointGoods ? pointPrice.toString() : goodsPrice.toFixed(2),
+              price_label: priceLabel
             };
           });
           cartList = formatCartList;
         }
         
         this.setData({ 
+          isLogin: true, 
           cartList, 
           totalCashPrice: sumCash.toFixed(2), 
           totalPointPrice: sumPoints 
@@ -188,7 +235,9 @@ Page({
               item.total_price = itemTotal.toString();
               sumPoints += itemTotal;
             } else {
-              const itemTotal = currentNum * Number(item.goods.member_price || 0);
+              // 🌟 核心修改：数量变动时，也要取真实计算的单价
+              const goodsPrice = that.getGoodsCashPrice(item.goods);
+              const itemTotal = currentNum * goodsPrice;
               item.total_price = itemTotal.toFixed(2);
               sumCash += itemTotal;
             }
@@ -230,7 +279,9 @@ Page({
                   if (item.isPointGoods) {
                     sumPoints += item.pointPrice * currentNum;
                   } else {
-                    sumCash += currentNum * Number(item.goods.member_price || 0);
+                    // 🌟 核心修改：重新计算剩余商品的总价时，取真实计算的单价
+                    const goodsPrice = that.getGoodsCashPrice(item.goods);
+                    sumCash += currentNum * goodsPrice;
                   }
                   return item;
                 });
@@ -249,12 +300,18 @@ Page({
 
   toCheckout() {
     const accessToken = wx.getStorageSync('accessToken');
-    if (!accessToken) { wx.navigateTo({ url: '/pages/login/login' }); return; }
+    if (!accessToken) { 
+      wx.navigateTo({ url: '/pages/login/login' }); 
+      return; 
+    }
     
-    // 计算是否全为积分商品传入结算页
     const isAllPointGoods = this.data.totalPointPrice > 0 && parseFloat(this.data.totalCashPrice) === 0;
     wx.navigateTo({ 
       url: `/pages/checkout/checkout?fromCart=true&isAllPointGoods=${isAllPointGoods}` 
     });
+  },
+
+  goToLogin() {
+    wx.navigateTo({ url: '/pages/login/login' });
   }
 });

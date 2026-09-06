@@ -23,6 +23,7 @@
       </view>
     </block>
   </view>
+
   <!-- ========== VIP 星级面板 ========== -->
   <view class="glass-panel vip-board" wx:if="{{isLogin}}">
     
@@ -37,15 +38,17 @@
     <view class="vip-upgrade-action-bar">
       <view class="upgrade-left-tip">
         <block wx:if="{{memberInfo.nextLevelDiff > 0}}">
-          <text class="tip-prefix">晋升特权</text>
-          <text class="tip-desc">距下级还需 <text class="tip-money">￥{{memberInfo.nextLevelDiff}}</text></text>
+           <text class="tip-desc">距下级还需 <text class="tip-money">￥{{memberInfo.nextLevelDiff}}</text></text>
         </block>
         <block wx:else>
-          <text class="tip-max-status">✨ 尊贵的TA创+</text>
+          <van-icon name="gem" class="tip-max-status"/>
+          <text class="tip-max-status">
+            尊贵的顶级蓝朋友</text>
         </block>
       </view>
 
-      <view class="btn-upgrade-luxury" wx:if="{{memberInfo.user_type < 5}}" bindtap="goToUpgrade">
+      <!-- 🌟 核心修改：最高等级扩充到了6级 -->
+      <view class="btn-upgrade-luxury" wx:if="{{memberInfo.user_type < 6}}" bindtap="goToUpgrade">
         <text class="btn-text">提升会籍</text>
         <van-icon name="arrow" class="btn-arrow-icon" size="20rpx" color="#FFFFFF" />
       </view>
@@ -57,13 +60,15 @@
           <view class="node-cost" style="color: {{ memberInfo.user_type >= item.value ? '#2C3327' : '#8A8E88' }}">
             <text class="rmb">￥</text><text>{{item.cost >= 10000 ? (item.cost/10000)+'万' : item.cost}}</text>
           </view>
-          <view class="node-stars">
-            <!-- 🌟 恢复多颗星星，并加上 overlap-star 类实现重叠 -->
-            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 2}}" />
-            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 3}}" />
-            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 4}}" />
-            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="36rpx" wx:if="{{item.value >= 5}}" />
+<!-- 🌟 增加动态排版类名：star-layout-1 到 star-layout-5 -->
+<view class="node-stars star-layout-{{item.value - 1}}">
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="32rpx" wx:if="{{item.value >= 2}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="32rpx" wx:if="{{item.value >= 3}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="32rpx" wx:if="{{item.value >= 4}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="32rpx" wx:if="{{item.value >= 5}}" />
+            <van-icon class="overlap-star" name="{{ memberInfo.user_type >= item.value ? 'star' : 'star-o' }}" color="{{ memberInfo.user_type >= item.value ? '#94A48C' : '#CBD5E1' }}" size="32rpx" wx:if="{{item.value >= 6}}" />
           </view>
+
         </view>
       </block>
     </view>
@@ -99,7 +104,7 @@
       <view class="function-icon">
         <van-icon name="smile-comment-o" class="list-van-icon" />
       </view>
-      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">AI蓝博士</view>
+      <view class="function-name" style="{{!isLogin ? 'color:#94a3b8' : ''}}">智能蓝博士</view>
     </view>
 
     <view class="function-item" bindtap="goToMemberCenter">

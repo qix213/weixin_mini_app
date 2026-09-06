@@ -8,7 +8,7 @@ Page({
   },
   getPrivilegeImg() {
     wx.request({
-      url: `${getApp().globalData.baseUrl}/app01/member_privilege/`,
+      url: `${getApp().globalData.baseUrl}/app01/offline_certificate/`,
       method: 'GET',
       success: (res) => {
         if (res.data.code === 200 && res.data.result) {
