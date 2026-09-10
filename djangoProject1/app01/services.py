@@ -42,9 +42,19 @@ def calculate_and_grant_commission(order):
         print("=========================================\n")
         return
 
-    # 财务水分解除：获取真实的佣金计算基数
-    commission_base = Decimal(str(order.commission_base or 0))
+    # =========================================================
+    # 🌟 财务水分解除：获取真实的佣金计算基数
+    # =========================================================
+    # 🚨 核心修复：使用 actual_pay_money (实付金额) 作为真正的返佣基数
+    actual_pay = getattr(order, 'actual_pay_money', 0)
+    commission_base = Decimal(str(actual_pay if actual_pay else 0))
     order_total = Decimal(str(order.total_price or 0))
+
+    # 如果连实付金额字段都没有，兜底尝试获取微信支付金额
+    if commission_base <= 0:
+        wechat_pay = getattr(order, 'wechat_pay', 0)
+        wallet_pay = getattr(order, 'wallet_pay', 0)
+        commission_base = Decimal(str(wechat_pay or 0)) + Decimal(str(wallet_pay or 0))
 
     if commission_base <= 0 or order_total <= 0:
         print("❌ 失败原因：该订单全额使用代金券或积分为0元购，无真金白银流水，不予发佣")

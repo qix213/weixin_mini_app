@@ -590,7 +590,6 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.utils import timezone
 
-
 class User(AbstractUser):
     # ================= 🌟 基础业务字段 =================
     # 🌟 核心更新：扩展为 7 档会员体系
@@ -605,6 +604,7 @@ class User(AbstractUser):
     )
     user_type = models.IntegerField(choices=USER_TYPE_CHOICES, null=True, blank=True, verbose_name="会员等级")
     can_use_ai = models.BooleanField(default=False, verbose_name="允许使用智能蓝博士")
+    can_watch_video = models.BooleanField(default=False, verbose_name="允许观看视频")
     expire_time = models.DateTimeField(null=True, blank=True, verbose_name="会籍到期时间")
     withdrawable_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="可提现余额")
     frozen_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00,
@@ -616,7 +616,7 @@ class User(AbstractUser):
         verbose_name="会员ID"
     )
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name="用户头像")
-    nickname = models.CharField(max_length=50, verbose_name="昵称", unique=True, null=True, blank=True)
+    nickname = models.CharField(max_length=50, verbose_name="昵称", null=True, blank=True)
     phone = models.CharField(
         max_length=11, validators=[RegexValidator(r'^1[3-9]\d{9}$', '手机号格式错误')],
         verbose_name="手机号", null=True, blank=True
@@ -625,7 +625,6 @@ class User(AbstractUser):
     # ================= 🌟 新增：微信身份绑定字段 =================
     openid = models.CharField(max_length=64, unique=True, null=True, blank=True, verbose_name="微信OpenID")
 
-    email = models.EmailField(verbose_name="邮箱", null=True, blank=True)
     province = models.CharField(max_length=20, verbose_name="省份", null=True, blank=True)
     city = models.CharField(max_length=20, verbose_name="城市", null=True, blank=True)
     district = models.CharField(max_length=20, verbose_name="区县", null=True, blank=True)
@@ -641,7 +640,6 @@ class User(AbstractUser):
     points = models.IntegerField(default=0, verbose_name="积分余额")
     coupon_count = models.IntegerField(default=0, verbose_name="优惠券数量")
     star_level = models.IntegerField(default=1, verbose_name="星级（1-5星）")
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name="注册时间")
 
     # ================= 🚀 生日权益与限制字段 =================
     birth_date = models.DateField(verbose_name="出生日期", null=True, blank=True)
@@ -660,7 +658,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "用户"
         verbose_name_plural = verbose_name
-        ordering = ["-create_time"]
+        ordering = ["-date_joined"]
 
     def __str__(self):
         type_display = self.get_user_type_display() or "普通用户"
@@ -1668,17 +1666,19 @@ class Coupon(models.Model):
             return f"{self.title} - {self.discount_rate * 10}折券"
 
 class UserCoupon(models.Model):
-    """用户持有的优惠券（关联用户和优惠券模板）"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_coupons",
                              verbose_name="所属用户")
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="user_coupons", verbose_name="优惠券模板")
 
-    # 核心状态字段
-    start_time = models.DateTimeField(auto_now_add=True, verbose_name="领取时间")
-    end_time = models.DateTimeField(verbose_name="过期时间")  # 自动计算：start_time + valid_days
+    # 🌟 优化描述，让定义绝对清晰
+    start_time = models.DateTimeField(auto_now_add=True, verbose_name="领取/发放时间",
+                                      help_text="系统自动记录，不可更改")
+    end_time = models.DateTimeField(verbose_name="过期时间",
+                                    help_text="默认根据模板有效期自动计算，管理员可手动修改延期")
+
     is_used = models.BooleanField(default=False, verbose_name="是否已使用")
-    used_time = models.DateTimeField(null=True, blank=True, verbose_name="使用时间")
-    order_sn = models.CharField(max_length=64, null=True, blank=True, verbose_name="关联订单号")  # 关联使用的订单
+    used_time = models.DateTimeField(null=True, blank=True, verbose_name="实际使用时间", help_text="核销时系统自动记录")
+    order_sn = models.CharField(max_length=64, null=True, blank=True, verbose_name="关联订单号")
 
     class Meta:
         verbose_name = "用户优惠券"
@@ -1690,19 +1690,18 @@ class UserCoupon(models.Model):
         return f"{self.user.nickname} - {self.coupon.title} - {status}"
 
     def save(self, *args, **kwargs):
-        # 自动计算过期时间（领取时间 + 模板的有效期天数）
+        # 🌟 修复底层隐患：不要依赖 self.start_time（因为它在第一次 save 前是 None）
         if not self.end_time:
-            self.end_time = self.start_time + datetime.timedelta(days=self.coupon.valid_days)
+            now = timezone.now()
+            self.end_time = now + datetime.timedelta(days=self.coupon.valid_days)
         super().save(*args, **kwargs)
 
     @property
     def is_expired(self):
-        """判断优惠券是否过期"""
         return timezone.now() > self.end_time
 
     @property
     def is_valid(self):
-        """判断优惠券是否可用（未使用+未过期）"""
         return not self.is_used and not self.is_expired
 
 class CommissionRecord(models.Model):

@@ -322,7 +322,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        # 返回token + 用户核心信息
         data['user_info'] = {
             'member_id': self.user.member_id,
             'nickname': self.user.nickname,
@@ -330,7 +329,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'user_type_name': self.user.get_user_type_display(),
             'star_level': self.user.star_level,
             'points': self.user.points,
-            'coupon_count': self.user.coupon_count
+            'coupon_count': self.user.coupon_count,
+            # 🌟 新增以下两个权限字段下发给前端
+            'can_use_ai': getattr(self.user, 'can_use_ai', False),
+            'can_watch_video': getattr(self.user, 'can_watch_video', False)
         }
         return data
 
@@ -483,17 +485,17 @@ class ExamRecordSerializer(serializers.ModelSerializer):
 
 
 class MemberInfoSerializer(serializers.ModelSerializer):
-    """会员信息序列化器：格式化返回会员核心字段"""
-    # 格式化会员类型（返回文字描述，如“蓝粉”而非 1）
     user_type_text = serializers.CharField(source='get_user_type_display', read_only=True)
+    create_time = serializers.DateTimeField(source='date_joined', format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = User
-        # 只返回前端需要的会员字段，隐藏敏感信息
         fields = [
             'member_id', 'nickname', 'phone', 'birth_date',
             'user_type', 'user_type_text', 'star_level', 'points',
             'coupon_count', 'create_time', 'expire_time', 'avatar','wallet_balance',
+            # 🌟 新增这俩字段，让个人中心接口也能返回权限状态
+            'can_use_ai', 'can_watch_video'
         ]
 
 

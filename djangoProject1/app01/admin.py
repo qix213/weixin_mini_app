@@ -14,7 +14,7 @@ admin.site.register(Notice)
 admin.site.register(Index_Annonce)
 admin.site.register(UserInfo)
 admin.site.register(Area)
-admin.site.register(UserCoupon)
+# admin.site.register(UserCoupon)
 admin.site.register(OfflineCertification)
 admin.site.register(GoodsImage)
 admin.site.register(StudyCheckIn)
@@ -33,15 +33,15 @@ admin.site.register(EnterpriseProfile)
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # 后台列表显示的字段
-    list_display = ['member_id', 'nickname', 'user_type', 'get_user_type_display', 'phone', 'star_level', 'points', 'create_time']
+    list_display = ['member_id', 'nickname', 'user_type', 'get_user_type_display', 'phone', 'star_level', 'points', 'date_joined']
     # 可搜索的字段
     search_fields = ['member_id', 'nickname', 'phone', 'email']
     # 可筛选的字段
-    list_filter = ['user_type', 'star_level', 'create_time']
+    list_filter = ['user_type', 'star_level', 'date_joined']
     # 只读字段（无需手动修改的字段）
-    readonly_fields = ['create_time']
+    readonly_fields = ['date_joined']
     # 列表排序（默认按创建时间倒序）
-    ordering = ['-create_time']
+    ordering = ['-date_joined']
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     # 🌟 在列表中显示 sort_order
@@ -159,3 +159,13 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     #
     # def has_delete_permission(self, request, obj=None):
     #     return False
+
+
+@admin.register(UserCoupon)
+class UserCouponAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'coupon', 'start_time', 'end_time', 'is_used', 'used_time']
+    list_filter = ['is_used', 'coupon__coupon_type']
+    search_fields = ['user__nickname', 'user__phone', 'order_sn']
+
+    # 🌟 核心：将这两个自动生成的时间加入只读列表，它们就会在截图中的详情页乖乖显示出来了！
+    readonly_fields = ['start_time', 'used_time', 'order_sn']

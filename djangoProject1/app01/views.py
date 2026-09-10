@@ -237,7 +237,21 @@ def create_register_user(data):
     if user.user_type > 1:
         user.expire_time = timezone.now() + timedelta(days=365)
         update_fields.append('expire_time')
+    recommender_id = data.get('recommender_id')
+    if recommender_id:
+        parent_user = User.objects.filter(member_id=recommender_id).first()
+        if parent_user:
+            user.parent_user = parent_user
+            update_fields.append('parent_user')
 
+            # 自动追溯最顶级的 Ta创+
+            root_ent = find_root_enterprise(parent_user)
+            if not root_ent:
+                # 🌟 兜底机制：强绑定到总账号 LANSIK26
+                root_ent = User.objects.filter(member_id="LANSIK26").first()
+
+            user.root_enterprise = root_ent
+            update_fields.append('root_enterprise')
     if update_fields:
         user.save(update_fields=update_fields)
 
@@ -440,16 +454,18 @@ class OfflineServiceViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset = OfflineServiceRecord.objects.all()
 
     def get_queryset(self):
-        """ 权限隔离：店长(5)看所有，客户看自己 """
+        """ 权限隔离：Ta创+(7)看所有，客户看自己 """
         user = self.request.user
         user_type = getattr(user, 'user_type', 1)
 
-        if user_type == 5:
+        # 🚨 致命越权修复：将 5 改为 7
+        if user_type == 7:
             queryset = OfflineServiceRecord.objects.all()
             customer_id = self.request.query_params.get('customer_id')
             if customer_id:
                 queryset = queryset.filter(user_id=customer_id)
         else:
+            # 非 Ta创+ 统统只能看到自己的线下项目
             queryset = OfflineServiceRecord.objects.filter(user=user)
 
         return queryset.select_related('user', 'manager', 'project').order_by('-create_time')
@@ -460,13 +476,15 @@ class OfflineServiceViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         user = request.user
         user_type = getattr(user, 'user_type', 1)
 
-        if user_type == 5:
+        # 🚨 致命越权修复：将 5 改为 7
+        if user_type == 7:
             customer_id = request.query_params.get('customer_id')
             if customer_id:
                 assets = UserOfflineProject.objects.select_related('user', 'project').filter(user_id=customer_id)
             else:
                 assets = UserOfflineProject.objects.select_related('user', 'project').all()
         else:
+            # 非 Ta创+ 统统只能查自己的资产，无法看到下级的卡项
             assets = UserOfflineProject.objects.select_related('user', 'project').filter(user=user)
 
         assets = assets.filter(total_times__gt=0)
@@ -547,54 +565,87 @@ class OfflineServiceViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             logger.error(f"确认服务接口故障: {str(e)}", exc_info=True)
             return Response({"code": 500, "msg": "服务器内部错误，核销失败"}, status=500)
 
-    # 🌟 核心整合：直接在这里接收图片上传，不需要改 urls.py 路由
-    @action(detail=False, methods=['post'], parser_classes=(MultiPartParser, FormParser))
+    @action(detail=False, methods=['post'])
     def upload_image(self, request):
-        """ 【客户端】中间件：通用图片上传 """
-        file_obj = request.FILES.get('file')
-        if not file_obj:
-            return Response({"code": 400, "msg": "未接收到图片文件"}, status=400)
+        """ 【客户端】评价时上传图片接口 """
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"code": 400, "msg": "未收到文件数据"}, status=400)
+
+        # 校验文件大小 (限制 15MB)
+        if file.size > 15 * 1024 * 1024:
+            return Response({"code": 400, "msg": "照片超过15MB，请压缩后再试"}, status=400)
+
+        import uuid
+        import os
+        from django.core.files.storage import default_storage
+        from django.conf import settings
+
         try:
-            ext = file_obj.name.split('.')[-1]
-            filename = f"reviews/{uuid.uuid4().hex}.{ext}"
-            file_path = default_storage.save(filename, file_obj)
-            file_url = request.build_absolute_uri(default_storage.url(file_path))
-            return Response({"code": 200, "msg": "上传成功", "data": {"url": file_url}})
+            # 提取后缀并生成唯一文件名
+            ext = file.name.split('.')[-1]
+            filename = f"offline_reviews/{uuid.uuid4().hex}.{ext}"
+
+            # 保存文件到 media 目录
+            saved_path = default_storage.save(filename, file)
+
+            # 拼接完整的访问 URL
+            url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
+
+            # 强制转换为 HTTPS（兼容你之前写的代理协议处理）
+            if url.startswith('http://'):
+                url = url.replace('http://', 'https://', 1)
+
+            return Response({
+                "code": 200,
+                "msg": "上传成功",
+                "data": {"url": url}
+            })
         except Exception as e:
-            return Response({"code": 500, "msg": f"保存失败: {str(e)}"}, status=500)
+            return Response({"code": 500, "msg": f"图片保存失败: {str(e)}"}, status=500)
 
     @action(detail=True, methods=['post'])
     def submit_review(self, request, pk=None):
-        """ 【客户端】第三步：核销完成后提交评价 """
+        """ 【客户端】第三步：提交服务评价与图片 """
         customer = request.user
-        rating = request.data.get('rating')
-        review_content = request.data.get('review_content', '')
-        review_images = request.data.get('review_images', [])
-
         try:
+            # 确保只能评价属于自己的、且已经“已完成(status=2)”的服务
             record = OfflineServiceRecord.objects.get(pk=pk, user=customer)
 
-            # 🌟 核心修正：核销完状态已经变成 2 了，这里必须验证等于 2！
             if record.status != 2:
-                return Response({"code": 400, "msg": "请先完成项目核销确认，再进行评价"}, status=400)
+                return Response({"code": 400, "msg": "只有已完成的服务才能进行评价"}, status=400)
 
-            if record.rating is not None:
-                return Response({"code": 400, "msg": "该次服务您已评价过，无法重复提交"}, status=400)
+            # 提取前端传来的动态 Payload 参数
+            rating = request.data.get('rating')
+            content = request.data.get('review_content')
+            images = request.data.get('review_images')  # 这里接收到的是一个 URL 列表
 
-            if rating:
-                record.rating = int(rating)
-            if review_content:
-                record.review_content = review_content
-            if isinstance(review_images, list) and review_images:
-                record.review_images = review_images
+            update_fields = ['review_time']
+
+            # 如果传了评分
+            if rating is not None:
+                record.rating = rating
+                update_fields.append('rating')
+
+            # 如果传了文字评价
+            if content:
+                record.review_content = content
+                update_fields.append('review_content')
+
+            # 如果传了评价图片（JSONField）
+            if images is not None:
+                record.review_images = images
+                update_fields.append('review_images')
 
             record.review_time = timezone.now()
-            record.save(update_fields=['rating', 'review_content', 'review_images', 'review_time'])
+            record.save(update_fields=update_fields)
 
-            return Response({"code": 200, "msg": "评价提交成功，感谢您的反馈！"})
+            return Response({"code": 200, "msg": "感谢您的评价！"})
 
         except OfflineServiceRecord.DoesNotExist:
             return Response({"code": 404, "msg": "未找到对应的服务记录"}, status=404)
+        except Exception as e:
+            return Response({"code": 500, "msg": f"评价提交失败: {str(e)}"}, status=500)
 
     @action(detail=False, methods=['post'])
     def buy_project(self, request):
@@ -616,7 +667,6 @@ class OfflineServiceViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             return Response({"code": 200, "msg": "资产下发成功", "data": {"remain_times": asset.remain_times}})
         except Goods.DoesNotExist:
             return Response({"code": 404, "msg": "该项目不存在或非线下项目"}, status=404)
-
 
 from rest_framework import viewsets
 from .models import CourseCategory
@@ -655,6 +705,12 @@ class VideoCourseViewSet(ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def check_permission(self, request, pk=None):
+        if not request.user.can_watch_video:
+            return Response({
+                "code": 403,
+                "msg": "您暂无观看视频的权限",
+                "has_permission": False
+            })
         try:
             video = self.get_object()
 
@@ -1142,11 +1198,16 @@ class MemberInfoView(APIView):
             response_data['coupon_count'] = coupon_count
             response_data['points'] = points
             response_data['birth_date'] = request.user.birth_date
+
+            # 🌟 确保两个权限都传递给前端（因为 serializer 里加了，这里其实不加也行，但加了最保险）
             response_data['can_use_ai'] = getattr(request.user, 'can_use_ai', False)
+            response_data['can_watch_video'] = getattr(request.user, 'can_watch_video', False)
+
             if request.user.avatar:
                 response_data['avatar_url'] = request.build_absolute_uri(request.user.avatar.url)
             else:
-                response_data['avatar_url'] = ''  # 没有头像返回空字符串，前端会自动兜底
+                response_data['avatar_url'] = ''
+
             return Response({
                 'code': 200,
                 'msg': '获取会员信息成功',
@@ -2913,31 +2974,60 @@ class WechatPrepayView(APIView):
                         return Response({"code": 400, "msg": "该订单用户缺少微信支付凭证"}, status=400)
 
                     base_money = Decimal(str(order.total_price))
+                    coupon_money = Decimal('0.00')
 
-                    # 优惠券计算
+                    # ==============================================================
+                    # 🌟 1. 统计仅包含居家产品的“可用基数” (goods_type == 1)
+                    # ==============================================================
+                    eligible_money = Decimal('0.00')
+                    for item in order.items.all():
+                        if item.goods and item.goods.goods_type == 1:
+                            eligible_money += Decimal(str(item.total_price))
+
+                    # ==============================================================
+                    # 🌟 2. 优惠券【限用一张】、【不找零】与【品类限制】结算引擎
+                    # ==============================================================
                     if user_coupon_id and user_coupon_id != -1 and user:
+                        if isinstance(user_coupon_id, list):
+                            return Response({"code": 400, "msg": "每次结算仅限使用一张优惠券！"}, status=400)
+
                         try:
-                            user_coupon = user.user_coupons.select_related('coupon').get(id=user_coupon_id, is_used=False)
+                            # 💡【核心修复】：不仅查询“未使用”的券，也允许查询“已被当前订单号锁定”的券
+                            user_coupon = user.user_coupons.select_related('coupon').select_for_update().get(
+                                Q(is_used=False) | Q(order_sn=order.order_sn),
+                                id=user_coupon_id
+                            )
                             coupon_tpl = user_coupon.coupon
-                            if base_money >= coupon_tpl.min_consume:
-                                coupon_money = coupon_tpl.money if coupon_tpl.coupon_type == 1 else (base_money - (base_money * coupon_tpl.discount_rate))
-                                base_money = max(base_money - coupon_money, Decimal('0.01'))
+
+                            if eligible_money >= coupon_tpl.min_consume:
+                                if coupon_tpl.coupon_type == 1:
+                                    coupon_money = coupon_tpl.money
+                                else:
+                                    coupon_money = eligible_money - (eligible_money * coupon_tpl.discount_rate)
+
+                                coupon_money = min(coupon_money, eligible_money)
+                                base_money = max(base_money - coupon_money, Decimal('0.00'))
                                 order.coupon_deduct = coupon_money
 
+                                # 💡 将优惠券与当前订单号死死绑定！
                                 user_coupon.is_used = True
+                                user_coupon.order_sn = order.order_sn
                                 user_coupon.used_time = timezone.now()
-                                user_coupon.save(update_fields=['is_used', 'used_time'])
-                        except Exception:
+                                user_coupon.save(update_fields=['is_used', 'used_time', 'order_sn'])
+                        except Exception as e:
+                            # 找不到券则忽略抵扣
                             pass
-
-                    # 积分抵扣
+                    # 3. 积分抵扣结算
                     if point_deduct > 0 and not getattr(order, 'is_point_deducted', False):
                         deduct_money = Decimal(str(round(point_deduct * 0.01, 2)))
                         order.point_deduct = point_deduct
                         order.point_deduct_money = deduct_money
-                        base_money = max(base_money - deduct_money, Decimal('0.01'))
+                        # 同样允许归零
+                        base_money = max(base_money - deduct_money, Decimal('0.00'))
 
-                    # 🌟 核心引擎：智能资金拆分算账
+                    # ==============================================================
+                    # 🌟 4. 智能资金拆分算账 (判断是用微信补、还是免单)
+                    # ==============================================================
                     wechat_pay_amount = base_money
                     if use_wallet and user:
                         user_wallet_bal = getattr(user, 'wallet_balance', Decimal('0.00'))
@@ -2948,17 +3038,24 @@ class WechatPrepayView(APIView):
                         elif user_wallet_bal > 0:
                             wallet_pay_amount = user_wallet_bal
                             wechat_pay_amount = wechat_pay_amount - wallet_pay_amount
-                            final_pay_method = 4  # 混合支付
+                            final_pay_method = 4  # 混合支付，差额微信补
 
+                    # 💡【修复 Bug】若抵扣完毕还需要用微信补 0 元，直接走免单绿色通道！
+                    if wechat_pay_amount == Decimal('0.00') and final_pay_method != 2:
+                        final_pay_method = 5  # 5: 0元免单通道
+
+                    # 若最终还需要调起微信，则微信强制要求必须 >= 0.01 元
                     if final_pay_method in [1, 4]:
                         wechat_pay_amount = max(wechat_pay_amount, Decimal('0.01'))
+
                     pay_price_cents = int(wechat_pay_amount * 100)
 
                     order.actual_pay_money = base_money
                     order.wallet_pay = wallet_pay_amount
                     order.wechat_pay = wechat_pay_amount
                     order.pay_method = final_pay_method
-                    order.save(update_fields=['point_deduct', 'point_deduct_money', 'coupon_deduct', 'actual_pay_money', 'wallet_pay', 'wechat_pay', 'pay_method'])
+                    order.save(update_fields=['point_deduct', 'point_deduct_money', 'coupon_deduct', 'actual_pay_money',
+                                              'wallet_pay', 'wechat_pay', 'pay_method'])
 
                     out_trade_no = order.order_sn
                     goods_desc = f"购买商品-{order.goods_names_str[:30]}"
@@ -6588,7 +6685,8 @@ class FinanceApproveTransferView(FinanceSecurityMixin, View):
         try:
             with transaction.atomic():
                 # 1. 使用 select_for_update() 实施行级悲观锁，强制排队
-                withdraw_rec = WithdrawRecord.objects.select_for_update().filter(out_bill_no=out_bill_no).first()
+                withdraw_rec = WithdrawRecord.objects.select_for_update().filter(
+                    out_bill_no=out_bill_no).first()
 
                 if not withdraw_rec:
                     return HttpResponse(
@@ -6740,7 +6838,6 @@ def wx_code2openid(request):
 
     except Exception as e:
         return JsonResponse({"code": 500, "msg": f"接口异常：{str(e)}", "data": None})
-
 
 class WeChatCustomerServiceConfigView(APIView):
     """
